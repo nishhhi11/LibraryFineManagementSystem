@@ -1,8 +1,12 @@
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
 import javax.swing.border.LineBorder;
+import javax.imageio.ImageIO;
 import java.awt.*;
 import java.awt.event.*;
+import java.awt.image.BufferedImage;
+import java.io.File;
+import java.io.IOException;
 import java.util.ArrayList;
 
 public class GUI extends JFrame {
@@ -1605,13 +1609,289 @@ public class GUI extends JFrame {
     // BOOK COVER
     // =========================================================
 
+    // =========================================================
+    // BOOK COVER
+    // =========================================================
+
+    File findCoverFile(
+            String bookId) {
+
+        String fileName =
+                bookId + ".png";
+
+        // Your current project keeps the images directly in assets.
+        String[] directPaths = {
+                "assets/" + fileName,
+                "LibraryFineManagementSystem/assets/" + fileName,
+                "../assets/" + fileName,
+                "../LibraryFineManagementSystem/assets/" + fileName,
+                "../../assets/" + fileName
+        };
+
+        for (String path : directPaths) {
+
+            File file =
+                    new File(path);
+
+            if (file.exists() && file.isFile()) {
+                return file;
+            }
+        }
+
+        // Also search upward from the current working folder.
+        File current =
+                new File(
+                        System.getProperty("user.dir")
+                );
+
+        for (int i = 0;
+             i < 6 && current != null;
+             i++) {
+
+            File file =
+                    new File(
+                            current,
+                            "assets/" + fileName
+                    );
+
+            if (file.exists() && file.isFile()) {
+                return file;
+            }
+
+            file =
+                    new File(
+                            current,
+                            "LibraryFineManagementSystem/assets/"
+                                    + fileName
+                    );
+
+            if (file.exists() && file.isFile()) {
+                return file;
+            }
+
+            current =
+                    current.getParentFile();
+        }
+
+        // Finally check the location of the compiled class.
+        try {
+
+            File classLocation =
+                    new File(
+                            GUI.class
+                                    .getProtectionDomain()
+                                    .getCodeSource()
+                                    .getLocation()
+                                    .toURI()
+                    );
+
+            if (classLocation.isFile()) {
+                classLocation =
+                        classLocation.getParentFile();
+            }
+
+            for (int i = 0;
+                 i < 6 && classLocation != null;
+                 i++) {
+
+                File file =
+                        new File(
+                                classLocation,
+                                "assets/" + fileName
+                        );
+
+                if (file.exists() && file.isFile()) {
+                    return file;
+                }
+
+                file =
+                        new File(
+                                classLocation,
+                                "LibraryFineManagementSystem/assets/"
+                                        + fileName
+                        );
+
+                if (file.exists() && file.isFile()) {
+                    return file;
+                }
+
+                classLocation =
+                        classLocation.getParentFile();
+            }
+
+        } catch (Exception ignored) {
+        }
+
+        return null;
+    }
+
+
     JPanel createCover(
             Book book) {
 
-        JPanel cover =
-                new JPanel(
-                        new BorderLayout()
+        File imageFile =
+                findCoverFile(
+                        book.getId()
                 );
+
+        BufferedImage coverImage =
+                null;
+
+        try {
+
+            if (imageFile != null) {
+
+                coverImage =
+                        ImageIO.read(imageFile);
+            }
+
+        } catch (IOException e) {
+
+            System.out.println(
+                    "Could not load cover: "
+                            + book.getId()
+            );
+        }
+
+        final BufferedImage finalCoverImage =
+                coverImage;
+
+        JPanel cover =
+                new JPanel() {
+
+                    @Override
+                    protected void paintComponent(
+                            Graphics g) {
+
+                        super.paintComponent(g);
+
+                        Graphics2D g2 =
+                                (Graphics2D)
+                                        g.create();
+
+                        g2.setRenderingHint(
+                                RenderingHints.KEY_INTERPOLATION,
+                                RenderingHints.VALUE_INTERPOLATION_BICUBIC
+                        );
+
+                        g2.setRenderingHint(
+                                RenderingHints.KEY_RENDERING,
+                                RenderingHints.VALUE_RENDER_QUALITY
+                        );
+
+                        g2.setRenderingHint(
+                                RenderingHints.KEY_ANTIALIASING,
+                                RenderingHints.VALUE_ANTIALIAS_ON
+                        );
+
+                        int panelWidth =
+                                getWidth();
+
+                        int panelHeight =
+                                getHeight();
+
+                        if (finalCoverImage != null) {
+
+                            int imageWidth =
+                                    finalCoverImage.getWidth();
+
+                            int imageHeight =
+                                    finalCoverImage.getHeight();
+
+                            // Fit the complete cover inside the
+                            // fixed cover area without cropping.
+                            double scale =
+                                    Math.min(
+                                            (double) panelWidth
+                                                    / imageWidth,
+                                            (double) panelHeight
+                                                    / imageHeight
+                                    );
+
+                            int drawWidth =
+                                    Math.max(
+                                            1,
+                                            (int)
+                                                    Math.ceil(
+                                                            imageWidth
+                                                                    * scale
+                                                    )
+                                    );
+
+                            int drawHeight =
+                                    Math.max(
+                                            1,
+                                            (int)
+                                                    Math.ceil(
+                                                            imageHeight
+                                                                    * scale
+                                                    )
+                                    );
+
+                            int x =
+                                    (panelWidth
+                                            - drawWidth) / 2;
+
+                            int y =
+                                    (panelHeight
+                                            - drawHeight) / 2;
+
+                            g2.drawImage(
+                                    finalCoverImage,
+                                    x,
+                                    y,
+                                    drawWidth,
+                                    drawHeight,
+                                    null
+                            );
+
+                        } else {
+
+                            g2.setColor(
+                                    categoryColor(
+                                            book.getCategory()
+                                    )
+                            );
+
+                            g2.fillRect(
+                                    0,
+                                    0,
+                                    panelWidth,
+                                    panelHeight
+                            );
+
+                            g2.setColor(WHITE);
+
+                            g2.setFont(
+                                    SMALL_BOLD
+                            );
+
+                            String text =
+                                    "NO COVER";
+
+                            FontMetrics metrics =
+                                    g2.getFontMetrics();
+
+                            int x =
+                                    (panelWidth
+                                            - metrics.stringWidth(text))
+                                            / 2;
+
+                            int y =
+                                    (panelHeight
+                                            + metrics.getAscent())
+                                            / 2;
+
+                            g2.drawString(
+                                    text,
+                                    x,
+                                    y
+                            );
+                        }
+
+                        g2.dispose();
+                    }
+                };
 
         cover.setBackground(
                 categoryColor(
@@ -1619,75 +1899,7 @@ public class GUI extends JFrame {
                 )
         );
 
-        JLabel category =
-                new JLabel(
-                        book.getCategory()
-                );
-
-        category.setFont(SMALL_BOLD);
-
-        category.setForeground(WHITE);
-
-        category.setBorder(
-                new EmptyBorder(
-                        8,
-                        8,
-                        0,
-                        4
-                )
-        );
-
-        JLabel title =
-                new JLabel(
-                        "<html><center>"
-                                + book.getTitle()
-                                + "</center></html>",
-                        SwingConstants.CENTER
-                );
-
-        title.setFont(
-                new Font(
-                        "Serif",
-                        Font.BOLD,
-                        12
-                )
-        );
-
-        title.setForeground(WHITE);
-
-        JLabel id =
-                new JLabel(
-                        book.getId(),
-                        SwingConstants.CENTER
-                );
-
-        id.setFont(SMALL_BOLD);
-
-        id.setForeground(WHITE);
-
-        id.setBorder(
-                new EmptyBorder(
-                        0,
-                        3,
-                        7,
-                        3
-                )
-        );
-
-        cover.add(
-                category,
-                BorderLayout.NORTH
-        );
-
-        cover.add(
-                title,
-                BorderLayout.CENTER
-        );
-
-        cover.add(
-                id,
-                BorderLayout.SOUTH
-        );
+        cover.setOpaque(true);
 
         return cover;
     }
@@ -1800,35 +2012,142 @@ public class GUI extends JFrame {
                 BorderLayout.WEST
         );
 
+        // Search box
+        JPanel searchBox =
+                new JPanel(
+                        new BorderLayout()
+                ) {
+
+                    @Override
+                    protected void paintComponent(
+                            Graphics g) {
+
+                        Graphics2D g2 =
+                                (Graphics2D)
+                                        g.create();
+
+                        g2.setRenderingHint(
+                                RenderingHints.KEY_ANTIALIASING,
+                                RenderingHints.VALUE_ANTIALIAS_ON
+                        );
+
+                        g2.setColor(WHITE);
+
+                        g2.fillRoundRect(
+                                0,
+                                0,
+                                getWidth() - 1,
+                                getHeight() - 1,
+                                14,
+                                14
+                        );
+
+                        g2.setColor(SAND);
+
+                        g2.drawRoundRect(
+                                0,
+                                0,
+                                getWidth() - 1,
+                                getHeight() - 1,
+                                14,
+                                14
+                        );
+
+                        g2.dispose();
+
+                        super.paintComponent(g);
+                    }
+                };
+
+        searchBox.setOpaque(false);
+
+        searchBox.setPreferredSize(
+                new Dimension(
+                        280,
+                        44
+                )
+        );
+
+        searchBox.setBorder(
+                new EmptyBorder(
+                        0,
+                        12,
+                        0,
+                        12
+                )
+        );
+
+        JLabel searchIcon =
+                new JLabel("⌕");
+
+        searchIcon.setFont(
+                new Font(
+                        "Serif",
+                        Font.BOLD,
+                        22
+                )
+        );
+
+        searchIcon.setForeground(MUTED);
+
+        searchIcon.setBorder(
+                new EmptyBorder(
+                        0,
+                        2,
+                        1,
+                        7
+                )
+        );
+
         JTextField search =
                 new JTextField();
 
-        search.setPreferredSize(
-                new Dimension(
-                        260,
-                        40
+        search.setFont(
+                new Font(
+                        "SansSerif",
+                        Font.PLAIN,
+                        14
                 )
         );
 
-        search.setFont(BODY);
+        search.setForeground(INK);
+
+        search.setBackground(
+                new Color(
+                        255,
+                        255,
+                        255,
+                        0
+                )
+        );
+
+        search.setOpaque(false);
 
         search.setBorder(
-                BorderFactory.createCompoundBorder(
-                        new LineBorder(
-                                SAND,
-                                1
-                        ),
-                        new EmptyBorder(
-                                0,
-                                10,
-                                0,
-                                10
-                        )
+                BorderFactory.createEmptyBorder(
+                        0,
+                        0,
+                        0,
+                        0
                 )
+        );
+
+        search.setToolTipText(
+                "Search by title or author"
+        );
+
+        searchBox.add(
+                searchIcon,
+                BorderLayout.WEST
+        );
+
+        searchBox.add(
+                search,
+                BorderLayout.CENTER
         );
 
         header.add(
-                search,
+                searchBox,
                 BorderLayout.EAST
         );
 
@@ -1904,6 +2223,24 @@ public class GUI extends JFrame {
                 }
         );
 
+        // Make the search box feel active when clicked.
+        search.addFocusListener(
+                new FocusAdapter() {
+
+                    public void focusGained(
+                            FocusEvent e) {
+
+                        searchBox.repaint();
+                    }
+
+                    public void focusLost(
+                            FocusEvent e) {
+
+                        searchBox.repaint();
+                    }
+                }
+        );
+
         JScrollPane scroll =
                 new JScrollPane(grid);
 
@@ -1949,13 +2286,35 @@ public class GUI extends JFrame {
 
         cover.setPreferredSize(
                 new Dimension(
-                        105,
-                        155
+                        110,
+                        170
                 )
         );
 
+        // Keep the cover at its real size instead of stretching
+        // it to the full height of the book card.
+        JPanel coverHolder =
+                new JPanel(
+                        new FlowLayout(
+                                FlowLayout.LEFT,
+                                0,
+                                0
+                        )
+                );
+
+        coverHolder.setOpaque(false);
+
+        coverHolder.setPreferredSize(
+                new Dimension(
+                        110,
+                        170
+                )
+        );
+
+        coverHolder.add(cover);
+
         card.add(
-                cover,
+                coverHolder,
                 BorderLayout.WEST
         );
 
