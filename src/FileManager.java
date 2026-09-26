@@ -402,6 +402,112 @@ public class FileManager {
         }
     }
 
+    // Add sample students only when no students exist
+    public static void addDefaultStudents() {
+
+        File file =
+                new File(STUDENT_FILE);
+
+        if (file.length() > 0) {
+            return;
+        }
+
+        try (BufferedWriter writer =
+                     new BufferedWriter(
+                             new FileWriter(file)
+                     )) {
+
+            addStudent(
+                    writer,
+                    "ST101",
+                    "Aarav Mehta",
+                    "B.Tech CSE",
+                    "9876543210"
+            );
+
+            addStudent(
+                    writer,
+                    "ST102",
+                    "Ananya Shah",
+                    "B.Tech IT",
+                    "9876543211"
+            );
+
+            addStudent(
+                    writer,
+                    "ST103",
+                    "Rohan Patil",
+                    "B.Tech CSE",
+                    "9876543212"
+            );
+
+            addStudent(
+                    writer,
+                    "ST104",
+                    "Isha Kapoor",
+                    "B.Tech AI & DS",
+                    "9876543213"
+            );
+
+            addStudent(
+                    writer,
+                    "ST105",
+                    "Kabir Joshi",
+                    "B.Tech CSE",
+                    "9876543214"
+            );
+
+            addStudent(
+                    writer,
+                    "ST106",
+                    "Meera Nair",
+                    "B.Tech Cybersecurity",
+                    "9876543215"
+            );
+
+            addStudent(
+                    writer,
+                    "ST107",
+                    "Vihaan Desai",
+                    "B.Tech IT",
+                    "9876543216"
+            );
+
+            addStudent(
+                    writer,
+                    "ST108",
+                    "Sara Khan",
+                    "B.Tech CSE",
+                    "9876543217"
+            );
+
+        } catch (IOException e) {
+
+            System.out.println(
+                    "Error adding default students."
+            );
+        }
+    }
+
+    static void addStudent(
+            BufferedWriter writer,
+            String id,
+            String name,
+            String course,
+            String contact)
+            throws IOException {
+
+        writer.write(
+                id + "|" +
+                        name + "|" +
+                        course + "|" +
+                        contact
+        );
+
+        writer.newLine();
+    }
+
+
     public static ArrayList<Student> loadStudents() {
 
         ArrayList<Student> students =

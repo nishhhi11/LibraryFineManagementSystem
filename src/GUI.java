@@ -146,6 +146,8 @@ public class GUI extends JFrame {
 
         FileManager.addDefaultBooks();
 
+        FileManager.addDefaultStudents();
+
         students =
                 FileManager.loadStudents();
 
@@ -2562,17 +2564,22 @@ public class GUI extends JFrame {
                 BorderLayout.WEST
         );
 
-        JTextField search =
-                new JTextField();
+        // Student search box
+        JPanel searchBox =
+                new JPanel(
+                        new BorderLayout()
+                );
 
-        search.setPreferredSize(
+        searchBox.setPreferredSize(
                 new Dimension(
-                        260,
-                        40
+                        300,
+                        42
                 )
         );
 
-        search.setBorder(
+        searchBox.setBackground(PAPER);
+
+        searchBox.setBorder(
                 BorderFactory.createCompoundBorder(
                         new LineBorder(
                                 SAND,
@@ -2587,8 +2594,94 @@ public class GUI extends JFrame {
                 )
         );
 
-        header.add(
+        JLabel searchIcon =
+                new JLabel("⌕");
+
+        searchIcon.setFont(
+                new Font(
+                        "SansSerif",
+                        Font.BOLD,
+                        20
+                )
+        );
+
+        searchIcon.setForeground(MUTED);
+
+        searchBox.add(
+                searchIcon,
+                BorderLayout.WEST
+        );
+
+        JTextField search =
+                new JTextField();
+
+        search.setFont(BODY);
+
+        search.setForeground(INK);
+
+        search.setBackground(PAPER);
+
+        search.setBorder(
+                BorderFactory.createEmptyBorder(
+                        0,
+                        8,
+                        0,
+                        5
+                )
+        );
+
+        search.setToolTipText(
+                "Search by student name, ID or course"
+        );
+
+        final String placeholder =
+                "Search students...";
+
+        search.setText(placeholder);
+
+        search.setForeground(MUTED);
+
+        search.addFocusListener(
+                new FocusAdapter() {
+
+                    public void focusGained(
+                            FocusEvent e) {
+
+                        if (search.getText()
+                                .equals(placeholder)) {
+
+                            search.setText("");
+
+                            search.setForeground(INK);
+                        }
+                    }
+
+                    public void focusLost(
+                            FocusEvent e) {
+
+                        if (search.getText()
+                                .trim()
+                                .isEmpty()) {
+
+                            search.setText(
+                                    placeholder
+                            );
+
+                            search.setForeground(
+                                    MUTED
+                            );
+                        }
+                    }
+                }
+        );
+
+        searchBox.add(
                 search,
+                BorderLayout.CENTER
+        );
+
+        header.add(
+                searchBox,
                 BorderLayout.EAST
         );
 
@@ -2641,6 +2734,12 @@ public class GUI extends JFrame {
                                         .toLowerCase()
                                         .trim();
 
+                        if (query.equals(
+                                placeholder.toLowerCase()
+                        )) {
+                            query = "";
+                        }
+
                         list.removeAll();
 
                         for (Student student :
@@ -2656,6 +2755,10 @@ public class GUI extends JFrame {
                                                     .contains(query)
                                             ||
                                             student.getCourse()
+                                                    .toLowerCase()
+                                                    .contains(query)
+                                            ||
+                                            student.getContact()
                                                     .toLowerCase()
                                                     .contains(query)
                             ) {
