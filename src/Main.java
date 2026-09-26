@@ -7,7 +7,7 @@ public class Main {
 
     static ArrayList<Student> students;
     static ArrayList<Book> books;
-    static ArrayList<Record> records;
+    static ArrayList<LibRecord> records;
 
     // Start library
     static void startLibrary() {
@@ -134,7 +134,7 @@ public class Main {
             return;
         }
 
-        for (Record record : records) {
+        for (LibRecord record : records) {
 
             if (record.getStudent().getId().equals(studentId)
                     && record.getBook().getId().equals(bookId)
@@ -152,8 +152,8 @@ public class Main {
         int allowedDays = sc.nextInt();
         sc.nextLine();
 
-        Record record =
-                new Record(student, book, allowedDays);
+        LibRecord record =
+                new LibRecord(student, book, allowedDays);
 
         records.add(record);
 
@@ -190,7 +190,7 @@ public class Main {
         System.out.print("Enter Book ID: ");
         String bookId = sc.nextLine();
 
-        Record record = findActiveRecord(studentId, bookId);
+        LibRecord record = findActiveRecord(studentId, bookId);
 
         if (record == null) {
             System.out.println("\nNo active issue record found.");
@@ -322,7 +322,7 @@ public class Main {
 
         boolean found = false;
 
-        for (Record record : records) {
+        for (LibRecord record : records) {
 
             if (record.getStudent().getId().equals(id)) {
 
@@ -351,7 +351,7 @@ public class Main {
 
         boolean found = false;
 
-        for (Record record : records) {
+        for (LibRecord record : records) {
 
             if (record.isReturned()) {
                 record.displayReceipt();
@@ -379,7 +379,7 @@ public class Main {
             availableCopies += book.getAvailableCopies();
         }
 
-        for (Record record : records) {
+        for (LibRecord record : records) {
 
             if (record.isReturned()) {
 
@@ -438,9 +438,9 @@ public class Main {
     }
 
     // Find active record
-    static Record findActiveRecord(String studentId, String bookId) {
+    static LibRecord findActiveRecord(String studentId, String bookId) {
 
-        for (Record record : records) {
+        for (LibRecord record : records) {
 
             if (record.getStudent().getId().equalsIgnoreCase(studentId)
                     && record.getBook().getId().equalsIgnoreCase(bookId)

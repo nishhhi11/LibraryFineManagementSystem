@@ -191,11 +191,11 @@ public class FileManager {
     }
 
     // Save records
-    public static void saveRecords(ArrayList<Record> records) {
+    public static void saveRecords(ArrayList<LibRecord> records) {
 
         try (BufferedWriter writer = new BufferedWriter(new FileWriter(RECORD_FILE))) {
 
-            for (Record record : records) {
+            for (LibRecord record : records) {
 
                 writer.write(
                         record.getStudent().getId() + "|" +
@@ -216,11 +216,11 @@ public class FileManager {
     }
 
     // Load records
-    public static ArrayList<Record> loadRecords(
+    public static ArrayList<LibRecord> loadRecords(
             ArrayList<Student> students,
             ArrayList<Book> books) {
 
-        ArrayList<Record> records = new ArrayList<>();
+        ArrayList<LibRecord> records = new ArrayList<>();
 
         try (BufferedReader reader = new BufferedReader(new FileReader(RECORD_FILE))) {
 
@@ -241,8 +241,8 @@ public class FileManager {
                         int actualDays = Integer.parseInt(data[3]);
                         boolean returned = Boolean.parseBoolean(data[6]);
 
-                        Record record =
-                                new Record(student, book, allowedDays);
+                        LibRecord record =
+                                new LibRecord(student, book, allowedDays);
 
                         if (returned) {
                             record.returnBook(actualDays);

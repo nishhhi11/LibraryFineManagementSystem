@@ -1,4 +1,4 @@
-public class Record {
+public class LibRecord {
 
     private Student student;
     private Book book;
@@ -9,7 +9,7 @@ public class Record {
     private boolean returned;
 
     // Create issue record
-    public Record(Student student, Book book, int allowedDays) {
+    public LibRecord(Student student, Book book, int allowedDays) {
 
         this.student = student;
         this.book = book;
