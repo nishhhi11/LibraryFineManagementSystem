@@ -1,0 +1,5 @@
+B101|Java Programming|Herbert Schildt|Academic|5|5
+B102|Database Management Systems|Raghu Ramakrishnan|Academic|4|4
+B103|Clean Code|Robert Martin|Reference|3|3
+B104|Harry Potter|J.K. Rowling|Fiction|6|6
+B105|Computer Networks|Andrew Tanenbaum|Academic|4|4
