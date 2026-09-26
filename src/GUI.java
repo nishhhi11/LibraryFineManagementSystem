@@ -1,3 +1,4 @@
+
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
 import javax.swing.border.LineBorder;
@@ -2968,6 +2969,10 @@ public class GUI extends JFrame {
     }
 
 
+    // =========================================================
+    // TRANSACTION PAGE
+    // =========================================================
+
     JPanel transactionPage(
             String titleText,
             String subtitle,
@@ -2979,6 +2984,11 @@ public class GUI extends JFrame {
                 );
 
         page.setBackground(CREAM);
+
+
+        // =====================================================
+        // HEADER
+        // =====================================================
 
         JPanel header =
                 new JPanel();
@@ -2994,9 +3004,9 @@ public class GUI extends JFrame {
 
         header.setBorder(
                 new EmptyBorder(
-                        32,
+                        30,
                         40,
-                        20,
+                        16,
                         40
                 )
         );
@@ -3005,14 +3015,12 @@ public class GUI extends JFrame {
                 new JLabel(titleText);
 
         title.setFont(DISPLAY);
-
         title.setForeground(INK);
 
         JLabel sub =
                 new JLabel(subtitle);
 
         sub.setFont(BODY);
-
         sub.setForeground(MUTED);
 
         header.add(title);
@@ -3028,46 +3036,60 @@ public class GUI extends JFrame {
                 BorderLayout.NORTH
         );
 
-        JPanel center =
+
+        // =====================================================
+        // LIVE LIBRARY STATS
+        // =====================================================
+
+        JPanel stats =
+                transactionStats(issueMode);
+
+        JPanel statsWrap =
+                new JPanel(
+                        new BorderLayout()
+                );
+
+        statsWrap.setOpaque(false);
+
+        statsWrap.setBorder(
+                new EmptyBorder(
+                        0,
+                        40,
+                        12,
+                        40
+                )
+        );
+
+        statsWrap.add(
+                stats,
+                BorderLayout.CENTER
+        );
+
+
+        // =====================================================
+        // FORM + FLOW
+        // =====================================================
+
+        JPanel content =
                 new JPanel(
                         new GridBagLayout()
                 );
 
-        center.setBackground(CREAM);
+        content.setBackground(CREAM);
 
-        GlassPanel form =
-                new GlassPanel(
-                        new Color(
-                                255,
-                                252,
-                                246,
-                                225
-                        ),
-                        new Color(
-                                255,
-                                255,
-                                255,
-                                170
-                        )
-                );
-
-        form.setLayout(
-                new GridBagLayout()
-        );
-
-        form.setBorder(
+        content.setBorder(
                 new EmptyBorder(
-                        28,
-                        30,
-                        28,
-                        30
+                        0,
+                        40,
+                        25,
+                        40
                 )
         );
 
-        GridBagConstraints gbc =
+        GridBagConstraints main =
                 new GridBagConstraints();
 
-        gbc.insets =
+        main.insets =
                 new Insets(
                         8,
                         8,
@@ -3075,45 +3097,213 @@ public class GUI extends JFrame {
                         8
                 );
 
-        gbc.fill =
-                GridBagConstraints.HORIZONTAL;
+        main.fill =
+                GridBagConstraints.BOTH;
 
-        gbc.weightx = 1;
+        main.weighty = 0;
+
+
+        // =====================================================
+        // FORM CARD
+        // =====================================================
+
+        GlassPanel formCard =
+                new GlassPanel(
+                        new Color(
+                                255,
+                                252,
+                                246,
+                                235
+                        ),
+                        new Color(
+                                255,
+                                255,
+                                255,
+                                180
+                        )
+                );
+
+        formCard.setLayout(
+                new BoxLayout(
+                        formCard,
+                        BoxLayout.Y_AXIS
+                )
+        );
+
+        formCard.setBorder(
+                new EmptyBorder(
+                        25,
+                        30,
+                        25,
+                        30
+                )
+        );
+
+
+        JLabel eyebrow =
+                new JLabel(
+                        issueMode
+                                ? "NEW ISSUE"
+                                : "BOOK RETURN"
+                );
+
+        eyebrow.setFont(SMALL_BOLD);
+        eyebrow.setForeground(GOLD);
+
+        formCard.add(eyebrow);
+
+        formCard.add(
+                Box.createVerticalStrut(5)
+        );
+
+
+        JLabel formTitle =
+                new JLabel(
+                        issueMode
+                                ? "Issue details"
+                                : "Return details"
+                );
+
+        formTitle.setFont(
+                new Font(
+                        "Serif",
+                        Font.BOLD,
+                        22
+                )
+        );
+
+        formTitle.setForeground(INK);
+
+        formCard.add(formTitle);
+
+        formCard.add(
+                Box.createVerticalStrut(3)
+        );
+
+
+        JLabel formDescription =
+                new JLabel(
+                        issueMode
+                                ? "Enter the student and book details below."
+                                : "Enter the return details to calculate the fine."
+                );
+
+        formDescription.setFont(BODY);
+        formDescription.setForeground(MUTED);
+
+        formCard.add(formDescription);
+
+        formCard.add(
+                Box.createVerticalStrut(17)
+        );
+
+
+        // Student ID
+
+        JLabel studentLabel =
+                new JLabel("Student ID");
+
+        studentLabel.setFont(BODY_BOLD);
+        studentLabel.setForeground(INK);
+
+        formCard.add(studentLabel);
+
+        formCard.add(
+                Box.createVerticalStrut(5)
+        );
 
         JTextField student =
                 formField();
 
+        student.setToolTipText(
+                "Example: ST101"
+        );
+
+        formCard.add(student);
+
+        formCard.add(
+                Box.createVerticalStrut(10)
+        );
+
+
+        // Book ID
+
+        JLabel bookLabel =
+                new JLabel("Book ID");
+
+        bookLabel.setFont(BODY_BOLD);
+        bookLabel.setForeground(INK);
+
+        formCard.add(bookLabel);
+
+        formCard.add(
+                Box.createVerticalStrut(5)
+        );
+
         JTextField book =
                 formField();
+
+        book.setToolTipText(
+                "Example: A101"
+        );
+
+        formCard.add(book);
+
+        formCard.add(
+                Box.createVerticalStrut(10)
+        );
+
+
+        // Days
+
+        JLabel daysLabel =
+                new JLabel(
+                        issueMode
+                                ? "Allowed Days"
+                                : "Actual Days"
+                );
+
+        daysLabel.setFont(BODY_BOLD);
+        daysLabel.setForeground(INK);
+
+        formCard.add(daysLabel);
+
+        formCard.add(
+                Box.createVerticalStrut(5)
+        );
 
         JTextField days =
                 formField();
 
-        addFormField(
-                form,
-                gbc,
-                0,
-                "Student ID",
-                student
-        );
-
-        addFormField(
-                form,
-                gbc,
-                1,
-                "Book ID",
-                book
-        );
-
-        addFormField(
-                form,
-                gbc,
-                2,
+        days.setToolTipText(
                 issueMode
-                        ? "Allowed Days"
-                        : "Actual Days",
-                days
+                        ? "Example: 7"
+                        : "Example: 12"
         );
+
+        formCard.add(days);
+
+        formCard.add(
+                Box.createVerticalStrut(6)
+        );
+
+
+        JLabel hint =
+                new JLabel(
+                        issueMode
+                                ? "Recommended borrowing period: 7–14 days"
+                                : "Enter the total number of days the book was kept."
+                );
+
+        hint.setFont(SMALL);
+        hint.setForeground(MUTED);
+
+        formCard.add(hint);
+
+        formCard.add(
+                Box.createVerticalStrut(15)
+        );
+
 
         JButton action =
                 actionButton(
@@ -3122,13 +3312,12 @@ public class GUI extends JFrame {
                                 : "Return Book"
                 );
 
-        gbc.gridx = 1;
-        gbc.gridy = 3;
-
-        form.add(
-                action,
-                gbc
+        action.setAlignmentX(
+                Component.LEFT_ALIGNMENT
         );
+
+        formCard.add(action);
+
 
         if (issueMode) {
 
@@ -3151,7 +3340,183 @@ public class GUI extends JFrame {
             );
         }
 
-        center.add(form);
+
+        // =====================================================
+        // INFORMATION CARD
+        // =====================================================
+
+        GlassPanel infoCard =
+                new GlassPanel(
+                        INK,
+                        new Color(
+                                255,
+                                255,
+                                255,
+                                45
+                        )
+                );
+
+        infoCard.setLayout(
+                new BoxLayout(
+                        infoCard,
+                        BoxLayout.Y_AXIS
+                )
+        );
+
+        infoCard.setBorder(
+                new EmptyBorder(
+                        25,
+                        28,
+                        25,
+                        28
+                )
+        );
+
+
+        JLabel infoEyebrow =
+                new JLabel(
+                        issueMode
+                                ? "LIBRARY FLOW"
+                                : "FINE CALCULATION"
+                );
+
+        infoEyebrow.setFont(SMALL_BOLD);
+        infoEyebrow.setForeground(GOLD);
+
+        infoCard.add(infoEyebrow);
+
+        infoCard.add(
+                Box.createVerticalStrut(6)
+        );
+
+
+        JLabel infoTitle =
+                new JLabel(
+                        issueMode
+                                ? "Issue a book"
+                                : "Return a book"
+                );
+
+        infoTitle.setFont(
+                new Font(
+                        "Serif",
+                        Font.BOLD,
+                        23
+                )
+        );
+
+        infoTitle.setForeground(WHITE);
+
+        infoCard.add(infoTitle);
+
+        infoCard.add(
+                Box.createVerticalStrut(14)
+        );
+
+
+        if (issueMode) {
+
+            addInfoRow(
+                    infoCard,
+                    "01",
+                    "Student",
+                    "Select a registered student."
+            );
+
+            addInfoRow(
+                    infoCard,
+                    "02",
+                    "Book",
+                    "Enter an available book ID."
+            );
+
+            addInfoRow(
+                    infoCard,
+                    "03",
+                    "Duration",
+                    "Set the allowed borrowing days."
+            );
+
+            addInfoRow(
+                    infoCard,
+                    "04",
+                    "Issue",
+                    "The book becomes unavailable for this record."
+            );
+
+        } else {
+
+            addInfoRow(
+                    infoCard,
+                    "01",
+                    "Student",
+                    "Enter the student who borrowed the book."
+            );
+
+            addInfoRow(
+                    infoCard,
+                    "02",
+                    "Book",
+                    "Enter the book being returned."
+            );
+
+            addInfoRow(
+                    infoCard,
+                    "03",
+                    "Days",
+                    "Enter the actual borrowing period."
+            );
+
+            addInfoRow(
+                    infoCard,
+                    "04",
+                    "Fine",
+                    "Delayed days and fine are calculated automatically."
+            );
+        }
+
+
+        // =====================================================
+        // ADD CARDS
+        // =====================================================
+
+        main.gridx = 0;
+        main.gridy = 0;
+        main.weightx = 0.62;
+        main.weighty = 0;
+
+        content.add(
+                formCard,
+                main
+        );
+
+
+        main.gridx = 1;
+        main.weightx = 0.38;
+        main.weighty = 0;
+
+        content.add(
+                infoCard,
+                main
+        );
+
+
+        JPanel center =
+                new JPanel(
+                        new BorderLayout()
+                );
+
+        center.setOpaque(false);
+
+        center.add(
+                statsWrap,
+                BorderLayout.NORTH
+        );
+
+        center.add(
+                content,
+                BorderLayout.CENTER
+        );
 
         page.add(
                 center,
@@ -3162,6 +3527,135 @@ public class GUI extends JFrame {
     }
 
 
+    // =========================================================
+    // TRANSACTION STATS
+    // =========================================================
+
+    JPanel transactionStats(
+            boolean issueMode) {
+
+        int totalCopies = 0;
+        int availableCopies = 0;
+        int issuedCopies = 0;
+        double totalFine = 0;
+
+        for (Book book : books) {
+
+            totalCopies +=
+                    book.getTotalCopies();
+
+            availableCopies +=
+                    book.getAvailableCopies();
+        }
+
+        issuedCopies =
+                totalCopies -
+                        availableCopies;
+
+        for (LibRecord record : records) {
+
+            if (record.isReturned()) {
+
+                totalFine +=
+                        record.getFine();
+            }
+        }
+
+
+        JPanel stats =
+                new JPanel(
+                        new GridLayout(
+                                1,
+                                3,
+                                12,
+                                0
+                        )
+                );
+
+        stats.setOpaque(false);
+
+
+        if (issueMode) {
+
+            stats.add(
+                    statCard(
+                            "AVAILABLE BOOKS",
+                            String.valueOf(
+                                    availableCopies
+                            ),
+                            "copies ready to issue",
+                            SAGE
+                    )
+            );
+
+            stats.add(
+                    statCard(
+                            "REGISTERED STUDENTS",
+                            String.valueOf(
+                                    students.size()
+                            ),
+                            "active library users",
+                            TERRACOTTA
+                    )
+            );
+
+            stats.add(
+                    statCard(
+                            "CURRENTLY ON LOAN",
+                            String.valueOf(
+                                    issuedCopies
+                            ),
+                            "books already issued",
+                            GOLD
+                    )
+            );
+
+        } else {
+
+            stats.add(
+                    statCard(
+                            "CURRENTLY ON LOAN",
+                            String.valueOf(
+                                    issuedCopies
+                            ),
+                            "books awaiting return",
+                            GOLD
+                    )
+            );
+
+            stats.add(
+                    statCard(
+                            "AVAILABLE BOOKS",
+                            String.valueOf(
+                                    availableCopies
+                            ),
+                            "copies in the library",
+                            SAGE
+                    )
+            );
+
+            stats.add(
+                    statCard(
+                            "RECORDED FINES",
+                            "₹"
+                                    + String.format(
+                                    "%.0f",
+                                    totalFine
+                            ),
+                            "total returned-book fines",
+                            TERRACOTTA
+                    )
+            );
+        }
+
+        return stats;
+    }
+
+
+    // =========================================================
+    // FORM FIELD
+    // =========================================================
+
     JTextField formField() {
 
         JTextField field =
@@ -3169,12 +3663,25 @@ public class GUI extends JFrame {
 
         field.setPreferredSize(
                 new Dimension(
-                        300,
-                        40
+                        360,
+                        42
+                )
+        );
+
+        field.setMaximumSize(
+                new Dimension(
+                        Integer.MAX_VALUE,
+                        42
                 )
         );
 
         field.setFont(BODY);
+
+        field.setForeground(INK);
+
+        field.setBackground(PAPER);
+
+        field.setCaretColor(TERRACOTTA);
 
         field.setBorder(
                 BorderFactory.createCompoundBorder(
@@ -3184,9 +3691,9 @@ public class GUI extends JFrame {
                         ),
                         new EmptyBorder(
                                 0,
-                                10,
+                                12,
                                 0,
-                                10
+                                12
                         )
                 )
         );
@@ -3195,41 +3702,123 @@ public class GUI extends JFrame {
     }
 
 
-    void addFormField(
+    // =========================================================
+    // INFORMATION ROW
+    // =========================================================
+
+    void addInfoRow(
             JPanel panel,
-            GridBagConstraints gbc,
-            int row,
-            String label,
-            JTextField field) {
+            String number,
+            String heading,
+            String description) {
 
-        gbc.gridx = 0;
+        JPanel row =
+                new JPanel();
 
-        gbc.gridy = row;
+        row.setOpaque(false);
 
-        gbc.weightx = 0;
-
-        JLabel text =
-                new JLabel(label);
-
-        text.setFont(BODY_BOLD);
-
-        text.setForeground(INK);
-
-        panel.add(
-                text,
-                gbc
+        row.setLayout(
+                new BorderLayout()
         );
 
-        gbc.gridx = 1;
+        row.setMaximumSize(
+                new Dimension(
+                        Integer.MAX_VALUE,
+                        56
+                )
+        );
 
-        gbc.weightx = 1;
+
+        JLabel numberLabel =
+                new JLabel(number);
+
+        numberLabel.setFont(
+                new Font(
+                        "Serif",
+                        Font.BOLD,
+                        15
+                )
+        );
+
+        numberLabel.setForeground(GOLD);
+
+        numberLabel.setPreferredSize(
+                new Dimension(
+                        35,
+                        30
+                )
+        );
+
+        row.add(
+                numberLabel,
+                BorderLayout.WEST
+        );
+
+
+        JPanel text =
+                new JPanel();
+
+        text.setOpaque(false);
+
+        text.setLayout(
+                new BoxLayout(
+                        text,
+                        BoxLayout.Y_AXIS
+                )
+        );
+
+
+        JLabel title =
+                new JLabel(heading);
+
+        title.setFont(BODY_BOLD);
+        title.setForeground(WHITE);
+
+
+        JLabel descriptionLabel =
+                new JLabel(
+                        "<html><div style='width:230px'>"
+                                + description
+                                + "</div></html>"
+                );
+
+        descriptionLabel.setFont(SMALL);
+
+        descriptionLabel.setForeground(
+                new Color(
+                        215,
+                        205,
+                        195
+                )
+        );
+
+
+        text.add(title);
+
+        text.add(
+                Box.createVerticalStrut(2)
+        );
+
+        text.add(descriptionLabel);
+
+
+        row.add(
+                text,
+                BorderLayout.CENTER
+        );
+
+
+        panel.add(row);
 
         panel.add(
-                field,
-                gbc
+                Box.createVerticalStrut(7)
         );
     }
 
+
+    // =========================================================
+    // ACTION BUTTON
+    // =========================================================
 
     JButton actionButton(
             String text) {
@@ -3239,8 +3828,15 @@ public class GUI extends JFrame {
 
         button.setPreferredSize(
                 new Dimension(
-                        150,
-                        42
+                        155,
+                        44
+                )
+        );
+
+        button.setMaximumSize(
+                new Dimension(
+                        155,
+                        44
                 )
         );
 
@@ -3252,14 +3848,18 @@ public class GUI extends JFrame {
                 TERRACOTTA
         );
 
+        button.setOpaque(true);
+
+        button.setContentAreaFilled(true);
+
         button.setFocusPainted(false);
 
         button.setBorder(
-                new EmptyBorder(
+                BorderFactory.createEmptyBorder(
                         8,
-                        15,
+                        18,
                         8,
-                        15
+                        18
                 )
         );
 
@@ -3267,6 +3867,33 @@ public class GUI extends JFrame {
                 new Cursor(
                         Cursor.HAND_CURSOR
                 )
+        );
+
+
+        button.addMouseListener(
+                new MouseAdapter() {
+
+                    public void mouseEntered(
+                            MouseEvent e) {
+
+                        button.setBackground(
+                                new Color(
+                                        160,
+                                        78,
+                                        60
+                                )
+                        );
+                    }
+
+
+                    public void mouseExited(
+                            MouseEvent e) {
+
+                        button.setBackground(
+                                TERRACOTTA
+                        );
+                    }
+                }
         );
 
         return button;
