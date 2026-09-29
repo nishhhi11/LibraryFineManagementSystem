@@ -798,9 +798,14 @@ public class GUI extends JFrame {
                 )
         );
 
+        int hour = java.time.LocalTime.now().getHour();
+        String greeting = "Good evening";
+        if (hour >= 5 && hour < 12) greeting = "Good morning";
+        else if (hour >= 12 && hour < 17) greeting = "Good afternoon";
+        
         JLabel title =
                 new JLabel(
-                        "Good evening, Librarian."
+                        greeting + ", Librarian."
                 );
 
         title.setFont(DISPLAY);
