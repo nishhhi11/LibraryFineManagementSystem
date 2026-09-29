@@ -1247,7 +1247,7 @@ public class GUI extends JFrame {
         bottomWidgets.setOpaque(false);
         
         // 1. Activity Row
-        GlassPanel activityPanel = new GlassPanel(CREAM, new Color(255, 255, 255, 170));
+        GlassPanel activityPanel = new GlassPanel(new Color(255, 252, 246, 225), new Color(255, 255, 255, 170));
         activityPanel.setLayout(new BoxLayout(activityPanel, BoxLayout.Y_AXIS));
         activityPanel.setBorder(new EmptyBorder(15, 15, 15, 15));
         JLabel actTitle = new JLabel("Recent Activity");
@@ -1261,8 +1261,16 @@ public class GUI extends JFrame {
         } else {
             for (int i = records.size() - 1; i >= Math.max(0, records.size() - 3); i--) {
                 LibRecord r = records.get(i);
-                JLabel row = new JLabel("<html><b>Student</b> " + (r.isReturned() ? "returned" : "borrowed") + " a book</html>");
-                row.setFont(SMALL); row.setForeground(INK);
+                JPanel row = new JPanel(new BorderLayout());
+                row.setOpaque(false);
+                JLabel text = new JLabel("<html><b>Student</b> " + (r.isReturned() ? "returned" : "borrowed") + " a book</html>");
+                text.setFont(SMALL); text.setForeground(INK);
+                row.add(text, BorderLayout.WEST);
+                if (r.isReturned() && r.getFine() > 0) {
+                    JLabel badge = new JLabel(" ₹" + r.getFine() + " ");
+                    badge.setOpaque(true); badge.setBackground(TERRACOTTA); badge.setForeground(WHITE); badge.setFont(SMALL_BOLD);
+                    row.add(badge, BorderLayout.EAST);
+                }
                 activityPanel.add(row);
                 activityPanel.add(Box.createVerticalStrut(5));
             }
@@ -1270,11 +1278,11 @@ public class GUI extends JFrame {
         bottomWidgets.add(activityPanel);
         
         // 2. Fine Slabs Card
-        GlassPanel slabsPanel = new GlassPanel(INK, new Color(255,255,255,40));
+        GlassPanel slabsPanel = new GlassPanel(new Color(255, 252, 246, 225), new Color(255, 255, 255, 170));
         slabsPanel.setLayout(new BoxLayout(slabsPanel, BoxLayout.Y_AXIS));
         slabsPanel.setBorder(new EmptyBorder(15, 15, 15, 15));
-        JLabel slabTitle = new JLabel("Fine Slabs");
-        slabTitle.setFont(SMALL_BOLD); slabTitle.setForeground(GOLD);
+        JLabel slabTitle = new JLabel("Fine Rules");
+        slabTitle.setFont(SMALL_BOLD); slabTitle.setForeground(INK);
         slabsPanel.add(slabTitle);
         slabsPanel.add(Box.createVerticalStrut(10));
         
@@ -1283,40 +1291,57 @@ public class GUI extends JFrame {
         String[] rules = {"1-7 Days", "₹5/day", "8-14 Days", "₹10/day", "15+ Days", "₹20/day"};
         for (String rule : rules) {
             JLabel l = new JLabel(rule);
-            l.setFont(SMALL); l.setForeground(WHITE);
+            l.setFont(SMALL); l.setForeground(MUTED);
             grid.add(l);
         }
         slabsPanel.add(grid);
+        slabsPanel.add(Box.createVerticalStrut(10));
+        JLabel note = new JLabel("Fine = days late × rate");
+        note.setFont(SMALL); note.setForeground(MUTED);
+        slabsPanel.add(note);
         bottomWidgets.add(slabsPanel);
         
-        // 3. Category Breakdown (Mocked Donut)
-        GlassPanel chartPanel = new GlassPanel(CREAM, new Color(255,255,255,170)) {
+        // 3. Category Breakdown
+        GlassPanel chartPanel = new GlassPanel(new Color(255, 252, 246, 225), new Color(255, 255, 255, 170)) {
             @Override protected void paintComponent(Graphics g) {
                 super.paintComponent(g);
                 Graphics2D g2 = (Graphics2D) g.create();
                 g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-                int size = Math.min(getWidth(), getHeight()) - 40;
+                int size = Math.min(getWidth(), getHeight()) - 60;
                 int x = (getWidth() - size) / 2;
-                int y = (getHeight() - size) / 2 + 10;
-                // Draw slices
-                g2.setColor(SAGE); g2.fillArc(x, y, size, size, 0, 120);
-                g2.setColor(GOLD); g2.fillArc(x, y, size, size, 120, 150);
-                g2.setColor(TERRACOTTA); g2.fillArc(x, y, size, size, 270, 90);
-                // Draw inner donut hole
-                g2.setColor(CREAM); g2.fillOval(x + 15, y + 15, size - 30, size - 30);
+                int y = (getHeight() - size) / 2 + 15;
+                
+                // Count categories dynamically
+                int prog = 0, data = 0, net = 0;
+                for(Book b : books) {
+                    if(b.getCategory().equalsIgnoreCase("Programming")) prog++;
+                    else if(b.getCategory().equalsIgnoreCase("Databases")) data++;
+                    else net++;
+                }
+                int total = prog + data + net;
+                if(total == 0) total = 1; // prevent div zero
+                
+                int ang1 = (int)(prog * 360.0 / total);
+                int ang2 = (int)(data * 360.0 / total);
+                int ang3 = 360 - ang1 - ang2;
+                
+                g2.setColor(SAGE); g2.fillArc(x, y, size, size, 0, ang1);
+                g2.setColor(GOLD); g2.fillArc(x, y, size, size, ang1, ang2);
+                g2.setColor(TERRACOTTA); g2.fillArc(x, y, size, size, ang1+ang2, ang3);
+                g2.setColor(new Color(255, 252, 246)); g2.fillOval(x + 15, y + 15, size - 30, size - 30);
                 g2.dispose();
             }
         };
         chartPanel.setLayout(new BoxLayout(chartPanel, BoxLayout.Y_AXIS));
         chartPanel.setBorder(new EmptyBorder(15, 15, 15, 15));
-        JLabel cTitle = new JLabel("Category Breakdown");
+        JLabel cTitle = new JLabel("Categories");
         cTitle.setFont(SMALL_BOLD); cTitle.setForeground(INK);
         chartPanel.add(cTitle);
         bottomWidgets.add(chartPanel);
         
         center.add(bottomWidgets);
 
-        // Keep dashboard content at top
+                // Keep dashboard content at top
 
         JPanel wrapper =
                 new JPanel(
