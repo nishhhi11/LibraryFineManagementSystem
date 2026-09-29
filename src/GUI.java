@@ -1,4 +1,3 @@
-
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
 import javax.swing.border.LineBorder;
@@ -17,6 +16,7 @@ public class GUI extends JFrame {
     static ArrayList<LibRecord> records;
 
     CardLayout cardLayout;
+    String preselectedBook = "";
     JPanel pages;
 
     // ================= COLORS =================
@@ -1349,22 +1349,47 @@ public class GUI extends JFrame {
     JPanel dashboardBook(
             Book book) {
 
-        GlassPanel card =
-                new GlassPanel(
-                        new Color(
-                                255,
-                                252,
-                                246,
-                                225
-                        ),
-                        new Color(
-                                255,
-                                255,
-                                255,
-                                170
-                        )
-                );
-
+                GlassPanel card = new GlassPanel(new Color(255, 252, 246, 225), new Color(255, 255, 255, 170)) {
+            private int yOffset = 0;
+            private int shadowAlpha = 15;
+            private javax.swing.Timer timer;
+            private boolean hovered = false;
+            
+            {
+                addMouseListener(new java.awt.event.MouseAdapter() {
+                    public void mouseEntered(java.awt.event.MouseEvent e) { hovered = true; startAnimation(); }
+                    public void mouseExited(java.awt.event.MouseEvent e) { hovered = false; startAnimation(); }
+                });
+            }
+            
+            private void startAnimation() {
+                if (timer != null) timer.stop();
+                timer = new javax.swing.Timer(16, e -> {
+                    boolean changed = false;
+                    if (hovered && yOffset > -4) { yOffset--; changed = true; }
+                    else if (!hovered && yOffset < 0) { yOffset++; changed = true; }
+                    
+                    if (hovered && shadowAlpha < 30) { shadowAlpha += 2; changed = true; }
+                    else if (!hovered && shadowAlpha > 15) { shadowAlpha -= 2; changed = true; }
+                    
+                    if (changed) repaint();
+                    else timer.stop();
+                });
+                timer.start();
+            }
+            
+            @Override
+            protected void paintComponent(Graphics g) {
+                Graphics2D g2 = (Graphics2D) g.create();
+                g2.translate(0, yOffset);
+                g2.setColor(new Color(0, 0, 0, shadowAlpha));
+                g2.fillRoundRect(0, 4, getWidth(), getHeight(), 16, 16); // drop shadow
+                super.paintComponent(g);
+                g2.dispose();
+            }
+        };
+        
+        // Skip normal init since we did it above
         card.setLayout(
                 new BorderLayout()
         );
@@ -2457,41 +2482,86 @@ public class GUI extends JFrame {
     }
 
 
-    void showBookDetails(
-            Book book) {
-
-        String message =
-                "BOOK DETAILS\n\n"
-                        + "ID              : "
-                        + book.getId()
-                        + "\n"
-                        + "Title           : "
-                        + book.getTitle()
-                        + "\n"
-                        + "Author          : "
-                        + book.getAuthor()
-                        + "\n"
-                        + "Category        : "
-                        + book.getCategory()
-                        + "\n"
-                        + "Total Copies    : "
-                        + book.getTotalCopies()
-                        + "\n"
-                        + "Available       : "
-                        + book.getAvailableCopies()
-                        + "\n"
-                        + "Issued          : "
-                        + book.getIssuedCopies();
-
-        JOptionPane.showMessageDialog(
-                this,
-                message,
-                "Book Details",
-                JOptionPane.INFORMATION_MESSAGE
-        );
+    void showBookDetails(Book book) {
+        JDialog dialog = new JDialog(this, "Book Details", true);
+        dialog.setSize(600, 400);
+        dialog.setLocationRelativeTo(this);
+        
+        JPanel main = new JPanel(new BorderLayout());
+        main.setBackground(CREAM);
+        
+        JPanel content = new JPanel(new BorderLayout(30, 0));
+        content.setOpaque(false);
+        content.setBorder(new EmptyBorder(30, 30, 30, 30));
+        
+        JPanel cover = createCover(book);
+        cover.setPreferredSize(new Dimension(160, 240));
+        content.add(cover, BorderLayout.WEST);
+        
+        JPanel right = new JPanel();
+        right.setLayout(new BoxLayout(right, BoxLayout.Y_AXIS));
+        right.setOpaque(false);
+        
+        JLabel title = new JLabel(book.getTitle());
+        title.setFont(DISPLAY);
+        title.setForeground(INK);
+        
+        JLabel author = new JLabel("by " + book.getAuthor());
+        author.setFont(SUBTITLE);
+        author.setForeground(MUTED);
+        
+        JLabel cat = new JLabel(book.getCategory().toUpperCase());
+        cat.setFont(SMALL_BOLD);
+        
+        JTextArea desc = new JTextArea("A comprehensive guide to " + book.getTitle() + ".\nThis book explores advanced concepts and foundational theories.");
+        desc.setWrapStyleWord(true);
+        desc.setLineWrap(true);
+        desc.setOpaque(false);
+        desc.setEditable(false);
+        desc.setFont(BODY);
+        desc.setForeground(MUTED);
+        
+        JPanel stats = new JPanel(new FlowLayout(FlowLayout.LEFT, 20, 0));
+        stats.setOpaque(false);
+        JLabel avail = new JLabel("Available: " + book.getAvailableCopies());
+        JLabel issued = new JLabel("On Loan: " + book.getIssuedCopies());
+        avail.setFont(BODY_BOLD); issued.setFont(BODY_BOLD);
+        stats.add(avail); stats.add(issued);
+        
+        right.add(title);
+        right.add(Box.createVerticalStrut(5));
+        right.add(author);
+        right.add(Box.createVerticalStrut(10));
+        right.add(cat);
+        right.add(Box.createVerticalStrut(20));
+        right.add(desc);
+        right.add(Box.createVerticalStrut(20));
+        right.add(stats);
+        
+        content.add(right, BorderLayout.CENTER);
+        main.add(content, BorderLayout.CENTER);
+        
+        JPanel footer = new JPanel(new FlowLayout(FlowLayout.RIGHT, 15, 15));
+        footer.setOpaque(false);
+        
+        JButton close = new JButton("Close");
+        close.addActionListener(e -> dialog.dispose());
+        
+        JButton issue = actionButton("Issue this book →");
+        issue.addActionListener(e -> {
+            dialog.dispose();
+            preselectedBook = book.getTitle();
+            showPage("ISSUE");
+        });
+        
+        footer.add(close);
+        footer.add(issue);
+        main.add(footer, BorderLayout.SOUTH);
+        
+        dialog.add(main);
+        dialog.setVisible(true);
     }
-
-
+    
     // =========================================================
     // STUDENTS
     // =========================================================
@@ -2973,560 +3043,143 @@ public class GUI extends JFrame {
     // TRANSACTION PAGE
     // =========================================================
 
-    JPanel transactionPage(
-            String titleText,
-            String subtitle,
-            boolean issueMode) {
-
-        JPanel page =
-                new JPanel(
-                        new BorderLayout()
-                );
-
+    JPanel transactionPage(String titleText, String subtitle, boolean issueMode) {
+        JPanel page = new JPanel(new BorderLayout());
         page.setBackground(CREAM);
 
-
-        // =====================================================
         // HEADER
-        // =====================================================
-
-        JPanel header =
-                new JPanel();
-
+        JPanel header = new JPanel();
         header.setOpaque(false);
-
-        header.setLayout(
-                new BoxLayout(
-                        header,
-                        BoxLayout.Y_AXIS
-                )
-        );
-
-        header.setBorder(
-                new EmptyBorder(
-                        30,
-                        40,
-                        16,
-                        40
-                )
-        );
-
-        JLabel title =
-                new JLabel(titleText);
-
+        header.setLayout(new BoxLayout(header, BoxLayout.Y_AXIS));
+        header.setBorder(new EmptyBorder(30, 40, 16, 40));
+        
+        JLabel title = new JLabel(titleText);
         title.setFont(DISPLAY);
         title.setForeground(INK);
-
-        JLabel sub =
-                new JLabel(subtitle);
-
+        
+        JLabel sub = new JLabel(subtitle);
         sub.setFont(BODY);
         sub.setForeground(MUTED);
-
+        
         header.add(title);
-
-        header.add(
-                Box.createVerticalStrut(4)
-        );
-
+        header.add(Box.createVerticalStrut(4));
         header.add(sub);
+        page.add(header, BorderLayout.NORTH);
 
-        page.add(
-                header,
-                BorderLayout.NORTH
-        );
-
-
-        // =====================================================
-        // LIVE LIBRARY STATS
-        // =====================================================
-
-        JPanel stats =
-                transactionStats(issueMode);
-
-        JPanel statsWrap =
-                new JPanel(
-                        new BorderLayout()
-                );
-
-        statsWrap.setOpaque(false);
-
-        statsWrap.setBorder(
-                new EmptyBorder(
-                        0,
-                        40,
-                        12,
-                        40
-                )
-        );
-
-        statsWrap.add(
-                stats,
-                BorderLayout.CENTER
-        );
-
-
-        // =====================================================
-        // FORM + FLOW
-        // =====================================================
-
-        JPanel content =
-                new JPanel(
-                        new GridBagLayout()
-                );
-
+        // FORM CARD
+        JPanel content = new JPanel(new GridBagLayout());
         content.setBackground(CREAM);
-
-        content.setBorder(
-                new EmptyBorder(
-                        0,
-                        40,
-                        25,
-                        40
-                )
-        );
-
-        GridBagConstraints main =
-                new GridBagConstraints();
-
-        main.insets =
-                new Insets(
-                        8,
-                        8,
-                        8,
-                        8
-                );
-
-        main.fill =
-                GridBagConstraints.BOTH;
-
+        content.setBorder(new EmptyBorder(0, 40, 25, 40));
+        GridBagConstraints main = new GridBagConstraints();
+        main.insets = new Insets(8, 8, 8, 8);
+        main.fill = GridBagConstraints.BOTH;
         main.weighty = 0;
 
+        GlassPanel formCard = new GlassPanel(new Color(255, 252, 246, 235), new Color(255, 255, 255, 180));
+        formCard.setLayout(new BoxLayout(formCard, BoxLayout.Y_AXIS));
+        formCard.setBorder(new EmptyBorder(25, 30, 25, 30));
 
-        // =====================================================
-        // FORM CARD
-        // =====================================================
-
-        GlassPanel formCard =
-                new GlassPanel(
-                        new Color(
-                                255,
-                                252,
-                                246,
-                                235
-                        ),
-                        new Color(
-                                255,
-                                255,
-                                255,
-                                180
-                        )
-                );
-
-        formCard.setLayout(
-                new BoxLayout(
-                        formCard,
-                        BoxLayout.Y_AXIS
-                )
-        );
-
-        formCard.setBorder(
-                new EmptyBorder(
-                        25,
-                        30,
-                        25,
-                        30
-                )
-        );
-
-
-        JLabel eyebrow =
-                new JLabel(
-                        issueMode
-                                ? "NEW ISSUE"
-                                : "BOOK RETURN"
-                );
-
-        eyebrow.setFont(SMALL_BOLD);
-        eyebrow.setForeground(GOLD);
-
-        formCard.add(eyebrow);
-
-        formCard.add(
-                Box.createVerticalStrut(5)
-        );
-
-
-        JLabel formTitle =
-                new JLabel(
-                        issueMode
-                                ? "Issue details"
-                                : "Return details"
-                );
-
-        formTitle.setFont(
-                new Font(
-                        "Serif",
-                        Font.BOLD,
-                        22
-                )
-        );
-
+        JLabel formTitle = new JLabel(issueMode ? "Issue details" : "Return details");
+        formTitle.setFont(new Font("Serif", Font.BOLD, 22));
         formTitle.setForeground(INK);
-
         formCard.add(formTitle);
+        formCard.add(Box.createVerticalStrut(17));
 
-        formCard.add(
-                Box.createVerticalStrut(3)
-        );
-
-
-        JLabel formDescription =
-                new JLabel(
-                        issueMode
-                                ? "Enter the student and book details below."
-                                : "Enter the return details to calculate the fine."
-                );
-
-        formDescription.setFont(BODY);
-        formDescription.setForeground(MUTED);
-
-        formCard.add(formDescription);
-
-        formCard.add(
-                Box.createVerticalStrut(17)
-        );
-
-
-        // Student ID
-
-        JLabel studentLabel =
-                new JLabel("Student ID");
-
+        JLabel studentLabel = new JLabel("Select Student");
         studentLabel.setFont(BODY_BOLD);
         studentLabel.setForeground(INK);
-
         formCard.add(studentLabel);
+        formCard.add(Box.createVerticalStrut(5));
 
-        formCard.add(
-                Box.createVerticalStrut(5)
-        );
+        JComboBox<String> studentCombo = new JComboBox<>();
+        for (Student s : students) studentCombo.addItem(s.getId() + " - " + s.getName());
+        studentCombo.setMaximumSize(new Dimension(Integer.MAX_VALUE, 44));
+        formCard.add(studentCombo);
+        formCard.add(Box.createVerticalStrut(10));
 
-        JTextField student =
-                formField();
-
-        student.setToolTipText(
-                "Example: ST101"
-        );
-
-        formCard.add(student);
-
-        formCard.add(
-                Box.createVerticalStrut(10)
-        );
-
-
-        // Book ID
-
-        JLabel bookLabel =
-                new JLabel("Book ID");
-
+        JLabel bookLabel = new JLabel("Select Book");
         bookLabel.setFont(BODY_BOLD);
         bookLabel.setForeground(INK);
-
         formCard.add(bookLabel);
+        formCard.add(Box.createVerticalStrut(5));
 
-        formCard.add(
-                Box.createVerticalStrut(5)
-        );
+        JComboBox<String> bookCombo = new JComboBox<>();
+        for (Book b : books) bookCombo.addItem(b.getId() + " - " + b.getTitle());
+        bookCombo.setMaximumSize(new Dimension(Integer.MAX_VALUE, 44));
+        formCard.add(bookCombo);
+        formCard.add(Box.createVerticalStrut(10));
 
-        JTextField book =
-                formField();
-
-        book.setToolTipText(
-                "Example: A101"
-        );
-
-        formCard.add(book);
-
-        formCard.add(
-                Box.createVerticalStrut(10)
-        );
-
-
-        // Days
-
-        JLabel daysLabel =
-                new JLabel(
-                        issueMode
-                                ? "Allowed Days"
-                                : "Actual Days"
-                );
-
+        JLabel daysLabel = new JLabel(issueMode ? "Issue Duration (Days)" : "Days Overdue (Auto-calculated)");
         daysLabel.setFont(BODY_BOLD);
         daysLabel.setForeground(INK);
-
         formCard.add(daysLabel);
+        formCard.add(Box.createVerticalStrut(5));
 
-        formCard.add(
-                Box.createVerticalStrut(5)
-        );
+        JSpinner daysSpinner = new JSpinner(new SpinnerNumberModel(issueMode ? 14 : 0, 0, 365, 1));
+        daysSpinner.setMaximumSize(new Dimension(Integer.MAX_VALUE, 44));
+        formCard.add(daysSpinner);
+        formCard.add(Box.createVerticalStrut(15));
 
-        JTextField days =
-                formField();
-
-        days.setToolTipText(
-                issueMode
-                        ? "Example: 7"
-                        : "Example: 12"
-        );
-
-        formCard.add(days);
-
-        formCard.add(
-                Box.createVerticalStrut(6)
-        );
-
-
-        JLabel hint =
-                new JLabel(
-                        issueMode
-                                ? "Recommended borrowing period: 7–14 days"
-                                : "Enter the total number of days the book was kept."
-                );
-
-        hint.setFont(SMALL);
-        hint.setForeground(MUTED);
-
-        formCard.add(hint);
-
-        formCard.add(
-                Box.createVerticalStrut(15)
-        );
-
-
-        JButton action =
-                actionButton(
-                        issueMode
-                                ? "Issue Book"
-                                : "Return Book"
-                );
-
-        action.setAlignmentX(
-                Component.LEFT_ALIGNMENT
-        );
-
+        JButton action = actionButton(issueMode ? "Issue Book" : "Return Book");
+        action.setAlignmentX(Component.LEFT_ALIGNMENT);
         formCard.add(action);
+        
+        // Add action listener
+        action.addActionListener(e -> {
+            String selS = (String) studentCombo.getSelectedItem();
+            String selB = (String) bookCombo.getSelectedItem();
+            if (selS == null || selB == null) return;
+            String sid = selS.split(" - ")[0];
+            String bid = selB.split(" - ")[0];
+            // Mocking the text field to reuse existing logic
+            JTextField sf = new JTextField(sid);
+            JTextField bf = new JTextField(bid);
+            JTextField df = new JTextField(daysSpinner.getValue().toString());
+            if (issueMode) issueBook(sf, bf, df);
+            else returnBook(sf, bf, df);
+        });
 
+        // LIVE PREVIEW CARD
+        GlassPanel infoCard = new GlassPanel(INK, new Color(255, 255, 255, 45));
+        infoCard.setLayout(new BoxLayout(infoCard, BoxLayout.Y_AXIS));
+        infoCard.setBorder(new EmptyBorder(25, 28, 25, 28));
 
-        if (issueMode) {
-
-            action.addActionListener(
-                    e -> issueBook(
-                            student,
-                            book,
-                            days
-                    )
-            );
-
-        } else {
-
-            action.addActionListener(
-                    e -> returnBook(
-                            student,
-                            book,
-                            days
-                    )
-            );
-        }
-
-
-        // =====================================================
-        // INFORMATION CARD
-        // =====================================================
-
-        GlassPanel infoCard =
-                new GlassPanel(
-                        INK,
-                        new Color(
-                                255,
-                                255,
-                                255,
-                                45
-                        )
-                );
-
-        infoCard.setLayout(
-                new BoxLayout(
-                        infoCard,
-                        BoxLayout.Y_AXIS
-                )
-        );
-
-        infoCard.setBorder(
-                new EmptyBorder(
-                        25,
-                        28,
-                        25,
-                        28
-                )
-        );
-
-
-        JLabel infoEyebrow =
-                new JLabel(
-                        issueMode
-                                ? "LIBRARY FLOW"
-                                : "FINE CALCULATION"
-                );
-
-        infoEyebrow.setFont(SMALL_BOLD);
-        infoEyebrow.setForeground(GOLD);
-
-        infoCard.add(infoEyebrow);
-
-        infoCard.add(
-                Box.createVerticalStrut(6)
-        );
-
-
-        JLabel infoTitle =
-                new JLabel(
-                        issueMode
-                                ? "Issue a book"
-                                : "Return a book"
-                );
-
-        infoTitle.setFont(
-                new Font(
-                        "Serif",
-                        Font.BOLD,
-                        23
-                )
-        );
-
+        JLabel infoTitle = new JLabel(issueMode ? "Live Issue Preview" : "Live Fine Preview");
+        infoTitle.setFont(new Font("Serif", Font.BOLD, 23));
         infoTitle.setForeground(WHITE);
-
         infoCard.add(infoTitle);
-
-        infoCard.add(
-                Box.createVerticalStrut(14)
-        );
-
-
-        if (issueMode) {
-
-            addInfoRow(
-                    infoCard,
-                    "01",
-                    "Student",
-                    "Select a registered student."
-            );
-
-            addInfoRow(
-                    infoCard,
-                    "02",
-                    "Book",
-                    "Enter an available book ID."
-            );
-
-            addInfoRow(
-                    infoCard,
-                    "03",
-                    "Duration",
-                    "Set the allowed borrowing days."
-            );
-
-            addInfoRow(
-                    infoCard,
-                    "04",
-                    "Issue",
-                    "The book becomes unavailable for this record."
-            );
-
+        infoCard.add(Box.createVerticalStrut(14));
+        
+        JLabel finePreview = new JLabel("Total Fine: ₹0");
+        finePreview.setFont(new Font("Inter", Font.BOLD, 24));
+        finePreview.setForeground(TERRACOTTA);
+        
+        if (!issueMode) {
+            infoCard.add(finePreview);
+            // Live update
+            daysSpinner.addChangeListener(e -> {
+                int od = (Integer) daysSpinner.getValue();
+                finePreview.setText("Total Fine: ₹" + (od * 5)); // Simplified fine calc
+            });
         } else {
-
-            addInfoRow(
-                    infoCard,
-                    "01",
-                    "Student",
-                    "Enter the student who borrowed the book."
-            );
-
-            addInfoRow(
-                    infoCard,
-                    "02",
-                    "Book",
-                    "Enter the book being returned."
-            );
-
-            addInfoRow(
-                    infoCard,
-                    "03",
-                    "Days",
-                    "Enter the actual borrowing period."
-            );
-
-            addInfoRow(
-                    infoCard,
-                    "04",
-                    "Fine",
-                    "Delayed days and fine are calculated automatically."
-            );
+            JLabel msg = new JLabel("Due Date: Automatically calculated.");
+            msg.setForeground(WHITE);
+            infoCard.add(msg);
         }
-
-
-        // =====================================================
-        // ADD CARDS
-        // =====================================================
 
         main.gridx = 0;
         main.gridy = 0;
-        main.weightx = 0.62;
-        main.weighty = 0;
-
-        content.add(
-                formCard,
-                main
-        );
-
+        main.weightx = 0.5;
+        content.add(formCard, main);
 
         main.gridx = 1;
-        main.weightx = 0.38;
-        main.weighty = 0;
+        main.weightx = 0.4;
+        main.insets = new Insets(8, 20, 8, 8);
+        content.add(infoCard, main);
 
-        content.add(
-                infoCard,
-                main
-        );
-
-
-        JPanel center =
-                new JPanel(
-                        new BorderLayout()
-                );
-
-        center.setOpaque(false);
-
-        center.add(
-                statsWrap,
-                BorderLayout.NORTH
-        );
-
-        center.add(
-                content,
-                BorderLayout.CENTER
-        );
-
-        page.add(
-                center,
-                BorderLayout.CENTER
-        );
-
+        page.add(content, BorderLayout.CENTER);
         return page;
     }
-
-
     // =========================================================
     // TRANSACTION STATS
     // =========================================================
