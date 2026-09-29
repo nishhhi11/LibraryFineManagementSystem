@@ -3156,6 +3156,22 @@ public class GUI extends JFrame {
         
         if (!issueMode) {
             infoCard.add(finePreview);
+            infoCard.add(Box.createVerticalStrut(20));
+            
+            // FINE SLAB TABLE
+            JPanel slabPanel = new JPanel(new GridLayout(3, 2, 5, 5));
+            slabPanel.setOpaque(false);
+            JLabel sTitle = new JLabel("<html><b>How Fines Work:</b></html>");
+            sTitle.setForeground(GOLD);
+            slabPanel.add(sTitle); slabPanel.add(new JLabel(""));
+            JLabel s1 = new JLabel("1 - 7 Days:"); s1.setForeground(WHITE);
+            JLabel s1r = new JLabel("₹5 / day"); s1r.setForeground(WHITE);
+            slabPanel.add(s1); slabPanel.add(s1r);
+            JLabel s2 = new JLabel("8+ Days:"); s2.setForeground(WHITE);
+            JLabel s2r = new JLabel("₹10 / day"); s2r.setForeground(WHITE);
+            slabPanel.add(s2); slabPanel.add(s2r);
+            infoCard.add(slabPanel);
+
             // Live update
             daysSpinner.addChangeListener(e -> {
                 int od = (Integer) daysSpinner.getValue();
