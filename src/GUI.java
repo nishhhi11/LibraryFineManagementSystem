@@ -210,9 +210,11 @@ public class GUI extends JFrame {
     // SIDEBAR
     // =========================================================
 
+    JPanel sidebar;
+    String activePage = "HOME";
     JPanel createSidebar() {
 
-        JPanel sidebar =
+        sidebar =
                 new JPanel(
                         new BorderLayout()
                 );
@@ -414,7 +416,21 @@ public class GUI extends JFrame {
             String page) {
 
         JButton button =
-                new JButton();
+                new JButton() {
+                    @Override
+                    protected void paintComponent(Graphics g) {
+                        if (activePage != null && activePage.equals(page)) {
+                            setBackground(new Color(72, 58, 49)); // Lighter active background
+                        } else {
+                            if (!getModel().isRollover()) setBackground(ESPRESSO);
+                        }
+                        super.paintComponent(g);
+                        if (activePage != null && activePage.equals(page)) {
+                            g.setColor(GOLD);
+                            g.fillRect(0, 0, 4, getHeight());
+                        }
+                    }
+                };
 
         button.setPreferredSize(
                 new Dimension(
