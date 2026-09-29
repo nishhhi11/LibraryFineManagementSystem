@@ -1245,14 +1245,23 @@ public class GUI extends JFrame {
         // ---------- BOTTOM WIDGETS (ACTIVITY, SLABS, CHART) ----------
         JPanel bottomWidgets = new JPanel(new GridLayout(1, 3, 15, 0));
         bottomWidgets.setOpaque(false);
+        bottomWidgets.setBorder(new EmptyBorder(0, 0, 40, 0)); // 40px bottom margin
         
         // 1. Activity Row
         GlassPanel activityPanel = new GlassPanel(new Color(255, 252, 246, 225), new Color(255, 255, 255, 170));
         activityPanel.setLayout(new BoxLayout(activityPanel, BoxLayout.Y_AXIS));
         activityPanel.setBorder(new EmptyBorder(15, 15, 15, 15));
+        
+        JPanel actHeader = new JPanel(new BorderLayout());
+        actHeader.setOpaque(false);
         JLabel actTitle = new JLabel("Recent Activity");
-        actTitle.setFont(SMALL_BOLD); actTitle.setForeground(INK);
-        activityPanel.add(actTitle);
+        actTitle.setFont(TITLE); actTitle.setForeground(INK);
+        JLabel actSub = new JLabel("Latest 5");
+        actSub.setFont(SMALL); actSub.setForeground(MUTED);
+        actHeader.add(actTitle, BorderLayout.WEST);
+        actHeader.add(actSub, BorderLayout.EAST);
+        activityPanel.add(actHeader);
+        
         activityPanel.add(Box.createVerticalStrut(10));
         if (records.isEmpty()) {
             JLabel empty = new JLabel("No activity yet.");
@@ -1281,9 +1290,17 @@ public class GUI extends JFrame {
         GlassPanel slabsPanel = new GlassPanel(new Color(255, 252, 246, 225), new Color(255, 255, 255, 170));
         slabsPanel.setLayout(new BoxLayout(slabsPanel, BoxLayout.Y_AXIS));
         slabsPanel.setBorder(new EmptyBorder(15, 15, 15, 15));
+        
+        JPanel slabsHeader = new JPanel(new BorderLayout());
+        slabsHeader.setOpaque(false);
         JLabel slabTitle = new JLabel("Fine Rules");
-        slabTitle.setFont(SMALL_BOLD); slabTitle.setForeground(INK);
-        slabsPanel.add(slabTitle);
+        slabTitle.setFont(TITLE); slabTitle.setForeground(INK);
+        JLabel slabSub = new JLabel("By days late");
+        slabSub.setFont(SMALL); slabSub.setForeground(MUTED);
+        slabsHeader.add(slabTitle, BorderLayout.WEST);
+        slabsHeader.add(slabSub, BorderLayout.EAST);
+        slabsPanel.add(slabsHeader);
+        
         slabsPanel.add(Box.createVerticalStrut(10));
         
         JPanel grid = new JPanel(new GridLayout(3, 2, 5, 5));
@@ -1334,9 +1351,17 @@ public class GUI extends JFrame {
         };
         chartPanel.setLayout(new BoxLayout(chartPanel, BoxLayout.Y_AXIS));
         chartPanel.setBorder(new EmptyBorder(15, 15, 15, 15));
+        
+        JPanel chartHeader = new JPanel(new BorderLayout());
+        chartHeader.setOpaque(false);
         JLabel cTitle = new JLabel("Categories");
-        cTitle.setFont(SMALL_BOLD); cTitle.setForeground(INK);
-        chartPanel.add(cTitle);
+        cTitle.setFont(TITLE); cTitle.setForeground(INK);
+        JLabel cSub = new JLabel("By title count");
+        cSub.setFont(SMALL); cSub.setForeground(MUTED);
+        chartHeader.add(cTitle, BorderLayout.WEST);
+        chartHeader.add(cSub, BorderLayout.EAST);
+        chartPanel.add(chartHeader);
+        
         bottomWidgets.add(chartPanel);
         
         center.add(bottomWidgets);
