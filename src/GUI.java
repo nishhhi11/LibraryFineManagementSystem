@@ -55,12 +55,12 @@ public class GUI extends JFrame {
     // ================= FONTS =================
 
     static Font customSerif;
-    static {
+        static {
         try {
             customSerif = Font.createFont(Font.TRUETYPE_FONT, new java.io.File("assets/fonts/PlayfairDisplay-Bold.ttf"));
             GraphicsEnvironment.getLocalGraphicsEnvironment().registerFont(customSerif);
         } catch (Exception e) {
-            customSerif = customSerif.deriveFont(Font.BOLD, 12f);
+            customSerif = new Font("Georgia", Font.BOLD, 12);
         }
     }
 
@@ -421,48 +421,13 @@ public class GUI extends JFrame {
         label.setFont(BODY_BOLD);
         button.add(label);
 
+        button.setActionCommand(page);
+        
         button.addActionListener(
                 e -> showPage(page)
         );
 
-        button.addMouseListener(
-                new MouseAdapter() {
-
-                    public void mouseEntered(
-                            MouseEvent e) {
-
-                        button.setBackground(
-                                new Color(
-                                        72,
-                                        58,
-                                        49
-                                )
-                        );
-
-                        label.setForeground(
-                                WHITE
-                        );
-                    }
-
-                    public void mouseExited(
-                            MouseEvent e) {
-
-                        button.setBackground(
-                                ESPRESSO
-                        );
-
-                        label.setForeground(
-                                new Color(
-                                        230,
-                                        222,
-                                        212
-                                )
-                        );
-                    }
-                }
-        );
-
-        return button;
+                return button;
     }
 
 
@@ -639,10 +604,32 @@ public class GUI extends JFrame {
         activePage = page;
         loadData();
         rebuildPages();
-        if (sidebar != null) sidebar.repaint();
+        if (sidebar != null) {
+            updateSidebar(sidebar, page);
+            sidebar.repaint();
+        }
         cardLayout.show(pages, page);
     }
-
+    
+    private void updateSidebar(java.awt.Container c, String page) {
+        for (java.awt.Component comp : c.getComponents()) {
+            if (comp instanceof javax.swing.JButton) {
+                javax.swing.JButton b = (javax.swing.JButton) comp;
+                String actionCmd = b.getActionCommand();
+                if (actionCmd != null && !actionCmd.isEmpty()) {
+                    boolean isActive = actionCmd.equals(page);
+                    b.setBackground(isActive ? new Color(72, 58, 49) : ESPRESSO);
+                    for (java.awt.Component child : b.getComponents()) {
+                        if (child instanceof javax.swing.JLabel) {
+                            child.setForeground(isActive ? WHITE : new Color(230, 222, 212));
+                        }
+                    }
+                }
+            } else if (comp instanceof java.awt.Container) {
+                updateSidebar((java.awt.Container) comp, page);
+            }
+        }
+    }
 
     void rebuildPages() {
 
@@ -2540,8 +2527,10 @@ JButton smallButton(
                 }
         );
 
-        JScrollPane scroll =
-                new JScrollPane(list);
+        JPanel listWrapper = new JPanel(new BorderLayout());
+        listWrapper.setBackground(CREAM);
+        listWrapper.add(list, BorderLayout.NORTH);
+        JScrollPane scroll = new JScrollPane(listWrapper);
 
         scroll.setBorder(null);
 
@@ -4060,7 +4049,7 @@ JButton smallButton(
         }
         slabsPanel.add(slabsGrid);
         slabsPanel.add(Box.createVerticalStrut(10));
-        JLabel note = new JLabel("Fine = days late × rate");
+        JLabel note = new JLabel("Tiered Calculation");
         note.setFont(SMALL); note.setForeground(MUTED);
         slabsPanel.add(note);
         topPanel.add(slabsPanel, BorderLayout.EAST);
@@ -4180,8 +4169,10 @@ JButton smallButton(
             }
         }
 
-        JScrollPane scroll =
-                new JScrollPane(list);
+        JPanel listWrapper = new JPanel(new BorderLayout());
+        listWrapper.setBackground(CREAM);
+        listWrapper.add(list, BorderLayout.NORTH);
+        JScrollPane scroll = new JScrollPane(listWrapper);
 
         scroll.setBorder(null);
 
