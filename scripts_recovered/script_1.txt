@@ -1,0 +1,11 @@
+python3 -c '
+import re
+with open("src/GUI.java", "r") as f:
+    text = f.read()
+
+# Replace multi-line
+text = re.sub(r"new Font\(\s*\"Serif\",\s*Font\.BOLD,\s*(\d+)\s*\)", r"customSerif.deriveFont(Font.BOLD, \1f)", text)
+
+with open("src/GUI.java", "w") as f:
+    f.write(text)
+'

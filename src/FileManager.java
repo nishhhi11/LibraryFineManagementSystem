@@ -576,16 +576,9 @@ public class FileManager {
         }
     }
 
-    public static void saveRecords(
-            ArrayList<LibRecord> records) {
-
-        try (BufferedWriter writer =
-                     new BufferedWriter(
-                             new FileWriter(RECORD_FILE)
-                     )) {
-
+    public static void saveRecords(ArrayList<LibRecord> records) {
+        try (java.io.BufferedWriter writer = new java.io.BufferedWriter(new java.io.FileWriter(RECORD_FILE))) {
             for (LibRecord record : records) {
-
                 writer.write(
                         record.getStudent().getId() + "|" +
                                 record.getBook().getId() + "|" +
@@ -593,93 +586,44 @@ public class FileManager {
                                 record.getActualDays() + "|" +
                                 record.getDelayedDays() + "|" +
                                 record.getFine() + "|" +
-                                record.isReturned()
+                                record.isReturned() + "|" +
+                                (record.getIssueDate() != null ? record.getIssueDate().toString() : java.time.LocalDate.now().toString())
                 );
-
                 writer.newLine();
             }
-
-        } catch (IOException e) {
-
-            System.out.println(
-                    "Error saving records."
-            );
+        } catch (Exception e) {
+            System.out.println("Error saving records.");
         }
     }
 
-    public static ArrayList<LibRecord> loadRecords(
-            ArrayList<Student> students,
-            ArrayList<Book> books) {
-
-        ArrayList<LibRecord> records =
-                new ArrayList<>();
-
-        try (BufferedReader reader =
-                     new BufferedReader(
-                             new FileReader(RECORD_FILE)
-                     )) {
-
+    public static ArrayList<LibRecord> loadRecords(ArrayList<Student> students, ArrayList<Book> books) {
+        ArrayList<LibRecord> records = new ArrayList<>();
+        try (java.io.BufferedReader reader = new java.io.BufferedReader(new java.io.FileReader(RECORD_FILE))) {
             String line;
-
             while ((line = reader.readLine()) != null) {
-
-                String[] data =
-                        line.split("\\|");
-
+                String[] data = line.split("\\|");
                 if (data.length >= 7) {
-
-                    Student student =
-                            findStudent(
-                                    students,
-                                    data[0]
-                            );
-
-                    Book book =
-                            findBook(
-                                    books,
-                                    data[1]
-                            );
-
-                    if (student != null
-                            && book != null) {
-
-                        int allowedDays =
-                                Integer.parseInt(data[2]);
-
-                        int actualDays =
-                                Integer.parseInt(data[3]);
-
-                        boolean returned =
-                                Boolean.parseBoolean(data[6]);
-
-                        LibRecord record =
-                                new LibRecord(
-                                        student,
-                                        book,
-                                        allowedDays
-                                );
-
-                        if (returned) {
-
-                            record.returnBook(
-                                    actualDays
-                            );
-
+                    Student student = findStudent(students, data[0]);
+                    Book book = findBook(books, data[1]);
+                    if (student != null && book != null) {
+                        int allowedDays = Integer.parseInt(data[2]);
+                        int actualDays = Integer.parseInt(data[3]);
+                        boolean returned = Boolean.parseBoolean(data[6]);
+                        java.time.LocalDate issueDate = java.time.LocalDate.now();
+                        if (data.length >= 8) {
+                            issueDate = java.time.LocalDate.parse(data[7]);
                         }
-
+                        LibRecord record = new LibRecord(student, book, allowedDays, issueDate);
+                        if (returned) {
+                            record.setReturnData(actualDays, Integer.parseInt(data[4]), Double.parseDouble(data[5]));
+                        }
                         records.add(record);
                     }
                 }
             }
-
-        } catch (IOException
-                 | NumberFormatException e) {
-
-            System.out.println(
-                    "Error loading records."
-            );
+        } catch (Exception e) {
+            System.out.println("Error loading records.");
         }
-
         return records;
     }
 

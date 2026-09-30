@@ -204,10 +204,10 @@ public class Main {
         System.out.println("Allowed Days : " + record.getAllowedDays());
 
         System.out.print("Enter actual days: ");
-        int actualDays = sc.nextInt();
+        sc.nextInt(); // consume actual days (unused, automatically uses today's date)
         sc.nextLine();
 
-        record.returnBook(actualDays);
+        record.returnBook(java.time.LocalDate.now());
 
         book.returnCopy();
 
@@ -223,7 +223,7 @@ public class Main {
         System.out.println("Available Copies : " + book.getAvailableCopies());
         System.out.println("==========================================");
 
-        record.displayReceipt();
+        
     }
 
     // Add new book
@@ -354,7 +354,7 @@ public class Main {
         for (LibRecord record : records) {
 
             if (record.isReturned()) {
-                record.displayReceipt();
+                
                 found = true;
             }
         }

@@ -1,0 +1,16 @@
+python3 -c '
+import json
+with open("/Users/nishi/.gemini/antigravity-ide/brain/b4e1f277-8c52-4622-8cef-7532aca7be14/.system_generated/logs/transcript_full.jsonl") as f:
+    for line in f:
+        data = json.loads(line)
+        if "tool_calls" in data:
+            for c in data["tool_calls"]:
+                if c["name"] == "write_to_file":
+                    args = c["args"]
+                    if isinstance(args, str):
+                        args = json.loads(args)
+                    if "GUI.java" in args.get("TargetFile", ""):
+                        print("FOUND write_to_file for GUI.java")
+                        with open("GUI_recovered_full.txt", "w") as out:
+                            out.write(args.get("CodeContent", ""))
+'

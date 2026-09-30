@@ -1,4 +1,9 @@
+import java.time.LocalDate;
+import java.time.temporal.ChronoUnit;
+
 public class LibRecord {
+    private LocalDate issueDate;
+
 
     private Student student;
     private Book book;
@@ -9,69 +14,49 @@ public class LibRecord {
     private boolean returned;
 
     // Create issue record
-    public LibRecord(Student student, Book book, int allowedDays) {
-
+    public LibRecord(Student student, Book book, int allowedDays, LocalDate issueDate) {
         this.student = student;
         this.book = book;
         this.allowedDays = allowedDays;
+        this.issueDate = issueDate;
         this.actualDays = 0;
         this.delayedDays = 0;
         this.fine = 0;
         this.returned = false;
     }
 
+    public LibRecord(Student student, Book book, int allowedDays) {
+        this(student, book, allowedDays, LocalDate.now());
+    }
+
     // Return book
-    public void returnBook(int actualDays) {
-
-        this.actualDays = actualDays;
-
+    public void returnBook(LocalDate returnDate) {
+        this.actualDays = (int) ChronoUnit.DAYS.between(issueDate, returnDate);
+        if (this.actualDays < 0) this.actualDays = 0;
+        
         delayedDays = actualDays - allowedDays;
+        if (delayedDays < 0) delayedDays = 0;
 
-        if (delayedDays < 0) {
-            delayedDays = 0;
-        }
-
-        calculateFine();
-
+        fine = calculateFineAmount(delayedDays);
         returned = true;
+    }
+    
+    public void setReturnData(int actualDays, int delayedDays, double fine) {
+        this.actualDays = actualDays;
+        this.delayedDays = delayedDays;
+        this.fine = fine;
+        this.returned = true;
     }
 
     // Calculate fine
-    private void calculateFine() {
-
-        double finePerDay;
-
-        switch (book.getCategory()) {
-
-            case "General":
-                finePerDay = 2;
-                break;
-
-            case "Academic":
-                finePerDay = 3;
-                break;
-
-            case "Reference":
-                finePerDay = 5;
-                break;
-
-            case "Fiction":
-                finePerDay = 2;
-                break;
-
-            default:
-                finePerDay = 0;
-        }
-
-        if (delayedDays == 0) {
-            fine = 0;
-        } else if (delayedDays <= 5) {
-            fine = delayedDays * finePerDay;
-        } else {
-            fine = delayedDays * finePerDay + 10;
-        }
+    public static double calculateFineAmount(int delayedDays) {
+        if (delayedDays <= 0) return 0.0;
+        if (delayedDays <= 7) return delayedDays * 5.0;
+        if (delayedDays <= 14) return (7 * 5.0) + ((delayedDays - 7) * 10.0);
+        return (7 * 5.0) + (7 * 10.0) + ((delayedDays - 14) * 20.0);
     }
-
+    
+    public LocalDate getIssueDate() { return issueDate; }
     public Student getStudent() {
         return student;
     }

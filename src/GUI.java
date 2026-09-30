@@ -3082,19 +3082,36 @@ JButton smallButton(
                     d1.setForeground(new Color(255, 255, 255, 200));
                     JLabel d2 = new JLabel("Due Date: " + due.format(formatter));
                     d2.setForeground(new Color(255, 255, 255, 200));
-                    JLabel d3 = new JLabel("Fine rule: ₹5/day from the 1st day late");
+                    JLabel d3 = new JLabel("Fine rule: 1-7 days: ₹5/day, 8-14: ₹10/day, 15+: ₹20/day");
                     d3.setForeground(GOLD);
-                    
                     rulesPanel.add(d1); rulesPanel.add(d2); rulesPanel.add(d3);
                 } else {
-                    int od = selectedDays[0];
-                    JLabel fTotal = new JLabel("Total Fine: ₹" + (od * 5));
+                    int delayed = 0;
+                    LibRecord active = null;
+                    for (LibRecord r : records) {
+                        if (!r.isReturned() && r.getStudent().getId().equals(student.getId()) && r.getBook().getId().equals(book.getId())) {
+                            active = r;
+                            break;
+                        }
+                    }
+                    if (active != null) {
+                        long diff = java.time.temporal.ChronoUnit.DAYS.between(active.getIssueDate(), today);
+                        if (diff < 0) diff = 0;
+                        delayed = (int) diff - active.getAllowedDays();
+                        if (delayed < 0) delayed = 0;
+                        JLabel fd = new JLabel("Overdue by: " + delayed + " days");
+                        fd.setForeground(new Color(255, 255, 255, 200));
+                        rulesPanel.add(fd);
+                    }
+                    
+                    double finalFine = LibRecord.calculateFineAmount(delayed);
+                    JLabel fTotal = new JLabel("Total Fine: ₹" + (int)finalFine);
                     fTotal.setFont(new Font("Inter", Font.BOLD, 22));
                     fTotal.setForeground(TERRACOTTA);
                     livePanel.add(fTotal);
                     livePanel.add(Box.createVerticalStrut(10));
                     
-                    JLabel d3 = new JLabel("Calculated automatically based on ₹5/day.");
+                    JLabel d3 = new JLabel("Auto-calculated using official tiers.");
                     d3.setForeground(new Color(255, 255, 255, 200));
                     rulesPanel.add(d3);
                 }
@@ -3107,7 +3124,29 @@ JButton smallButton(
             infoCard.repaint();
         };
 
-        studentCombo.addActionListener(e -> updatePreview.run());
+        studentCombo.addActionListener(e -> {
+            if (!issueMode) {
+                String selS = (String) studentCombo.getSelectedItem();
+                boolean validS = selS != null && !selS.startsWith("Select") && selS.contains(" · ");
+                ArrayList<String> newBookItems = new ArrayList<>();
+                if (validS) {
+                    String sid = selS.split(" · ")[0];
+                    for (LibRecord r : records) {
+                        if (!r.isReturned() && r.getStudent().getId().equals(sid)) {
+                            Book b = r.getBook();
+                            newBookItems.add(b.getId() + " · " + b.getTitle() + " · " + b.getAuthor());
+                        }
+                    }
+                } else {
+                    for (Book b : books) newBookItems.add(b.getId() + " · " + b.getTitle() + " · " + b.getAuthor());
+                }
+                bookCombo.removeAllItems();
+                bookCombo.addItem("Select Book...");
+                for(String b : newBookItems) bookCombo.addItem(b);
+                bookCombo.setSelectedIndex(0);
+            }
+            updatePreview.run();
+        });
         bookCombo.addActionListener(e -> updatePreview.run());
         
         if (issueMode) {
@@ -3124,11 +3163,6 @@ JButton smallButton(
                     updatePreview.run();
                 });
             }
-        } else {
-            daysSpinner.addChangeListener(e -> {
-                selectedDays[0] = (Integer) daysSpinner.getValue();
-                updatePreview.run();
-            });
         }
         
         updatePreview.run();
@@ -3738,79 +3772,22 @@ JButton smallButton(
             JTextField bookField,
             JTextField daysField) {
 
-        String studentId =
-                studentField.getText()
-                        .trim();
+        String studentId = studentField.getText().trim();
+        String bookId = bookField.getText().trim();
 
-        String bookId =
-                bookField.getText()
-                        .trim();
-
-        String daysText =
-                daysField.getText()
-                        .trim();
-
-        if (
-                studentId.isEmpty()
-                        ||
-                        bookId.isEmpty()
-                        ||
-                        daysText.isEmpty()
-        ) {
-
-            warning(
-                    "Please fill all fields."
-            );
-
+        if (studentId.isEmpty() || bookId.isEmpty()) {
+            warning("Please fill all required fields.");
             return;
         }
 
-        int actualDays;
-
-        try {
-
-            actualDays =
-                    Integer.parseInt(
-                            daysText
-                    );
-
-        } catch (NumberFormatException e) {
-
-            warning(
-                    "Actual days must be a number."
-            );
-
-            return;
-        }
-
-        if (actualDays <= 0) {
-
-            warning(
-                    "Actual days must be greater than zero."
-            );
-
-            return;
-        }
-
-        LibRecord record =
-                findActiveRecord(
-                        studentId,
-                        bookId
-                );
+        LibRecord record = findActiveRecord(studentId, bookId);
 
         if (record == null) {
-
-            warning(
-                    "No active issue record found."
-            );
-
+            warning("No active issue record found.");
             return;
         }
 
-        record.returnBook(
-                actualDays
-        );
-
+        record.returnBook(java.time.LocalDate.now());
         record.getBook().returnCopy();
 
         saveData();
@@ -3818,23 +3795,15 @@ JButton smallButton(
         JOptionPane.showMessageDialog(
                 this,
                 "BOOK RETURNED\n\n"
-                        + "Book : "
-                        + record.getBook()
-                        .getTitle()
-                        + "\nActual Days : "
-                        + actualDays
-                        + "\nDelayed Days : "
-                        + record.getDelayedDays()
-                        + "\n\nFine : ₹"
-                        + (int) record.getFine(),
+                        + "Book : " + record.getBook().getTitle()
+                        + "\nDelayed Days : " + record.getDelayedDays()
+                        + "\n\nFine : ₹" + (int) record.getFine(),
                 "Return Receipt",
                 JOptionPane.INFORMATION_MESSAGE
         );
 
         studentField.setText("");
-
         bookField.setText("");
-
         daysField.setText("");
     }
 
@@ -4380,7 +4349,7 @@ JButton smallButton(
 
             // border
 
-            g2.setColor(new Color(230, 215, 195));
+            g2.setColor(borderColor);
 
             g2.drawRoundRect(
                     0,

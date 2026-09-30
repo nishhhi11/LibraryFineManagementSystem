@@ -1,0 +1,1 @@
+git restore src/GUI.java && python3 fix_polish.py
