@@ -1,5 +1,6 @@
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
+import javax.swing.border.Border;
 import javax.swing.border.LineBorder;
 import javax.imageio.ImageIO;
 import java.awt.*;
@@ -10,6 +11,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 
 public class GUI extends JFrame {
+    boolean suppressDialogs = false;
 
     static ArrayList<Student> students;
     static ArrayList<Book> books;
@@ -2742,130 +2744,481 @@ JButton smallButton(
         content.setBorder(new EmptyBorder(0, 40, 25, 40));
         GridBagConstraints main = new GridBagConstraints();
         main.insets = new Insets(8, 8, 8, 8);
-        main.fill = GridBagConstraints.BOTH;
-        main.weighty = 0;
+        main.fill = GridBagConstraints.HORIZONTAL;
+        main.anchor = GridBagConstraints.NORTH;
+        main.weighty = 1.0;
 
         GlassPanel formCard = new GlassPanel(new Color(255, 252, 246, 235), new Color(255, 255, 255, 180));
         formCard.setLayout(new BoxLayout(formCard, BoxLayout.Y_AXIS));
         formCard.setBorder(new EmptyBorder(25, 30, 25, 30));
 
         JLabel formTitle = new JLabel(issueMode ? "Issue details" : "Return details");
-        formTitle.setFont(customSerif.deriveFont(Font.BOLD, 22f));
+        formTitle.setFont(TITLE);
         formTitle.setForeground(INK);
+        formTitle.setAlignmentX(Component.LEFT_ALIGNMENT);
         formCard.add(formTitle);
         formCard.add(Box.createVerticalStrut(17));
 
         JLabel studentLabel = new JLabel("Select Student");
         studentLabel.setFont(BODY_BOLD);
         studentLabel.setForeground(INK);
+        studentLabel.setAlignmentX(Component.LEFT_ALIGNMENT);
         formCard.add(studentLabel);
         formCard.add(Box.createVerticalStrut(5));
 
-        JComboBox<String> studentCombo = new JComboBox<>();
-        for (Student s : students) studentCombo.addItem(s.getId() + " - " + s.getName());
+        ArrayList<String> studItems = new ArrayList<>();
+        for (Student s : students) studItems.add(s.getId() + " · " + s.getName() + " · " + s.getCourse());
+        JComboBox<String> studentCombo = createSearchableCombo(studItems, "Select Student...");
         studentCombo.setMaximumSize(new Dimension(Integer.MAX_VALUE, 44));
+        studentCombo.setAlignmentX(Component.LEFT_ALIGNMENT);
         formCard.add(studentCombo);
-        formCard.add(Box.createVerticalStrut(10));
+        formCard.add(Box.createVerticalStrut(15));
 
         JLabel bookLabel = new JLabel("Select Book");
         bookLabel.setFont(BODY_BOLD);
         bookLabel.setForeground(INK);
+        bookLabel.setAlignmentX(Component.LEFT_ALIGNMENT);
         formCard.add(bookLabel);
         formCard.add(Box.createVerticalStrut(5));
 
-        JComboBox<String> bookCombo = new JComboBox<>();
-        for (Book b : books) bookCombo.addItem(b.getId() + " - " + b.getTitle());
+        ArrayList<String> bookItems = new ArrayList<>();
+        for (Book b : books) bookItems.add(b.getId() + " · " + b.getTitle() + " · " + b.getAuthor());
+        JComboBox<String> bookCombo = createSearchableCombo(bookItems, "Select Book...");
         bookCombo.setMaximumSize(new Dimension(Integer.MAX_VALUE, 44));
+        bookCombo.setAlignmentX(Component.LEFT_ALIGNMENT);
         formCard.add(bookCombo);
-        formCard.add(Box.createVerticalStrut(10));
+        formCard.add(Box.createVerticalStrut(15));
 
         JLabel daysLabel = new JLabel(issueMode ? "Issue Duration (Days)" : "Days Overdue (Auto-calculated)");
         daysLabel.setFont(BODY_BOLD);
         daysLabel.setForeground(INK);
+        daysLabel.setAlignmentX(Component.LEFT_ALIGNMENT);
         formCard.add(daysLabel);
         formCard.add(Box.createVerticalStrut(5));
 
-        JSpinner daysSpinner = new JSpinner(new SpinnerNumberModel(issueMode ? 14 : 0, 0, 365, 1));
-        daysSpinner.setMaximumSize(new Dimension(Integer.MAX_VALUE, 44));
-        formCard.add(daysSpinner);
-        formCard.add(Box.createVerticalStrut(15));
+        // Chips for days
+        JPanel daysPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 8, 0));
+        daysPanel.setOpaque(false);
+        daysPanel.setAlignmentX(Component.LEFT_ALIGNMENT);
+        
+        final int[] selectedDays = {issueMode ? 14 : 0};
+        int[] options = {7, 14, 21, 30};
+        ArrayList<JButton> chipBtns = new ArrayList<>();
+        
+        JSpinner daysSpinner = new JSpinner(new SpinnerNumberModel(0, 0, 365, 1));
+        
+        if (issueMode) {
+            for (int d : options) {
+                JButton chip = new JButton(d + " days");
+                chip.setFont(SMALL_BOLD);
+                chip.setFocusPainted(false);
+                chip.setCursor(new Cursor(Cursor.HAND_CURSOR));
+                chip.setPreferredSize(new Dimension(80, 36));
+                
+                if (d == 14) {
+                    chip.setBackground(TERRACOTTA);
+                    chip.setForeground(WHITE);
+                } else {
+                    chip.setBackground(WHITE);
+                    chip.setForeground(MUTED);
+                }
+                
+                chipBtns.add(chip);
+                daysPanel.add(chip);
+            }
+        } else {
+            daysSpinner.setPreferredSize(new Dimension(100, 36));
+            daysSpinner.setFont(BODY);
+            daysPanel.add(daysSpinner);
+        }
+        
+        formCard.add(daysPanel);
+        formCard.add(Box.createVerticalStrut(25));
 
         JButton action = actionButton(issueMode ? "Issue Book" : "Return Book");
         action.setAlignmentX(Component.LEFT_ALIGNMENT);
+        action.setMaximumSize(new Dimension(Integer.MAX_VALUE, 48));
+        action.setEnabled(false);
+        
+        // Add hover lift to primary button
+        action.addMouseListener(new MouseAdapter() {
+            Border normalBorder = new EmptyBorder(12, 0, 12, 0);
+            Border liftBorder = new EmptyBorder(10, 0, 14, 0); // visually pushes up
+            public void mouseEntered(MouseEvent e) { if(action.isEnabled()) action.setBorder(liftBorder); }
+            public void mouseExited(MouseEvent e) { action.setBorder(normalBorder); }
+        });
+        
         formCard.add(action);
         
-        // Add action listener
-        action.addActionListener(e -> {
-            String selS = (String) studentCombo.getSelectedItem();
-            String selB = (String) bookCombo.getSelectedItem();
-            if (selS == null || selB == null) return;
-            String sid = selS.split(" - ")[0];
-            String bid = selB.split(" - ")[0];
-            // Mocking the text field to reuse existing logic
-            JTextField sf = new JTextField(sid);
-            JTextField bf = new JTextField(bid);
-            JTextField df = new JTextField(daysSpinner.getValue().toString());
-            if (issueMode) issueBook(sf, bf, df);
-            else returnBook(sf, bf, df);
-        });
+        formCard.add(Box.createVerticalStrut(30));
+        
+        // RECENT ISSUES
+        JPanel recentPanel = new JPanel();
+        recentPanel.setLayout(new BoxLayout(recentPanel, BoxLayout.Y_AXIS));
+        recentPanel.setOpaque(false);
+        recentPanel.setAlignmentX(Component.LEFT_ALIGNMENT);
+        
+        JLabel recentTitle = new JLabel("Recent Issues");
+        recentTitle.setFont(BODY_BOLD);
+        recentTitle.setForeground(INK);
+        recentPanel.add(recentTitle);
+        recentPanel.add(Box.createVerticalStrut(10));
+        
+        int count = 0;
+        for (int i = records.size() - 1; i >= 0; i--) {
+            LibRecord r = records.get(i);
+            if (!r.isReturned()) {
+                JLabel row = new JLabel("• " + r.getBook().getTitle() + " to " + r.getStudent().getName());
+                row.setFont(SMALL);
+                row.setForeground(MUTED);
+                recentPanel.add(row);
+                recentPanel.add(Box.createVerticalStrut(6));
+                count++;
+                if (count == 3) break;
+            }
+        }
+        formCard.add(recentPanel);
 
         // LIVE PREVIEW CARD
         GlassPanel infoCard = new GlassPanel(INK, new Color(255, 255, 255, 45));
-        infoCard.setLayout(new BoxLayout(infoCard, BoxLayout.Y_AXIS));
+        infoCard.setLayout(new BorderLayout());
         infoCard.setBorder(new EmptyBorder(25, 28, 25, 28));
-
-        JLabel infoTitle = new JLabel(issueMode ? "Live Issue Preview" : "Live Fine Preview");
-        infoTitle.setFont(customSerif.deriveFont(Font.BOLD, 23f));
-        infoTitle.setForeground(WHITE);
-        infoCard.add(infoTitle);
-        infoCard.add(Box.createVerticalStrut(14));
         
-        JLabel finePreview = new JLabel("Total Fine: ₹0");
-        finePreview.setFont(new Font("Inter", Font.BOLD, 24));
-        finePreview.setForeground(TERRACOTTA);
-        
-        if (!issueMode) {
-            infoCard.add(finePreview);
-            infoCard.add(Box.createVerticalStrut(20));
+        Runnable updatePreview = () -> {
+            infoCard.removeAll();
             
-            // FINE SLAB TABLE
-            JPanel slabPanel = new JPanel(new GridLayout(3, 2, 5, 5));
-            slabPanel.setOpaque(false);
-            JLabel sTitle = new JLabel("<html><b>How Fines Work:</b></html>");
-            sTitle.setForeground(GOLD);
-            slabPanel.add(sTitle); slabPanel.add(new JLabel(""));
-            JLabel s1 = new JLabel("1 - 7 Days:"); s1.setForeground(WHITE);
-            JLabel s1r = new JLabel("₹5 / day"); s1r.setForeground(WHITE);
-            slabPanel.add(s1); slabPanel.add(s1r);
-            JLabel s2 = new JLabel("8+ Days:"); s2.setForeground(WHITE);
-            JLabel s2r = new JLabel("₹10 / day"); s2r.setForeground(WHITE);
-            slabPanel.add(s2); slabPanel.add(s2r);
-            infoCard.add(slabPanel);
+            String selS = (String) studentCombo.getSelectedItem();
+            String selB = (String) bookCombo.getSelectedItem();
+            
+            boolean validS = selS != null && !selS.startsWith("Select") && selS.contains(" · ");
+            boolean validB = selB != null && !selB.startsWith("Select") && selB.contains(" · ");
+            
+            if (!validS || !validB) {
+                action.setEnabled(false);
+                action.setText(issueMode ? "Issue Book" : "Return Book");
+                
+                JPanel emptyState = new JPanel();
+                emptyState.setLayout(new BoxLayout(emptyState, BoxLayout.Y_AXIS));
+                emptyState.setOpaque(false);
+                
+                JLabel emptyIcon = new JLabel("📚");
+                emptyIcon.setFont(DISPLAY.deriveFont(48f));
+                emptyIcon.setForeground(new Color(255, 255, 255, 50));
+                emptyIcon.setAlignmentX(Component.CENTER_ALIGNMENT);
+                
+                JLabel emptyText = new JLabel("Select a student and a book to preview");
+                emptyText.setFont(BODY);
+                emptyText.setForeground(new Color(255, 255, 255, 120));
+                emptyText.setAlignmentX(Component.CENTER_ALIGNMENT);
+                
+                emptyState.add(Box.createVerticalStrut(80));
+                emptyState.add(emptyIcon);
+                emptyState.add(Box.createVerticalStrut(16));
+                emptyState.add(emptyText);
+                
+                infoCard.add(emptyState, BorderLayout.CENTER);
+            } else {
+                String sid = selS.split(" · ")[0];
+                String bid = selB.split(" · ")[0];
+                
+                Student student = null;
+                for (Student s : students) if (s.getId().equals(sid)) student = s;
+                Book book = null;
+                for (Book b : books) if (b.getId().equals(bid)) book = b;
+                
+                if (student == null || book == null) return;
+                
+                JPanel livePanel = new JPanel();
+                livePanel.setLayout(new BoxLayout(livePanel, BoxLayout.Y_AXIS));
+                livePanel.setOpaque(false);
+                
+                JLabel infoTitle = new JLabel(issueMode ? "Live Issue Preview" : "Live Fine Preview");
+                infoTitle.setFont(TITLE);
+                infoTitle.setForeground(WHITE);
+                infoTitle.setAlignmentX(Component.LEFT_ALIGNMENT);
+                livePanel.add(infoTitle);
+                livePanel.add(Box.createVerticalStrut(20));
+                
+                int activeBooks = 0;
+                double finesDue = 0.0;
+                for (LibRecord r : records) {
+                    if (r.getStudent().getId().equals(student.getId())) {
+                        if (!r.isReturned()) activeBooks++;
+                        else finesDue += r.getFine();
+                    }
+                }
+                
+                boolean canIssue = true;
+                String warningMsg = "";
+                
+                if (issueMode) {
+                    if (activeBooks >= 3) {
+                        warningMsg = "⚠ Borrowing limit reached (3 books)";
+                        canIssue = false;
+                    } else if (finesDue > 0) {
+                        warningMsg = "⚠ Cannot issue: Student has unpaid fines";
+                        canIssue = false;
+                    } else if (book.getAvailableCopies() <= 0) {
+                        warningMsg = "⚠ Book is out of stock";
+                        canIssue = false;
+                    }
+                } else {
+                    LibRecord active = null;
+                    for (LibRecord r : records) {
+                        if (!r.isReturned() && r.getStudent().getId().equals(student.getId()) && r.getBook().getId().equals(book.getId())) {
+                            active = r;
+                            break;
+                        }
+                    }
+                    if (active == null) {
+                        warningMsg = "⚠ This book is not issued to this student";
+                        canIssue = false;
+                    }
+                }
+                
+                action.setEnabled(canIssue);
+                action.setText(canIssue ? (issueMode ? "Issue Book" : "Return Book") : "Unavailable");
+                
+                if (!warningMsg.isEmpty()) {
+                    JPanel warnBox = new JPanel(new BorderLayout());
+                    warnBox.setOpaque(false);
+                    warnBox.setAlignmentX(Component.LEFT_ALIGNMENT);
+                    JLabel warn = new JLabel(warningMsg);
+                    warn.setFont(BODY_BOLD);
+                    warn.setForeground(TERRACOTTA);
+                    warnBox.add(warn, BorderLayout.WEST);
+                    livePanel.add(warnBox);
+                    livePanel.add(Box.createVerticalStrut(15));
+                }
+                
+                JPanel bookRow = new JPanel(new FlowLayout(FlowLayout.LEFT, 15, 0));
+                bookRow.setOpaque(false);
+                bookRow.setAlignmentX(Component.LEFT_ALIGNMENT);
+                
+                JPanel cover = createCover(book);
+                cover.setPreferredSize(new Dimension(60, 90));
+                bookRow.add(cover);
+                
+                JPanel bookText = new JPanel();
+                bookText.setLayout(new BoxLayout(bookText, BoxLayout.Y_AXIS));
+                bookText.setOpaque(false);
+                JLabel bTitle = new JLabel(book.getTitle());
+                bTitle.setFont(BODY_BOLD);
+                bTitle.setForeground(WHITE);
+                
+                int avail = book.getAvailableCopies();
+                int total = book.getTotalCopies();
+                String copiesStr = avail + " of " + total + (issueMode && canIssue ? " → " + (avail - 1) + " of " + total + " after issue" : " available");
+                JLabel bAvail = new JLabel(copiesStr);
+                bAvail.setFont(SMALL);
+                bAvail.setForeground(new Color(255, 255, 255, 180));
+                
+                bookText.add(bTitle);
+                bookText.add(Box.createVerticalStrut(5));
+                bookText.add(bAvail);
+                bookRow.add(bookText);
+                livePanel.add(bookRow);
+                
+                livePanel.add(Box.createVerticalStrut(25));
+                
+                JPanel studentRow = new JPanel(new FlowLayout(FlowLayout.LEFT, 15, 0));
+                studentRow.setOpaque(false);
+                studentRow.setAlignmentX(Component.LEFT_ALIGNMENT);
+                
+                Color[] tints = {new Color(153, 168, 150), new Color(201, 142, 116), new Color(214, 195, 165), new Color(135, 160, 178)};
+                Color avatarColor = tints[Math.abs(student.getName().hashCode()) % tints.length];
+                
+                JPanel avatar = new JPanel(new GridBagLayout()) {
+                    @Override
+                    protected void paintComponent(Graphics g) {
+                        Graphics2D g2 = (Graphics2D) g.create();
+                        g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+                        g2.setColor(avatarColor);
+                        g2.fillRoundRect(0, 0, getWidth(), getHeight(), 12, 12);
+                        g2.dispose();
+                    }
+                };
+                avatar.setOpaque(false);
+                avatar.setPreferredSize(new Dimension(42, 42));
+                JLabel initial = new JLabel(student.getName().substring(0, 1).toUpperCase());
+                initial.setFont(customSerif.deriveFont(Font.BOLD, 18f));
+                initial.setForeground(WHITE);
+                avatar.add(initial);
+                
+                studentRow.add(avatar);
+                
+                JPanel studentText = new JPanel();
+                studentText.setLayout(new BoxLayout(studentText, BoxLayout.Y_AXIS));
+                studentText.setOpaque(false);
+                JLabel sName = new JLabel(student.getName() + " (" + student.getId() + ")");
+                sName.setFont(BODY_BOLD);
+                sName.setForeground(WHITE);
+                
+                String statMsg = activeBooks > 0 ? activeBooks + " books currently issued" : "0 books currently issued";
+                if (finesDue > 0) statMsg += " · ₹" + (int)finesDue + " unpaid fine";
+                
+                JLabel sStat = new JLabel(statMsg);
+                sStat.setFont(SMALL);
+                sStat.setForeground(new Color(255, 255, 255, 180));
+                
+                studentText.add(sName);
+                studentText.add(Box.createVerticalStrut(4));
+                studentText.add(sStat);
+                studentRow.add(studentText);
+                livePanel.add(studentRow);
+                
+                livePanel.add(Box.createVerticalStrut(25));
+                
+                JPanel rulesPanel = new JPanel(new GridLayout(3, 1, 0, 8));
+                rulesPanel.setOpaque(false);
+                rulesPanel.setAlignmentX(Component.LEFT_ALIGNMENT);
+                
+                java.time.LocalDate today = java.time.LocalDate.now();
+                java.time.format.DateTimeFormatter formatter = java.time.format.DateTimeFormatter.ofPattern("d MMM yyyy");
+                
+                if (issueMode) {
+                    java.time.LocalDate due = today.plusDays(selectedDays[0]);
+                    JLabel d1 = new JLabel("Issue Date: " + today.format(formatter));
+                    d1.setForeground(new Color(255, 255, 255, 200));
+                    JLabel d2 = new JLabel("Due Date: " + due.format(formatter));
+                    d2.setForeground(new Color(255, 255, 255, 200));
+                    JLabel d3 = new JLabel("Fine rule: ₹5/day from the 1st day late");
+                    d3.setForeground(GOLD);
+                    
+                    rulesPanel.add(d1); rulesPanel.add(d2); rulesPanel.add(d3);
+                } else {
+                    int od = selectedDays[0];
+                    JLabel fTotal = new JLabel("Total Fine: ₹" + (od * 5));
+                    fTotal.setFont(new Font("Inter", Font.BOLD, 22));
+                    fTotal.setForeground(TERRACOTTA);
+                    livePanel.add(fTotal);
+                    livePanel.add(Box.createVerticalStrut(10));
+                    
+                    JLabel d3 = new JLabel("Calculated automatically based on ₹5/day.");
+                    d3.setForeground(new Color(255, 255, 255, 200));
+                    rulesPanel.add(d3);
+                }
+                
+                livePanel.add(rulesPanel);
+                infoCard.add(livePanel, BorderLayout.NORTH);
+            }
+            
+            infoCard.revalidate();
+            infoCard.repaint();
+        };
 
-            // Live update
-            daysSpinner.addChangeListener(e -> {
-                int od = (Integer) daysSpinner.getValue();
-                finePreview.setText("Total Fine: ₹" + (od * 5)); // Simplified fine calc
-            });
+        studentCombo.addActionListener(e -> updatePreview.run());
+        bookCombo.addActionListener(e -> updatePreview.run());
+        
+        if (issueMode) {
+            for (JButton chip : chipBtns) {
+                chip.addActionListener(e -> {
+                    int d = Integer.parseInt(chip.getText().split(" ")[0]);
+                    selectedDays[0] = d;
+                    for (JButton b : chipBtns) {
+                        b.setBackground(WHITE);
+                        b.setForeground(MUTED);
+                    }
+                    chip.setBackground(TERRACOTTA);
+                    chip.setForeground(WHITE);
+                    updatePreview.run();
+                });
+            }
         } else {
-            JLabel msg = new JLabel("Due Date: Automatically calculated.");
-            msg.setForeground(WHITE);
-            infoCard.add(msg);
+            daysSpinner.addChangeListener(e -> {
+                selectedDays[0] = (Integer) daysSpinner.getValue();
+                updatePreview.run();
+            });
         }
+        
+        updatePreview.run();
+
+        action.addActionListener(e -> {
+            action.setText("Processing...");
+            action.setEnabled(false);
+            
+            Timer timer = new Timer(600, ev -> {
+                String selS = (String) studentCombo.getSelectedItem();
+                String selB = (String) bookCombo.getSelectedItem();
+                String sid = selS.split(" · ")[0];
+                String bid = selB.split(" · ")[0];
+                JTextField sf = new JTextField(sid);
+                JTextField bf = new JTextField(bid);
+                JTextField df = new JTextField(String.valueOf(selectedDays[0]));
+                
+                if (issueMode) {
+                    // Suppress dialog inside issueBook
+                    boolean prev = suppressDialogs;
+                    suppressDialogs = true;
+                    issueBook(sf, bf, df);
+                    suppressDialogs = prev;
+                    
+                    java.time.LocalDate due = java.time.LocalDate.now().plusDays(selectedDays[0]);
+                    java.time.format.DateTimeFormatter formatter = java.time.format.DateTimeFormatter.ofPattern("d MMM");
+                    JOptionPane.showMessageDialog(this, selB.split(" · ")[1] + " issued to " + selS.split(" · ")[1] + ", due " + due.format(formatter), "Success", JOptionPane.INFORMATION_MESSAGE);
+                } else {
+                    boolean prev = suppressDialogs;
+                    suppressDialogs = true;
+                    returnBook(sf, bf, df);
+                    suppressDialogs = prev;
+                    JOptionPane.showMessageDialog(this, selB.split(" · ")[1] + " returned successfully.", "Success", JOptionPane.INFORMATION_MESSAGE);
+                }
+                
+                studentCombo.setSelectedIndex(0);
+                bookCombo.setSelectedIndex(0);
+                updatePreview.run();
+            });
+            timer.setRepeats(false);
+            timer.start();
+        });
 
         main.gridx = 0;
         main.gridy = 0;
-        main.weightx = 0.5;
+        main.weightx = 0.55;
         content.add(formCard, main);
 
         main.gridx = 1;
-        main.weightx = 0.4;
+        main.weightx = 0.45;
         main.insets = new Insets(8, 20, 8, 8);
         content.add(infoCard, main);
 
-        page.add(content, BorderLayout.CENTER);
+        JPanel wrapper = new JPanel(new BorderLayout());
+        wrapper.setBackground(CREAM);
+        wrapper.add(content, BorderLayout.NORTH);
+        page.add(wrapper, BorderLayout.CENTER);
         return page;
     }
+
+    private JComboBox<String> createSearchableCombo(ArrayList<String> items, String placeholder) {
+        JComboBox<String> cb = new JComboBox<>();
+        cb.addItem(placeholder);
+        for(String i : items) cb.addItem(i);
+        cb.setEditable(true);
+        cb.setBackground(WHITE);
+        cb.setFont(BODY);
+        
+        JTextField tf = (JTextField) cb.getEditor().getEditorComponent();
+        tf.addKeyListener(new KeyAdapter() {
+            public void keyReleased(KeyEvent e) {
+                if (e.getKeyCode() == KeyEvent.VK_DOWN || e.getKeyCode() == KeyEvent.VK_UP || e.getKeyCode() == KeyEvent.VK_ENTER) return;
+                SwingUtilities.invokeLater(() -> {
+                    String text = tf.getText();
+                    cb.hidePopup();
+                    cb.removeAllItems();
+                    cb.addItem(placeholder);
+                    for (String item : items) {
+                        if (item.toLowerCase().contains(text.toLowerCase())) {
+                            cb.addItem(item);
+                        }
+                    }
+                    cb.showPopup();
+                    tf.setText(text);
+                });
+            }
+        });
+        return cb;
+    }
+
     // =========================================================
     // TRANSACTION STATS
     // =========================================================
@@ -3355,7 +3708,7 @@ JButton smallButton(
 
         saveData();
 
-        JOptionPane.showMessageDialog(
+        if(!suppressDialogs) JOptionPane.showMessageDialog(
                 this,
                 "BOOK ISSUED SUCCESSFULLY\n\n"
                         + "Student : "
