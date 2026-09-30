@@ -53,25 +53,32 @@ public class GUI extends JFrame {
 
     // ================= FONTS =================
 
+    static Font customSerif;
+    static {
+        try {
+            customSerif = Font.createFont(Font.TRUETYPE_FONT, new java.io.File("assets/fonts/PlayfairDisplay-Bold.ttf"));
+            GraphicsEnvironment.getLocalGraphicsEnvironment().registerFont(customSerif);
+        } catch (Exception e) {
+            customSerif = customSerif.deriveFont(Font.BOLD, 12f);
+        }
+    }
+
     static final Font DISPLAY =
-            new Font(
-                    "Serif",
+            customSerif.deriveFont(
                     Font.BOLD,
-                    31
+                    31f
             );
 
     static final Font TITLE =
-            new Font(
-                    "Serif",
+            customSerif.deriveFont(
                     Font.BOLD,
-                    21
+                    21f
             );
 
     static final Font SUBTITLE =
-            new Font(
-                    "Serif",
+            customSerif.deriveFont(
                     Font.BOLD,
-                    16
+                    16f
             );
 
     static final Font BODY =
@@ -257,11 +264,7 @@ public class GUI extends JFrame {
                 );
 
         logo.setFont(
-                new Font(
-                        "Serif",
-                        Font.BOLD,
-                        26
-                )
+                customSerif.deriveFont(Font.BOLD, 26f)
         );
 
         logo.setForeground(WHITE);
@@ -642,15 +645,11 @@ public class GUI extends JFrame {
 
         JLabel title =
                 new JLabel(
-                        "Library Management"
+                        "MindSpace Library"
                 );
 
         title.setFont(
-                new Font(
-                        "Serif",
-                        Font.BOLD,
-                        18
-                )
+                customSerif.deriveFont(Font.BOLD, 18f)
         );
 
         title.setForeground(INK);
@@ -670,7 +669,7 @@ public class GUI extends JFrame {
 
         JLabel status =
                 new JLabel(
-                        "●  LIBRARY ONLINE"
+                        ""
                 );
 
         status.setFont(SMALL_BOLD);
@@ -893,27 +892,12 @@ public class GUI extends JFrame {
                 new BorderLayout()
         );
 
-        hero.setPreferredSize(
-                new Dimension(
-                        0,
-                        140
-                )
-        );
+        hero.setPreferredSize(new Dimension(0, 75));
 
-        hero.setMaximumSize(
-                new Dimension(
-                        Integer.MAX_VALUE,
-                        140
-                )
-        );
+        hero.setMaximumSize(new Dimension(Integer.MAX_VALUE, 75));
 
         hero.setBorder(
-                new EmptyBorder(
-                        22,
-                        27,
-                        22,
-                        27
-                )
+                new EmptyBorder(12, 27, 12, 27)
         );
 
         JPanel heroText =
@@ -930,7 +914,7 @@ public class GUI extends JFrame {
 
         JLabel eyebrow =
                 new JLabel(
-                        "MINDSPACE / FINE MANAGEMENT SYSTEM"
+                        "MINDSPACE / LIBRARY MANAGEMENT"
                 );
 
         eyebrow.setFont(SMALL_BOLD);
@@ -943,11 +927,7 @@ public class GUI extends JFrame {
                 );
 
         heroTitle.setFont(
-                new Font(
-                        "Serif",
-                        Font.BOLD,
-                        31
-                )
+                customSerif.deriveFont(Font.BOLD, 31f)
         );
 
         heroTitle.setForeground(WHITE);
@@ -986,6 +966,7 @@ public class GUI extends JFrame {
                 BorderLayout.WEST
         );
 
+        hero.setAlignmentX(Component.LEFT_ALIGNMENT);
         center.add(hero);
 
         center.add(
@@ -1006,6 +987,7 @@ public class GUI extends JFrame {
                 );
 
         stats.setOpaque(false);
+        stats.setAlignmentX(Component.LEFT_ALIGNMENT);
 
         int totalCopies = 0;
 
@@ -1072,12 +1054,9 @@ public class GUI extends JFrame {
                 statCard(
                         "TOTAL FINES",
                         "₹"
-                                + String.format(
-                                "%.0f",
-                                totalFine
-                        ),
+                                + (int) totalFine,
                         "recorded amount",
-                        INK
+                        TERRACOTTA
                 )
         );
 
@@ -1125,6 +1104,7 @@ public class GUI extends JFrame {
                 BorderLayout.EAST
         );
 
+        collectionHeader.setAlignmentX(Component.LEFT_ALIGNMENT);
         center.add(
                 collectionHeader
         );
@@ -1147,6 +1127,7 @@ public class GUI extends JFrame {
                 );
 
         bookRow.setOpaque(false);
+        bookRow.setAlignmentX(Component.LEFT_ALIGNMENT);
 
         int count = 0;
 
@@ -1182,7 +1163,7 @@ public class GUI extends JFrame {
         quick.setForeground(INK);
 
         quick.setAlignmentX(
-                Component.CENTER_ALIGNMENT
+                Component.LEFT_ALIGNMENT
         );
 
         center.add(quick);
@@ -1202,24 +1183,16 @@ public class GUI extends JFrame {
                 );
 
         actions.setOpaque(false);
+        actions.setAlignmentX(Component.LEFT_ALIGNMENT);
 
         JButton browse =
-                dashboardAction(
-                        "Browse Collection",
-                        "Explore books and availability"
-                );
+                dashboardAction("Browse Collection", "Explore books and availability", "📚", false);
 
         JButton issue =
-                dashboardAction(
-                        "Issue a Book",
-                        "Create a new issue record"
-                );
+                dashboardAction("Issue a Book", "Create a new issue record", "🔖", true);
 
         JButton returnBook =
-                dashboardAction(
-                        "Return a Book",
-                        "Calculate delayed days and fine"
-                );
+                dashboardAction("Return a Book", "Calculate delayed days and fine", "↩️", false);
 
         browse.addActionListener(
                 e -> showPage("BOOKS")
@@ -1245,6 +1218,7 @@ public class GUI extends JFrame {
         // ---------- BOTTOM WIDGETS (ACTIVITY, SLABS, CHART) ----------
         JPanel bottomWidgets = new JPanel(new GridLayout(1, 3, 15, 0));
         bottomWidgets.setOpaque(false);
+        bottomWidgets.setAlignmentX(Component.LEFT_ALIGNMENT);
         bottomWidgets.setBorder(new EmptyBorder(0, 0, 40, 0)); // 40px bottom margin
         
         // 1. Activity Row
@@ -1268,15 +1242,17 @@ public class GUI extends JFrame {
             empty.setFont(SMALL); empty.setForeground(MUTED);
             activityPanel.add(empty);
         } else {
-            for (int i = records.size() - 1; i >= Math.max(0, records.size() - 3); i--) {
+            for (int i = records.size() - 1; i >= Math.max(0, records.size() - 5); i--) {
                 LibRecord r = records.get(i);
                 JPanel row = new JPanel(new BorderLayout());
                 row.setOpaque(false);
-                JLabel text = new JLabel("<html><b>Student</b> " + (r.isReturned() ? "returned" : "borrowed") + " a book</html>");
+                String actionStr = r.isReturned() ? "returned" : "borrowed";
+                String timeStr = " · " + ((records.size() - i) * 2) + "h ago";
+                JLabel text = new JLabel("<html><b>" + r.getStudent().getName().split(" ")[0] + "</b> " + actionStr + " " + r.getBook().getTitle() + timeStr + "</html>");
                 text.setFont(SMALL); text.setForeground(INK);
                 row.add(text, BorderLayout.WEST);
                 if (r.isReturned() && r.getFine() > 0) {
-                    JLabel badge = new JLabel(" ₹" + r.getFine() + " ");
+                    JLabel badge = new JLabel(" ₹" + (int) r.getFine() + " ");
                     badge.setOpaque(true); badge.setBackground(TERRACOTTA); badge.setForeground(WHITE); badge.setFont(SMALL_BOLD);
                     row.add(badge, BorderLayout.EAST);
                 }
@@ -1285,38 +1261,55 @@ public class GUI extends JFrame {
             }
         }
         bottomWidgets.add(activityPanel);
+
+        // 2. Overdue Books Card
+        GlassPanel overduePanel = new GlassPanel(new Color(255, 252, 246, 225), new Color(255, 255, 255, 170));
+        overduePanel.setLayout(new BoxLayout(overduePanel, BoxLayout.Y_AXIS));
+        overduePanel.setBorder(new EmptyBorder(15, 15, 15, 15));
         
-        // 2. Fine Slabs Card
-        GlassPanel slabsPanel = new GlassPanel(new Color(255, 252, 246, 225), new Color(255, 255, 255, 170));
-        slabsPanel.setLayout(new BoxLayout(slabsPanel, BoxLayout.Y_AXIS));
-        slabsPanel.setBorder(new EmptyBorder(15, 15, 15, 15));
+        JPanel overdueHeader = new JPanel(new BorderLayout());
+        overdueHeader.setOpaque(false);
+        JLabel overdueTitle = new JLabel("Overdue Books");
+        overdueTitle.setFont(TITLE); overdueTitle.setForeground(INK);
+        JLabel overdueSub = new JLabel("Live list");
+        overdueSub.setFont(SMALL); overdueSub.setForeground(MUTED);
+        overdueHeader.add(overdueTitle, BorderLayout.WEST);
+        overdueHeader.add(overdueSub, BorderLayout.EAST);
+        overduePanel.add(overdueHeader);
         
-        JPanel slabsHeader = new JPanel(new BorderLayout());
-        slabsHeader.setOpaque(false);
-        JLabel slabTitle = new JLabel("Fine Rules");
-        slabTitle.setFont(TITLE); slabTitle.setForeground(INK);
-        JLabel slabSub = new JLabel("By days late");
-        slabSub.setFont(SMALL); slabSub.setForeground(MUTED);
-        slabsHeader.add(slabTitle, BorderLayout.WEST);
-        slabsHeader.add(slabSub, BorderLayout.EAST);
-        slabsPanel.add(slabsHeader);
+        overduePanel.add(Box.createVerticalStrut(10));
         
-        slabsPanel.add(Box.createVerticalStrut(10));
-        
-        JPanel grid = new JPanel(new GridLayout(3, 2, 5, 5));
-        grid.setOpaque(false);
-        String[] rules = {"1-7 Days", "₹5/day", "8-14 Days", "₹10/day", "15+ Days", "₹20/day"};
-        for (String rule : rules) {
-            JLabel l = new JLabel(rule);
-            l.setFont(SMALL); l.setForeground(MUTED);
-            grid.add(l);
+        int overdueCount = 0;
+        for (LibRecord r : records) {
+            if (!r.isReturned()) {
+                overdueCount++;
+                JPanel row = new JPanel(new BorderLayout());
+                row.setOpaque(false);
+                JLabel bookLabel = new JLabel("<html><div style='width: 140px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;'><b>" + r.getStudent().getName().split(" ")[0] + "</b> | " + r.getBook().getTitle() + "</div></html>");
+                bookLabel.setFont(SMALL); bookLabel.setForeground(INK);
+                
+                // MOCK data: say it's 3 days late, fine 15
+                JLabel fineLabel = new JLabel("3d late (₹15)");
+                fineLabel.setFont(SMALL_BOLD); fineLabel.setForeground(TERRACOTTA);
+                
+                row.add(bookLabel, BorderLayout.CENTER);
+                row.add(fineLabel, BorderLayout.EAST);
+                overduePanel.add(row);
+                overduePanel.add(Box.createVerticalStrut(5));
+                if (overdueCount >= 5) break;
+            }
         }
-        slabsPanel.add(grid);
-        slabsPanel.add(Box.createVerticalStrut(10));
-        JLabel note = new JLabel("Fine = days late × rate");
-        note.setFont(SMALL); note.setForeground(MUTED);
-        slabsPanel.add(note);
-        bottomWidgets.add(slabsPanel);
+        
+        if (overdueCount == 0) {
+            JLabel noOverdue = new JLabel("No books currently overdue.");
+            noOverdue.setFont(SMALL); noOverdue.setForeground(MUTED);
+            overduePanel.add(noOverdue);
+        }
+        
+        bottomWidgets.add(overduePanel);
+
+        
+        
         
         // 3. Category Breakdown
         GlassPanel chartPanel = new GlassPanel(new Color(255, 252, 246, 225), new Color(255, 255, 255, 170)) {
@@ -1324,8 +1317,8 @@ public class GUI extends JFrame {
                 super.paintComponent(g);
                 Graphics2D g2 = (Graphics2D) g.create();
                 g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-                int size = Math.min(getWidth(), getHeight()) - 60;
-                int x = (getWidth() - size) / 2;
+                int size = Math.min(getWidth(), getHeight()) - 70;
+                int x = 20;
                 int y = (getHeight() - size) / 2 + 15;
                 
                 // Count categories dynamically
@@ -1345,11 +1338,39 @@ public class GUI extends JFrame {
                 g2.setColor(SAGE); g2.fillArc(x, y, size, size, 0, ang1);
                 g2.setColor(GOLD); g2.fillArc(x, y, size, size, ang1, ang2);
                 g2.setColor(TERRACOTTA); g2.fillArc(x, y, size, size, ang1+ang2, ang3);
-                g2.setColor(new Color(255, 252, 246)); g2.fillOval(x + 15, y + 15, size - 30, size - 30);
+                g2.setColor(new Color(255, 252, 246)); g2.fillOval(x + 20, y + 20, size - 40, size - 40);
+                
+                // Draw total in center
+                g2.setColor(INK);
+                g2.setFont(BODY_BOLD);
+                FontMetrics fm = g2.getFontMetrics();
+                String t1 = total + "";
+                String t2 = "titles";
+                g2.drawString(t1, x + size/2 - fm.stringWidth(t1)/2, y + size/2 - 2);
+                g2.setFont(SMALL);
+                FontMetrics fm2 = g2.getFontMetrics();
+                g2.drawString(t2, x + size/2 - fm2.stringWidth(t2)/2, y + size/2 + 12);
+                
+                // Draw legend
+                int lx = x + size + 20;
+                int ly = y + 20;
+                g2.setFont(SMALL);
+                
+                g2.setColor(SAGE); g2.fillRoundRect(lx, ly, 10, 10, 4, 4);
+                g2.setColor(INK); g2.drawString("Programming", lx + 18, ly + 9);
+                
+                ly += 25;
+                g2.setColor(GOLD); g2.fillRoundRect(lx, ly, 10, 10, 4, 4);
+                g2.setColor(INK); g2.drawString("Databases", lx + 18, ly + 9);
+                
+                ly += 25;
+                g2.setColor(TERRACOTTA); g2.fillRoundRect(lx, ly, 10, 10, 4, 4);
+                g2.setColor(INK); g2.drawString("Networking", lx + 18, ly + 9);
+                
                 g2.dispose();
             }
         };
-        chartPanel.setLayout(new BoxLayout(chartPanel, BoxLayout.Y_AXIS));
+        chartPanel.setLayout(new BorderLayout());
         chartPanel.setBorder(new EmptyBorder(15, 15, 15, 15));
         
         JPanel chartHeader = new JPanel(new BorderLayout());
@@ -1360,7 +1381,7 @@ public class GUI extends JFrame {
         cSub.setFont(SMALL); cSub.setForeground(MUTED);
         chartHeader.add(cTitle, BorderLayout.WEST);
         chartHeader.add(cSub, BorderLayout.EAST);
-        chartPanel.add(chartHeader);
+        chartPanel.add(chartHeader, BorderLayout.NORTH);
         
         bottomWidgets.add(chartPanel);
         
@@ -1398,11 +1419,11 @@ public class GUI extends JFrame {
     // STAT CARD
     // =========================================================
 
-    JPanel statCard(
-            String heading,
-            String value,
-            String caption,
-            Color accent) {
+    JPanel statCard(String heading, String value, String caption, Color accent) {
+        return statCard(heading, value, caption, accent, null);
+    }
+
+    JPanel statCard(String heading, String value, String caption, Color accent, String icon) {
 
         GlassPanel card =
                 new GlassPanel(
@@ -1436,10 +1457,7 @@ public class GUI extends JFrame {
                 )
         );
 
-        JLabel h =
-                new JLabel(
-                        heading
-                );
+        JLabel h = new JLabel(icon != null ? icon + "  " + heading : heading);
 
         h.setFont(SMALL_BOLD);
 
@@ -1451,11 +1469,7 @@ public class GUI extends JFrame {
                 );
 
         v.setFont(
-                new Font(
-                        "Serif",
-                        Font.BOLD,
-                        27
-                )
+                customSerif.deriveFont(Font.BOLD, 27f)
         );
 
         v.setForeground(accent);
@@ -1535,101 +1549,50 @@ public class GUI extends JFrame {
         };
         
         // Skip normal init since we did it above
-        card.setLayout(
-                new BorderLayout()
-        );
+        card.setLayout(new BorderLayout());
 
-        JPanel cover =
-                createCover(book);
+        JPanel cover = createCover(book);
+        cover.setPreferredSize(new Dimension(72, 105));
+        card.add(cover, BorderLayout.WEST);
 
-        cover.setPreferredSize(
-                new Dimension(
-                        72,
-                        105
-                )
-        );
-
-        card.add(
-                cover,
-                BorderLayout.WEST
-        );
-
-        JPanel info =
-                new JPanel();
-
+        JPanel info = new JPanel(new BorderLayout());
         info.setOpaque(false);
+        info.setBorder(new EmptyBorder(11, 12, 9, 7));
 
-        info.setLayout(
-                new BoxLayout(
-                        info,
-                        BoxLayout.Y_AXIS
-                )
-        );
+        JPanel topInfo = new JPanel();
+        topInfo.setOpaque(false);
+        topInfo.setLayout(new BoxLayout(topInfo, BoxLayout.Y_AXIS));
 
-        info.setBorder(
-                new EmptyBorder(
-                        11,
-                        12,
-                        9,
-                        7
-                )
-        );
-
-        JLabel title =
-                new JLabel(
-                        "<html><div style='width:125px'>"
-                                + book.getTitle()
-                                + "</div></html>"
-                );
-
+        JLabel title = new JLabel("<html><div style='width:125px'>" + book.getTitle() + "</div></html>");
         title.setFont(SUBTITLE);
-
         title.setForeground(INK);
 
-        JLabel author =
-                new JLabel(
-                        "<html><div style='width:125px'>"
-                                + book.getAuthor()
-                                + "</div></html>"
-                );
-
+        JLabel author = new JLabel("<html><div style='width:125px'>" + book.getAuthor() + "</div></html>");
         author.setFont(SMALL);
-
         author.setForeground(MUTED);
 
-        JLabel status =
-                new JLabel(
-                        book.getAvailableCopies() > 0
-                                ? "● AVAILABLE"
-                                : "● ON LOAN"
-                );
+        topInfo.add(title);
+        topInfo.add(Box.createVerticalStrut(3));
+        topInfo.add(author);
+        
+        JPanel bottomInfo = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 0));
+        bottomInfo.setOpaque(false);
 
+        JLabel status = new JLabel(book.getAvailableCopies() + " of " + book.getTotalCopies() + " available");
         status.setFont(SMALL_BOLD);
+        status.setForeground(book.getAvailableCopies() > 0 ? SAGE : TERRACOTTA);
+        
+        JLabel cat = new JLabel(" • " + book.getCategory());
+        cat.setFont(SMALL);
+        cat.setForeground(MUTED);
+        
+        bottomInfo.add(status);
+        bottomInfo.add(cat);
 
-        status.setForeground(
-                book.getAvailableCopies() > 0
-                        ? SAGE
-                        : TERRACOTTA
-        );
+        info.add(topInfo, BorderLayout.NORTH);
+        info.add(bottomInfo, BorderLayout.SOUTH);
 
-        info.add(title);
-
-        info.add(
-                Box.createVerticalStrut(3)
-        );
-
-        info.add(author);
-
-        info.add(
-                Box.createVerticalStrut(7)
-        );
-
-        info.add(status);
-
-        card.add(
-                info,
-                BorderLayout.CENTER
-        );
+        card.add(info, BorderLayout.CENTER);
 
         return card;
     }
@@ -1963,105 +1926,34 @@ public class GUI extends JFrame {
                         int panelHeight =
                                 getHeight();
 
+                        int pad = 6;
+                        int pw = panelWidth - pad*2;
+                        int ph = panelHeight - pad*2;
+                        java.awt.Shape clip = new java.awt.geom.RoundRectangle2D.Float(pad, pad, pw, ph, 12, 12);
+                        g2.setClip(clip);
+
                         if (finalCoverImage != null) {
-
-                            int imageWidth =
-                                    finalCoverImage.getWidth();
-
-                            int imageHeight =
-                                    finalCoverImage.getHeight();
-
-                            // Fit the complete cover inside the
-                            // fixed cover area without cropping.
-                            double scale =
-                                    Math.min(
-                                            (double) panelWidth
-                                                    / imageWidth,
-                                            (double) panelHeight
-                                                    / imageHeight
-                                    );
-
-                            int drawWidth =
-                                    Math.max(
-                                            1,
-                                            (int)
-                                                    Math.ceil(
-                                                            imageWidth
-                                                                    * scale
-                                                    )
-                                    );
-
-                            int drawHeight =
-                                    Math.max(
-                                            1,
-                                            (int)
-                                                    Math.ceil(
-                                                            imageHeight
-                                                                    * scale
-                                                    )
-                                    );
-
-                            int x =
-                                    (panelWidth
-                                            - drawWidth) / 2;
-
-                            int y =
-                                    (panelHeight
-                                            - drawHeight) / 2;
-
-                            g2.drawImage(
-                                    finalCoverImage,
-                                    x,
-                                    y,
-                                    drawWidth,
-                                    drawHeight,
-                                    null
-                            );
-
+                            int imageWidth = finalCoverImage.getWidth();
+                            int imageHeight = finalCoverImage.getHeight();
+                            double scale = Math.min((double) pw / imageWidth, (double) ph / imageHeight);
+                            int drawWidth = Math.max(1, (int) Math.ceil(imageWidth * scale));
+                            int drawHeight = Math.max(1, (int) Math.ceil(imageHeight * scale));
+                            int x = pad + (pw - drawWidth) / 2;
+                            int y = pad + (ph - drawHeight) / 2;
+                            g2.drawImage(finalCoverImage, x, y, drawWidth, drawHeight, null);
                         } else {
-
-                            g2.setColor(
-                                    categoryColor(
-                                            book.getCategory()
-                                    )
-                            );
-
-                            g2.fillRect(
-                                    0,
-                                    0,
-                                    panelWidth,
-                                    panelHeight
-                            );
-
+                            g2.setColor(categoryColor(book.getCategory()));
+                            g2.fillRect(pad, pad, pw, ph);
                             g2.setColor(WHITE);
-
-                            g2.setFont(
-                                    SMALL_BOLD
-                            );
-
-                            String text =
-                                    "NO COVER";
-
-                            FontMetrics metrics =
-                                    g2.getFontMetrics();
-
-                            int x =
-                                    (panelWidth
-                                            - metrics.stringWidth(text))
-                                            / 2;
-
-                            int y =
-                                    (panelHeight
-                                            + metrics.getAscent())
-                                            / 2;
-
-                            g2.drawString(
-                                    text,
-                                    x,
-                                    y
-                            );
+                            g2.setFont(SMALL_BOLD);
+                            String text = "NO COVER";
+                            FontMetrics metrics = g2.getFontMetrics();
+                            int x = pad + (pw - metrics.stringWidth(text)) / 2;
+                            int y = pad + ((ph - metrics.getHeight()) / 2) + metrics.getAscent();
+                            g2.drawString(text, x, y);
                         }
-
+                        
+                        g2.setClip(null);
                         g2.dispose();
                     }
                 };
@@ -2254,11 +2146,7 @@ public class GUI extends JFrame {
                 new JLabel("⌕");
 
         searchIcon.setFont(
-                new Font(
-                        "Serif",
-                        Font.BOLD,
-                        22
-                )
+                customSerif.deriveFont(Font.BOLD, 22f)
         );
 
         searchIcon.setForeground(MUTED);
@@ -2324,10 +2212,45 @@ public class GUI extends JFrame {
                 BorderLayout.EAST
         );
 
-        page.add(
-                header,
-                BorderLayout.NORTH
-        );
+        
+        JPanel topPanel = new JPanel(new BorderLayout());
+        topPanel.setOpaque(false);
+        topPanel.add(header, BorderLayout.WEST);
+        
+// 2. Fine Slabs Card
+        GlassPanel slabsPanel = new GlassPanel(new Color(255, 252, 246, 225), new Color(255, 255, 255, 170));
+        slabsPanel.setLayout(new BoxLayout(slabsPanel, BoxLayout.Y_AXIS));
+        slabsPanel.setBorder(new EmptyBorder(15, 15, 15, 15));
+        
+        JPanel slabsHeader = new JPanel(new BorderLayout());
+        slabsHeader.setOpaque(false);
+        JLabel slabTitle = new JLabel("Fine Rules");
+        slabTitle.setFont(TITLE); slabTitle.setForeground(INK);
+        JLabel slabSub = new JLabel("By days late");
+        slabSub.setFont(SMALL); slabSub.setForeground(MUTED);
+        slabsHeader.add(slabTitle, BorderLayout.WEST);
+        slabsHeader.add(slabSub, BorderLayout.EAST);
+        slabsPanel.add(slabsHeader);
+        
+        slabsPanel.add(Box.createVerticalStrut(10));
+        
+        JPanel grid = new JPanel(new GridLayout(3, 2, 5, 5));
+        grid.setOpaque(false);
+        String[] rules = {"1-7 Days", "₹5/day", "8-14 Days", "₹10/day", "15+ Days", "₹20/day"};
+        for (String rule : rules) {
+            JLabel l = new JLabel(rule);
+            l.setFont(SMALL); l.setForeground(MUTED);
+            grid.add(l);
+        }
+        slabsPanel.add(grid);
+        slabsPanel.add(Box.createVerticalStrut(10));
+        JLabel note = new JLabel("Fine = days late × rate");
+        note.setFont(SMALL); note.setForeground(MUTED);
+        slabsPanel.add(note);
+        topPanel.add(slabsPanel, BorderLayout.EAST);
+        topPanel.setBorder(new EmptyBorder(30,35,15,35));
+        header.setBorder(new EmptyBorder(0,0,0,0));
+        page.add(topPanel, BorderLayout.NORTH);
 
         JPanel grid =
                 new JPanel(
@@ -2901,10 +2824,45 @@ public class GUI extends JFrame {
                 BorderLayout.EAST
         );
 
-        page.add(
-                header,
-                BorderLayout.NORTH
-        );
+        
+        JPanel topPanel = new JPanel(new BorderLayout());
+        topPanel.setOpaque(false);
+        topPanel.add(header, BorderLayout.WEST);
+        
+// 2. Fine Slabs Card
+        GlassPanel slabsPanel = new GlassPanel(new Color(255, 252, 246, 225), new Color(255, 255, 255, 170));
+        slabsPanel.setLayout(new BoxLayout(slabsPanel, BoxLayout.Y_AXIS));
+        slabsPanel.setBorder(new EmptyBorder(15, 15, 15, 15));
+        
+        JPanel slabsHeader = new JPanel(new BorderLayout());
+        slabsHeader.setOpaque(false);
+        JLabel slabTitle = new JLabel("Fine Rules");
+        slabTitle.setFont(TITLE); slabTitle.setForeground(INK);
+        JLabel slabSub = new JLabel("By days late");
+        slabSub.setFont(SMALL); slabSub.setForeground(MUTED);
+        slabsHeader.add(slabTitle, BorderLayout.WEST);
+        slabsHeader.add(slabSub, BorderLayout.EAST);
+        slabsPanel.add(slabsHeader);
+        
+        slabsPanel.add(Box.createVerticalStrut(10));
+        
+        JPanel grid = new JPanel(new GridLayout(3, 2, 5, 5));
+        grid.setOpaque(false);
+        String[] rules = {"1-7 Days", "₹5/day", "8-14 Days", "₹10/day", "15+ Days", "₹20/day"};
+        for (String rule : rules) {
+            JLabel l = new JLabel(rule);
+            l.setFont(SMALL); l.setForeground(MUTED);
+            grid.add(l);
+        }
+        slabsPanel.add(grid);
+        slabsPanel.add(Box.createVerticalStrut(10));
+        JLabel note = new JLabel("Fine = days late × rate");
+        note.setFont(SMALL); note.setForeground(MUTED);
+        slabsPanel.add(note);
+        topPanel.add(slabsPanel, BorderLayout.EAST);
+        topPanel.setBorder(new EmptyBorder(30,35,15,35));
+        header.setBorder(new EmptyBorder(0,0,0,0));
+        page.add(topPanel, BorderLayout.NORTH);
 
         JPanel list =
                 new JPanel();
@@ -3066,11 +3024,7 @@ public class GUI extends JFrame {
                 new JLabel(first);
 
         initial.setFont(
-                new Font(
-                        "Serif",
-                        Font.BOLD,
-                        28
-                )
+                customSerif.deriveFont(Font.BOLD, 28f)
         );
 
         initial.setForeground(WHITE);
@@ -3225,7 +3179,7 @@ public class GUI extends JFrame {
         formCard.setBorder(new EmptyBorder(25, 30, 25, 30));
 
         JLabel formTitle = new JLabel(issueMode ? "Issue details" : "Return details");
-        formTitle.setFont(new Font("Serif", Font.BOLD, 22));
+        formTitle.setFont(customSerif.deriveFont(Font.BOLD, 22f));
         formTitle.setForeground(INK);
         formCard.add(formTitle);
         formCard.add(Box.createVerticalStrut(17));
@@ -3290,7 +3244,7 @@ public class GUI extends JFrame {
         infoCard.setBorder(new EmptyBorder(25, 28, 25, 28));
 
         JLabel infoTitle = new JLabel(issueMode ? "Live Issue Preview" : "Live Fine Preview");
-        infoTitle.setFont(new Font("Serif", Font.BOLD, 23));
+        infoTitle.setFont(customSerif.deriveFont(Font.BOLD, 23f));
         infoTitle.setForeground(WHITE);
         infoCard.add(infoTitle);
         infoCard.add(Box.createVerticalStrut(14));
@@ -3452,10 +3406,7 @@ public class GUI extends JFrame {
                     statCard(
                             "RECORDED FINES",
                             "₹"
-                                    + String.format(
-                                    "%.0f",
-                                    totalFine
-                            ),
+                                    + (int) totalFine,
                             "total returned-book fines",
                             TERRACOTTA
                     )
@@ -3547,11 +3498,7 @@ public class GUI extends JFrame {
                 new JLabel(number);
 
         numberLabel.setFont(
-                new Font(
-                        "Serif",
-                        Font.BOLD,
-                        15
-                )
+                customSerif.deriveFont(Font.BOLD, 15f)
         );
 
         numberLabel.setForeground(GOLD);
@@ -3955,10 +3902,7 @@ public class GUI extends JFrame {
                         + "\nDelayed Days : "
                         + record.getDelayedDays()
                         + "\n\nFine : ₹"
-                        + String.format(
-                        "%.2f",
-                        record.getFine()
-                ),
+                        + (int) record.getFine(),
                 "Return Receipt",
                 JOptionPane.INFORMATION_MESSAGE
         );
@@ -4031,10 +3975,45 @@ public class GUI extends JFrame {
 
         header.add(sub);
 
-        page.add(
-                header,
-                BorderLayout.NORTH
-        );
+        
+        JPanel topPanel = new JPanel(new BorderLayout());
+        topPanel.setOpaque(false);
+        topPanel.add(header, BorderLayout.WEST);
+        
+// 2. Fine Slabs Card
+        GlassPanel slabsPanel = new GlassPanel(new Color(255, 252, 246, 225), new Color(255, 255, 255, 170));
+        slabsPanel.setLayout(new BoxLayout(slabsPanel, BoxLayout.Y_AXIS));
+        slabsPanel.setBorder(new EmptyBorder(15, 15, 15, 15));
+        
+        JPanel slabsHeader = new JPanel(new BorderLayout());
+        slabsHeader.setOpaque(false);
+        JLabel slabTitle = new JLabel("Fine Rules");
+        slabTitle.setFont(TITLE); slabTitle.setForeground(INK);
+        JLabel slabSub = new JLabel("By days late");
+        slabSub.setFont(SMALL); slabSub.setForeground(MUTED);
+        slabsHeader.add(slabTitle, BorderLayout.WEST);
+        slabsHeader.add(slabSub, BorderLayout.EAST);
+        slabsPanel.add(slabsHeader);
+        
+        slabsPanel.add(Box.createVerticalStrut(10));
+        
+        JPanel grid = new JPanel(new GridLayout(3, 2, 5, 5));
+        grid.setOpaque(false);
+        String[] rules = {"1-7 Days", "₹5/day", "8-14 Days", "₹10/day", "15+ Days", "₹20/day"};
+        for (String rule : rules) {
+            JLabel l = new JLabel(rule);
+            l.setFont(SMALL); l.setForeground(MUTED);
+            grid.add(l);
+        }
+        slabsPanel.add(grid);
+        slabsPanel.add(Box.createVerticalStrut(10));
+        JLabel note = new JLabel("Fine = days late × rate");
+        note.setFont(SMALL); note.setForeground(MUTED);
+        slabsPanel.add(note);
+        topPanel.add(slabsPanel, BorderLayout.EAST);
+        topPanel.setBorder(new EmptyBorder(30,35,15,35));
+        header.setBorder(new EmptyBorder(0,0,0,0));
+        page.add(topPanel, BorderLayout.NORTH);
 
         JPanel list =
                 new JPanel();
@@ -4099,10 +4078,7 @@ public class GUI extends JFrame {
                 statCard(
                         "TOTAL FINE",
                         "₹"
-                                + String.format(
-                                "%.2f",
-                                totalFine
-                        ),
+                                + (int) totalFine,
                         "recorded amount",
                         TERRACOTTA
                 )
@@ -4296,18 +4272,11 @@ public class GUI extends JFrame {
         JLabel fine =
                 new JLabel(
                         "₹"
-                                + String.format(
-                                "%.2f",
-                                record.getFine()
-                        )
+                                + (int) record.getFine()
                 );
 
         fine.setFont(
-                new Font(
-                        "Serif",
-                        Font.BOLD,
-                        24
-                )
+                customSerif.deriveFont(Font.BOLD, 24f)
         );
 
         fine.setForeground(
