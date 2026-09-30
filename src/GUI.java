@@ -45,8 +45,7 @@ public class GUI extends JFrame {
     static final Color GOLD =
             new Color(193, 157, 91);
 
-    static final Color MUTED =
-            new Color(120, 108, 96);
+    static final Color MUTED = new Color(100, 90, 80);
 
     static final Color WHITE =
             Color.WHITE;
@@ -292,41 +291,17 @@ public class GUI extends JFrame {
                 Box.createVerticalStrut(38)
         );
 
-        addNavigation(
-                top,
-                "Overview",
-                "HOME"
-        );
+        addNavigation(top, "⌂", "Overview", "HOME");
 
-        addNavigation(
-                top,
-                "Book Collection",
-                "BOOKS"
-        );
+        addNavigation(top, "📚", "Book Collection", "BOOKS");
 
-        addNavigation(
-                top,
-                "Students",
-                "STUDENTS"
-        );
+        addNavigation(top, "👤", "Students", "STUDENTS");
 
-        addNavigation(
-                top,
-                "Issue Book",
-                "ISSUE"
-        );
+        addNavigation(top, "🔖", "Issue Book", "ISSUE");
 
-        addNavigation(
-                top,
-                "Return Book",
-                "RETURN"
-        );
+        addNavigation(top, "↩️", "Return Book", "RETURN");
 
-        addNavigation(
-                top,
-                "Fine Records",
-                "FINES"
-        );
+        addNavigation(top, "🧾", "Fine Records", "FINES");
 
         sidebar.add(
                 top,
@@ -395,106 +370,45 @@ public class GUI extends JFrame {
     }
 
 
-    void addNavigation(
-            JPanel parent,
-            String text,
-            String page) {
-
-        JButton button =
-                navButton(
-                        text,
-                        page
-                );
-
+    void addNavigation(JPanel parent, String icon, String text, String page) {
+        JButton button = navButton(icon, text, page);
         parent.add(button);
-
-        parent.add(
-                Box.createVerticalStrut(7)
-        );
+        parent.add(Box.createVerticalStrut(2));
     }
 
 
-    JButton navButton(
-            String text,
-            String page) {
-
-        JButton button =
-                new JButton() {
-                    @Override
-                    protected void paintComponent(Graphics g) {
-                        if (activePage != null && activePage.equals(page)) {
-                            setBackground(new Color(72, 58, 49)); // Lighter active background
-                        } else {
-                            if (!getModel().isRollover()) setBackground(ESPRESSO);
-                        }
-                        super.paintComponent(g);
-                        if (activePage != null && activePage.equals(page)) {
-                            g.setColor(GOLD);
-                            g.fillRect(0, 0, 4, getHeight());
-                        }
-                    }
-                };
-
-        button.setPreferredSize(
-                new Dimension(
-                        180,
-                        44
-                )
-        );
-
-        button.setMaximumSize(
-                new Dimension(
-                        180,
-                        44
-                )
-        );
-
-        button.setAlignmentX(
-                Component.LEFT_ALIGNMENT
-        );
-
-        button.setLayout(
-                new BorderLayout()
-        );
-
-        button.setBackground(
-                ESPRESSO
-        );
-
-        button.setBorder(
-                new EmptyBorder(
-                        0,
-                        13,
-                        0,
-                        8
-                )
-        );
-
+    JButton navButton(String icon, String text, String page) {
+        JButton button = new JButton() {
+            @Override
+            protected void paintComponent(Graphics g) {
+                Graphics2D g2 = (Graphics2D) g.create();
+                g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+                if (activePage != null && activePage.equals(page)) {
+                    g2.setColor(new Color(72, 58, 49));
+                    g2.fillRoundRect(4, 0, getWidth() - 8, getHeight(), 12, 12);
+                } else if (getModel().isRollover()) {
+                    g2.setColor(new Color(60, 45, 35));
+                    g2.fillRoundRect(4, 0, getWidth() - 8, getHeight(), 12, 12);
+                }
+                super.paintComponent(g);
+                g2.dispose();
+            }
+        };
+        button.setOpaque(false);
+        button.setContentAreaFilled(false);
+        button.setPreferredSize(new Dimension(180, 40));
+        button.setMaximumSize(new Dimension(180, 40));
+        button.setAlignmentX(Component.LEFT_ALIGNMENT);
+        button.setLayout(new FlowLayout(FlowLayout.LEFT, 15, 8));
+        button.setBackground(ESPRESSO);
+        button.setBorder(new EmptyBorder(0, 10, 0, 8));
         button.setFocusPainted(false);
+        button.setCursor(new Cursor(Cursor.HAND_CURSOR));
 
-        button.setCursor(
-                new Cursor(
-                        Cursor.HAND_CURSOR
-                )
-        );
-
-        JLabel label =
-                new JLabel(text);
-
+        JLabel label = new JLabel(icon + "  " + text);
         label.setFont(BODY_BOLD);
-
-        label.setForeground(
-                new Color(
-                        230,
-                        222,
-                        212
-                )
-        );
-
-        button.add(
-                label,
-                BorderLayout.WEST
-        );
+        label.setForeground(new Color(230, 222, 212));
+        button.add(label);
 
         button.addActionListener(
                 e -> showPage(page)
@@ -656,27 +570,45 @@ public class GUI extends JFrame {
 
         left.add(title);
 
-        JPanel right =
-                new JPanel(
-                        new FlowLayout(
-                                FlowLayout.RIGHT,
-                                25,
-                                17
-                        )
-                );
-
+        JPanel right = new JPanel(new FlowLayout(FlowLayout.RIGHT, 15, 15));
         right.setOpaque(false);
-
-        JLabel status =
-                new JLabel(
-                        ""
-                );
-
-        status.setFont(SMALL_BOLD);
-
-        status.setForeground(SAGE);
-
-        right.add(status);
+        
+        GlassPanel search = new GlassPanel(WHITE, SAND);
+        search.setPreferredSize(new Dimension(240, 34));
+        search.setLayout(new BorderLayout());
+        search.setBorder(new EmptyBorder(0, 12, 0, 12));
+        JLabel searchIcon = new JLabel("🔍");
+        searchIcon.setForeground(MUTED);
+        JLabel searchTxt = new JLabel("Search books or students...");
+        searchTxt.setFont(SMALL); searchTxt.setForeground(MUTED);
+        search.add(searchIcon, BorderLayout.WEST);
+        search.add(searchTxt, BorderLayout.CENTER);
+        
+        JLabel bell = new JLabel("🔔");
+        bell.setFont(new Font("Segoe UI Emoji", Font.PLAIN, 16));
+        bell.setBorder(new EmptyBorder(0, 5, 0, 5));
+        
+        JPanel profile = new JPanel(new BorderLayout());
+        profile.setOpaque(false);
+        profile.setPreferredSize(new Dimension(32, 32));
+        JLabel pLabel = new JLabel("N", SwingConstants.CENTER) {
+            @Override
+            protected void paintComponent(Graphics g) {
+                Graphics2D g2 = (Graphics2D)g.create();
+                g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+                g2.setColor(TERRACOTTA);
+                g2.fillOval(0,0,getWidth(),getHeight());
+                super.paintComponent(g);
+                g2.dispose();
+            }
+        };
+        pLabel.setForeground(WHITE);
+        pLabel.setFont(SMALL_BOLD);
+        profile.add(pLabel);
+        
+        right.add(search);
+        right.add(bell);
+        right.add(profile);
 
         bar.add(
                 left,
@@ -1602,144 +1534,64 @@ public class GUI extends JFrame {
     // QUICK ACTION CARD
     // =========================================================
 
-    JButton dashboardAction(
-            String title,
-            String subtitle) {
-
-        JButton button =
-                new JButton();
-
-        button.setLayout(
-                new BorderLayout()
-        );
-
+    JButton dashboardAction(String title, String subtitle, String iconStr, boolean isPrimary) {
+        JButton button = new JButton();
+        button.setLayout(new BorderLayout());
         button.setOpaque(false);
-
         button.setContentAreaFilled(false);
-
         button.setBorderPainted(false);
-
         button.setFocusPainted(false);
+        button.setCursor(new Cursor(Cursor.HAND_CURSOR));
 
-        button.setCursor(
-                new Cursor(
-                        Cursor.HAND_CURSOR
-                )
+        GlassPanel glass = new GlassPanel(
+                isPrimary ? TERRACOTTA : new Color(255, 252, 246, 225),
+                new Color(255, 255, 255, 170)
         );
+        glass.setLayout(new BorderLayout());
+        glass.setBorder(new EmptyBorder(12, 17, 12, 17));
 
-        GlassPanel glass =
-                new GlassPanel(
-                        new Color(
-                                255,
-                                252,
-                                246,
-                                225
-                        ),
-                        new Color(
-                                255,
-                                255,
-                                255,
-                                170
-                        )
-                );
-
-        glass.setLayout(
-                new BorderLayout()
-        );
-
-        JPanel content =
-                new JPanel();
-
+        JPanel content = new JPanel();
         content.setOpaque(false);
+        content.setLayout(new BoxLayout(content, BoxLayout.Y_AXIS));
 
-        content.setLayout(
-                new BoxLayout(
-                        content,
-                        BoxLayout.Y_AXIS
-                )
-        );
-
-        content.setBorder(
-                new EmptyBorder(
-                        12,
-                        17,
-                        12,
-                        17
-                )
-        );
-
-        JLabel titleLabel =
-                new JLabel(title);
-
+        JLabel titleLabel = new JLabel(iconStr + " " + title);
         titleLabel.setFont(SUBTITLE);
+        titleLabel.setForeground(isPrimary ? WHITE : INK);
 
-        titleLabel.setForeground(INK);
-
-        JLabel sub =
-                new JLabel(subtitle);
-
+        JLabel sub = new JLabel(subtitle);
         sub.setFont(SMALL);
-
-        sub.setForeground(MUTED);
+        sub.setForeground(isPrimary ? new Color(255,255,255,200) : MUTED);
 
         content.add(titleLabel);
-
-        content.add(
-                Box.createVerticalStrut(3)
-        );
-
+        content.add(Box.createVerticalStrut(3));
         content.add(sub);
+        
+        JLabel arrow = new JLabel(">");
+        arrow.setFont(TITLE);
+        arrow.setForeground(isPrimary ? WHITE : MUTED);
+        
+        glass.add(content, BorderLayout.CENTER);
+        glass.add(arrow, BorderLayout.EAST);
+        button.add(glass, BorderLayout.CENTER);
 
-        glass.add(
-                content,
-                BorderLayout.CENTER
-        );
-
-        button.add(
-                glass,
-                BorderLayout.CENTER
-        );
-
-        button.addMouseListener(
-                new MouseAdapter() {
-
-                    public void mouseEntered(
-                            MouseEvent e) {
-
-                        glass.setBorder(
-                                new LineBorder(
-                                        new Color(
-                                                210,
-                                                190,
-                                                165
-                                        ),
-                                        1
-                                )
-                        );
-
-                        glass.repaint();
-                    }
-
-                    public void mouseExited(
-                            MouseEvent e) {
-
-                        glass.setBorder(
-                                new EmptyBorder(
-                                        0,
-                                        0,
-                                        0,
-                                        0
-                                )
-                        );
-
-                        glass.repaint();
-                    }
-                }
-        );
+        button.addMouseListener(new java.awt.event.MouseAdapter() {
+            public void mouseEntered(java.awt.event.MouseEvent e) {
+                glass.setBorder(new javax.swing.border.CompoundBorder(
+                        new javax.swing.border.LineBorder(new Color(210, 190, 165), 1),
+                        new EmptyBorder(11, 16, 11, 16)
+                ));
+                button.setLocation(button.getX(), button.getY() - 2);
+                glass.repaint();
+            }
+            public void mouseExited(java.awt.event.MouseEvent e) {
+                glass.setBorder(new EmptyBorder(12, 17, 12, 17));
+                button.setLocation(button.getX(), button.getY() + 2);
+                glass.repaint();
+            }
+        });
 
         return button;
     }
-
 
     // =========================================================
     // BOOK COVER
@@ -2234,15 +2086,15 @@ public class GUI extends JFrame {
         
         slabsPanel.add(Box.createVerticalStrut(10));
         
-        JPanel grid = new JPanel(new GridLayout(3, 2, 5, 5));
-        grid.setOpaque(false);
+        JPanel slabsGrid = new JPanel(new GridLayout(3, 2, 5, 5));
+        slabsGrid.setOpaque(false);
         String[] rules = {"1-7 Days", "₹5/day", "8-14 Days", "₹10/day", "15+ Days", "₹20/day"};
         for (String rule : rules) {
             JLabel l = new JLabel(rule);
             l.setFont(SMALL); l.setForeground(MUTED);
-            grid.add(l);
+            slabsGrid.add(l);
         }
-        slabsPanel.add(grid);
+        slabsPanel.add(slabsGrid);
         slabsPanel.add(Box.createVerticalStrut(10));
         JLabel note = new JLabel("Fine = days late × rate");
         note.setFont(SMALL); note.setForeground(MUTED);
@@ -2846,15 +2698,15 @@ public class GUI extends JFrame {
         
         slabsPanel.add(Box.createVerticalStrut(10));
         
-        JPanel grid = new JPanel(new GridLayout(3, 2, 5, 5));
-        grid.setOpaque(false);
+        JPanel slabsGrid = new JPanel(new GridLayout(3, 2, 5, 5));
+        slabsGrid.setOpaque(false);
         String[] rules = {"1-7 Days", "₹5/day", "8-14 Days", "₹10/day", "15+ Days", "₹20/day"};
         for (String rule : rules) {
             JLabel l = new JLabel(rule);
             l.setFont(SMALL); l.setForeground(MUTED);
-            grid.add(l);
+            slabsGrid.add(l);
         }
-        slabsPanel.add(grid);
+        slabsPanel.add(slabsGrid);
         slabsPanel.add(Box.createVerticalStrut(10));
         JLabel note = new JLabel("Fine = days late × rate");
         note.setFont(SMALL); note.setForeground(MUTED);
@@ -3997,15 +3849,15 @@ public class GUI extends JFrame {
         
         slabsPanel.add(Box.createVerticalStrut(10));
         
-        JPanel grid = new JPanel(new GridLayout(3, 2, 5, 5));
-        grid.setOpaque(false);
+        JPanel slabsGrid = new JPanel(new GridLayout(3, 2, 5, 5));
+        slabsGrid.setOpaque(false);
         String[] rules = {"1-7 Days", "₹5/day", "8-14 Days", "₹10/day", "15+ Days", "₹20/day"};
         for (String rule : rules) {
             JLabel l = new JLabel(rule);
             l.setFont(SMALL); l.setForeground(MUTED);
-            grid.add(l);
+            slabsGrid.add(l);
         }
-        slabsPanel.add(grid);
+        slabsPanel.add(slabsGrid);
         slabsPanel.add(Box.createVerticalStrut(10));
         JLabel note = new JLabel("Fine = days late × rate");
         note.setFont(SMALL); note.setForeground(MUTED);
@@ -4430,14 +4282,7 @@ public class GUI extends JFrame {
 
             // soft shadow
 
-            g2.setColor(
-                    new Color(
-                            60,
-                            45,
-                            35,
-                            16
-                    )
-            );
+            g2.setColor(new Color(60, 45, 35, 25));
 
             g2.fillRoundRect(
                     3,
@@ -4463,9 +4308,7 @@ public class GUI extends JFrame {
 
             // border
 
-            g2.setColor(
-                    borderColor
-            );
+            g2.setColor(new Color(230, 215, 195));
 
             g2.drawRoundRect(
                     0,
