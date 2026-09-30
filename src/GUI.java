@@ -407,9 +407,18 @@ public class GUI extends JFrame {
         button.setFocusPainted(false);
         button.setCursor(new Cursor(Cursor.HAND_CURSOR));
 
-        JLabel label = new JLabel(icon + "  " + text);
+        JLabel label = new JLabel(icon + "  " + text) {
+            @Override
+            protected void paintComponent(Graphics g) {
+                if (activePage != null && activePage.equals(page)) {
+                    setForeground(WHITE);
+                } else {
+                    setForeground(new Color(230, 222, 212));
+                }
+                super.paintComponent(g);
+            }
+        };
         label.setFont(BODY_BOLD);
-        label.setForeground(new Color(230, 222, 212));
         button.add(label);
 
         button.addActionListener(
@@ -2746,7 +2755,7 @@ JButton smallButton(
         main.insets = new Insets(8, 8, 8, 8);
         main.fill = GridBagConstraints.HORIZONTAL;
         main.anchor = GridBagConstraints.NORTH;
-        main.weighty = 1.0;
+        main.weighty = 0.0;
 
         GlassPanel formCard = new GlassPanel(new Color(255, 252, 246, 235), new Color(255, 255, 255, 180));
         formCard.setLayout(new BoxLayout(formCard, BoxLayout.Y_AXIS));
@@ -2835,6 +2844,34 @@ JButton smallButton(
         formCard.add(daysPanel);
         formCard.add(Box.createVerticalStrut(25));
 
+        if (!issueMode) {
+            JLabel conditionLabel = new JLabel("Condition on Return");
+            conditionLabel.setFont(BODY_BOLD);
+            conditionLabel.setForeground(INK);
+            conditionLabel.setAlignmentX(Component.LEFT_ALIGNMENT);
+            formCard.add(conditionLabel);
+            formCard.add(Box.createVerticalStrut(5));
+            
+            JComboBox<String> conditionCombo = new JComboBox<>(new String[]{"Good", "Damaged (₹150 charge)", "Lost (Full price charge)"});
+            conditionCombo.setMaximumSize(new Dimension(Integer.MAX_VALUE, 44));
+            conditionCombo.setAlignmentX(Component.LEFT_ALIGNMENT);
+            conditionCombo.setUI(new javax.swing.plaf.basic.BasicComboBoxUI() {
+                @Override
+                protected JButton createArrowButton() {
+                    JButton btn = new JButton("▼");
+                    btn.setBorderPainted(false);
+                    btn.setContentAreaFilled(false);
+                    btn.setFocusPainted(false);
+                    btn.setFont(new Font("SansSerif", Font.BOLD, 10));
+                    btn.setForeground(new Color(120, 110, 100));
+                    btn.setCursor(new Cursor(Cursor.HAND_CURSOR));
+                    return btn;
+                }
+            });
+            formCard.add(conditionCombo);
+            formCard.add(Box.createVerticalStrut(25));
+        }
+        
         JButton action = actionButton(issueMode ? "Issue Book" : "Return Book");
         action.setAlignmentX(Component.LEFT_ALIGNMENT);
         action.setMaximumSize(new Dimension(Integer.MAX_VALUE, 48));
@@ -3074,46 +3111,100 @@ JButton smallButton(
                 rulesPanel.setAlignmentX(Component.LEFT_ALIGNMENT);
                 
                 java.time.LocalDate today = java.time.LocalDate.now();
-                java.time.format.DateTimeFormatter formatter = java.time.format.DateTimeFormatter.ofPattern("d MMM yyyy");
+                java.time.format.DateTimeFormatter formatter = java.time.format.DateTimeFormatter.ofPattern("d MMM");
                 
-                if (issueMode) {
-                    java.time.LocalDate due = today.plusDays(selectedDays[0]);
-                    JLabel d1 = new JLabel("Issue Date: " + today.format(formatter));
-                    d1.setForeground(new Color(255, 255, 255, 200));
-                    JLabel d2 = new JLabel("Due Date: " + due.format(formatter));
-                    d2.setForeground(new Color(255, 255, 255, 200));
-                    JLabel d3 = new JLabel("Fine rule: 1-7 days: ₹5/day, 8-14: ₹10/day, 15+: ₹20/day");
-                    d3.setForeground(GOLD);
-                    rulesPanel.add(d1); rulesPanel.add(d2); rulesPanel.add(d3);
+                if (!validS || !validB) {
+                    JLabel empty = new JLabel(issueMode ? "Select a student and a book to preview" : "Select a student to see their borrowed books");
+                    empty.setForeground(new Color(255, 255, 255, 120));
+                    empty.setFont(BODY);
+                    rulesPanel.add(empty);
                 } else {
-                    int delayed = 0;
-                    LibRecord active = null;
-                    for (LibRecord r : records) {
-                        if (!r.isReturned() && r.getStudent().getId().equals(student.getId()) && r.getBook().getId().equals(book.getId())) {
-                            active = r;
-                            break;
+                    if (issueMode) {
+                        java.time.LocalDate due = today.plusDays(selectedDays[0]);
+                        JLabel d1 = new JLabel("Issue Date: " + today.format(formatter));
+                        d1.setForeground(new Color(255, 255, 255, 200));
+                        JLabel d2 = new JLabel("Due Date: " + due.format(formatter));
+                        d2.setForeground(new Color(255, 255, 255, 200));
+                        JLabel d3 = new JLabel("Fine rule: 1-7 days: ₹5/day, 8-14: ₹10/day, 15+: ₹20/day");
+                        d3.setForeground(GOLD);
+                        rulesPanel.add(d1); rulesPanel.add(d2); rulesPanel.add(d3);
+                    } else {
+                        int delayed = 0;
+                        LibRecord active = null;
+                        for (LibRecord r : records) {
+                            if (!r.isReturned() && r.getStudent().getId().equals(sid) && r.getBook().getId().equals(bid)) {
+                                active = r;
+                                break;
+                            }
+                        }
+                        
+                        if (active != null) {
+                            long diff = java.time.temporal.ChronoUnit.DAYS.between(active.getIssueDate(), today);
+                            if (diff < 0) diff = 0;
+                            delayed = (int) diff - active.getAllowedDays();
+                            if (delayed < 0) delayed = 0;
+                            
+                            JLabel info = new JLabel("<html><b>" + active.getBook().getTitle() + "</b><br>Borrowed by: " + active.getStudent().getName() + " (" + active.getStudent().getId() + ")</html>");
+                            info.setForeground(WHITE);
+                            info.setFont(BODY);
+                            rulesPanel.add(info);
+                            rulesPanel.add(Box.createVerticalStrut(10));
+                            
+                            // Timeline
+                            java.time.LocalDate due = active.getIssueDate().plusDays(active.getAllowedDays());
+                            JLabel timeline = new JLabel("Issued " + active.getIssueDate().format(formatter) + "  →  Due " + due.format(formatter) + "  →  Returned Today");
+                            timeline.setForeground(new Color(255, 255, 255, 200));
+                            rulesPanel.add(timeline);
+                            
+                            if (delayed > 0) {
+                                JLabel badge = new JLabel("  " + delayed + " Days Overdue  ");
+                                badge.setOpaque(true);
+                                badge.setBackground(new Color(200, 50, 50));
+                                badge.setForeground(WHITE);
+                                badge.setFont(SMALL_BOLD);
+                                rulesPanel.add(Box.createVerticalStrut(5));
+                                rulesPanel.add(badge);
+                            } else {
+                                JLabel badge = new JLabel("  Returned On Time  ");
+                                badge.setOpaque(true);
+                                badge.setBackground(new Color(50, 160, 80));
+                                badge.setForeground(WHITE);
+                                badge.setFont(SMALL_BOLD);
+                                rulesPanel.add(Box.createVerticalStrut(5));
+                                rulesPanel.add(badge);
+                            }
+                            
+                            rulesPanel.add(Box.createVerticalStrut(15));
+                            
+                            double finalFine = LibRecord.calculateFineAmount(delayed);
+                            
+                            if (delayed > 0) {
+                                String arithmetic = "";
+                                if (delayed <= 7) arithmetic = delayed + " days × ₹5 = ₹" + (delayed * 5);
+                                else if (delayed <= 14) arithmetic = "7 days × ₹5 + " + (delayed - 7) + " days × ₹10 = ₹" + (35 + (delayed - 7) * 10);
+                                else arithmetic = "7 days × ₹5 + 7 days × ₹10 + " + (delayed - 14) + " days × ₹20 = ₹" + (105 + (delayed - 14) * 20);
+                                
+                                JLabel breakdown = new JLabel("Breakdown: " + arithmetic);
+                                breakdown.setForeground(new Color(255, 255, 255, 150));
+                                rulesPanel.add(breakdown);
+                            }
+                            
+                            JLabel fTotal = new JLabel(finalFine == 0 ? "No fine, returned on time" : "Total Fine: ₹" + (int)finalFine);
+                            fTotal.setFont(new Font("Georgia", Font.BOLD, 22));
+                            if (finalFine == 0) fTotal.setForeground(new Color(80, 200, 120));
+                            else if (finalFine <= 50) fTotal.setForeground(GOLD);
+                            else fTotal.setForeground(TERRACOTTA);
+                            
+                            livePanel.add(fTotal);
+                            livePanel.add(Box.createVerticalStrut(10));
+                            
+                            if (finalFine > 0) {
+                                JComboBox<String> fineAction = new JComboBox<>(new String[]{"Collect fine now", "Add to student record"});
+                                fineAction.setMaximumSize(new Dimension(200, 30));
+                                livePanel.add(fineAction);
+                            }
                         }
                     }
-                    if (active != null) {
-                        long diff = java.time.temporal.ChronoUnit.DAYS.between(active.getIssueDate(), today);
-                        if (diff < 0) diff = 0;
-                        delayed = (int) diff - active.getAllowedDays();
-                        if (delayed < 0) delayed = 0;
-                        JLabel fd = new JLabel("Overdue by: " + delayed + " days");
-                        fd.setForeground(new Color(255, 255, 255, 200));
-                        rulesPanel.add(fd);
-                    }
-                    
-                    double finalFine = LibRecord.calculateFineAmount(delayed);
-                    JLabel fTotal = new JLabel("Total Fine: ₹" + (int)finalFine);
-                    fTotal.setFont(new Font("Inter", Font.BOLD, 22));
-                    fTotal.setForeground(TERRACOTTA);
-                    livePanel.add(fTotal);
-                    livePanel.add(Box.createVerticalStrut(10));
-                    
-                    JLabel d3 = new JLabel("Auto-calculated using official tiers.");
-                    d3.setForeground(new Color(255, 255, 255, 200));
-                    rulesPanel.add(d3);
                 }
                 
                 livePanel.add(rulesPanel);
@@ -3219,6 +3310,80 @@ JButton smallButton(
         JPanel wrapper = new JPanel(new BorderLayout());
         wrapper.setBackground(CREAM);
         wrapper.add(content, BorderLayout.NORTH);
+        if (!issueMode) {
+            JPanel borrowedListPanel = new JPanel();
+            borrowedListPanel.setLayout(new BoxLayout(borrowedListPanel, BoxLayout.Y_AXIS));
+            borrowedListPanel.setOpaque(false);
+            borrowedListPanel.setBorder(new EmptyBorder(20, 40, 20, 40));
+            
+            JLabel listTitle = new JLabel("Currently Borrowed by Selected Student");
+            listTitle.setFont(TITLE);
+            listTitle.setForeground(INK);
+            borrowedListPanel.add(listTitle);
+            borrowedListPanel.add(Box.createVerticalStrut(15));
+            
+            JPanel listContainer = new JPanel();
+            listContainer.setLayout(new BoxLayout(listContainer, BoxLayout.Y_AXIS));
+            listContainer.setOpaque(false);
+            
+            // To be populated dynamically by studentCombo action listener
+            Runnable updateBorrowedList = () -> {
+                listContainer.removeAll();
+                String selS = (String) studentCombo.getSelectedItem();
+                if (selS != null && !selS.startsWith("Select")) {
+                    String sid = selS.split(" · ")[0];
+                    for (LibRecord r : records) {
+                        if (!r.isReturned() && r.getStudent().getId().equals(sid)) {
+                            JPanel row = new JPanel(new BorderLayout());
+                            row.setBackground(WHITE);
+                            row.setBorder(new EmptyBorder(10, 15, 10, 15));
+                            row.setMaximumSize(new Dimension(Integer.MAX_VALUE, 50));
+                            
+                            JLabel bName = new JLabel(r.getBook().getTitle());
+                            bName.setFont(BODY_BOLD);
+                            row.add(bName, BorderLayout.WEST);
+                            
+                            java.time.LocalDate today = java.time.LocalDate.now();
+                            long diff = java.time.temporal.ChronoUnit.DAYS.between(r.getIssueDate(), today);
+                            int delayed = (int) diff - r.getAllowedDays();
+                            if (delayed < 0) delayed = 0;
+                            
+                            JPanel rightPane = new JPanel(new FlowLayout(FlowLayout.RIGHT, 15, 0));
+                            rightPane.setOpaque(false);
+                            
+                            if (delayed > 0) {
+                                JLabel badge = new JLabel(" " + delayed + " Days Overdue ");
+                                badge.setOpaque(true);
+                                badge.setBackground(new Color(200, 50, 50));
+                                badge.setForeground(WHITE);
+                                badge.setFont(SMALL_BOLD);
+                                rightPane.add(badge);
+                            }
+                            
+                            JButton retBtn = actionButton("Return");
+                            retBtn.setPreferredSize(new Dimension(80, 30));
+                            retBtn.addActionListener(ev -> {
+                                bookCombo.setSelectedItem(r.getBook().getId() + " · " + r.getBook().getTitle() + " · " + r.getBook().getAuthor());
+                                action.doClick();
+                            });
+                            rightPane.add(retBtn);
+                            row.add(rightPane, BorderLayout.EAST);
+                            
+                            listContainer.add(row);
+                            listContainer.add(Box.createVerticalStrut(8));
+                        }
+                    }
+                }
+                listContainer.revalidate();
+                listContainer.repaint();
+            };
+            
+            // Attach to studentCombo
+            studentCombo.addActionListener(e -> updateBorrowedList.run());
+            
+            borrowedListPanel.add(listContainer);
+            wrapper.add(borrowedListPanel, BorderLayout.CENTER);
+        }
         page.add(wrapper, BorderLayout.CENTER);
         return page;
     }
@@ -3792,15 +3957,10 @@ JButton smallButton(
 
         saveData();
 
-        JOptionPane.showMessageDialog(
-                this,
-                "BOOK RETURNED\n\n"
-                        + "Book : " + record.getBook().getTitle()
-                        + "\nDelayed Days : " + record.getDelayedDays()
-                        + "\n\nFine : ₹" + (int) record.getFine(),
-                "Return Receipt",
-                JOptionPane.INFORMATION_MESSAGE
-        );
+        JOptionPane.showMessageDialog(this,
+            record.getBook().getTitle() + " returned. Fine ₹" + (int)record.getFine() + " recorded.",
+            "Return Success",
+            JOptionPane.INFORMATION_MESSAGE);
 
         studentField.setText("");
         bookField.setText("");
