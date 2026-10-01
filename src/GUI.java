@@ -966,7 +966,40 @@ public class GUI extends JFrame {
         h.add(s, BorderLayout.EAST);
         return h;
     }
-    JPanel statCard(String heading, String value, String caption, Color accent) {
+    
+    JPanel quickAction(String titleStr, String subStr, String iconStr, String page) {
+        GlassPanel q = new GlassPanel(new Color(255, 252, 246, 225), new Color(255, 255, 255, 170));
+        q.setLayout(new BorderLayout());
+        q.setBorder(new EmptyBorder(12, 16, 12, 16));
+        
+        JPanel textPanel = new JPanel();
+        textPanel.setOpaque(false);
+        textPanel.setLayout(new BoxLayout(textPanel, BoxLayout.Y_AXIS));
+        
+        JLabel t = new JLabel(iconStr + "  " + titleStr);
+        t.setFont(SMALL_BOLD);
+        t.setForeground(INK);
+        
+        JLabel s = new JLabel(subStr);
+        s.setFont(SMALL);
+        s.setForeground(MUTED);
+        
+        textPanel.add(t);
+        textPanel.add(Box.createVerticalStrut(4));
+        textPanel.add(s);
+        
+        q.add(textPanel, BorderLayout.WEST);
+        
+        q.setCursor(new Cursor(Cursor.HAND_CURSOR));
+        q.addMouseListener(new java.awt.event.MouseAdapter() {
+            public void mouseClicked(java.awt.event.MouseEvent e) {
+                showPage(page);
+            }
+        });
+        
+        return q;
+    }
+JPanel statCard(String heading, String value, String caption, Color accent) {
         return statCard(heading, value, caption, accent, null);
     }
 
