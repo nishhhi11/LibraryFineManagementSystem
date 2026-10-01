@@ -1152,15 +1152,16 @@ public class GUI extends JFrame {
                 g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
                 int w = getWidth(), h = getHeight();
                 
-                int cs = 0, sh = 0, fic = 0, cla = 0;
+                int acad = 0, ref = 0, gen = 0, fic = 0;
                 for (Book b : books) {
                     String cat = b.getCategory();
-                    if (cat.equals("Computer Science") || cat.equals("CS") || cat.equals("Academic") || cat.equals("Programming")) cs++;
-                    else if (cat.equals("Self-Help") || cat.equals("Reference")) sh++;
-                    else if (cat.equals("Fiction")) fic++;
-                    else cla++;
+                    if (cat.equalsIgnoreCase("Academic") || cat.equalsIgnoreCase("CS") || cat.equalsIgnoreCase("Computer Science")) acad++;
+                    else if (cat.equalsIgnoreCase("Reference")) ref++;
+                    else if (cat.equalsIgnoreCase("General") || cat.equalsIgnoreCase("Self-Help")) gen++;
+                    else if (cat.equalsIgnoreCase("Fiction")) fic++;
+                    else acad++;
                 }
-                int total = cs + sh + fic + cla;
+                int total = acad + ref + gen + fic;
                 if (total == 0) total = 1;
                 
                 int topH = 44;
@@ -1172,12 +1173,12 @@ public class GUI extends JFrame {
                 int x = 20;
                 int y = topH + (availH - size) / 2;
                 
-                int a1 = (int)(cs * 360.0 / total), a2 = (int)(sh * 360.0 / total), a3 = (int)(fic * 360.0 / total), a4 = 360 - a1 - a2 - a3;
+                int a1 = (int)(acad * 360.0 / total), a2 = (int)(ref * 360.0 / total), a3 = (int)(gen * 360.0 / total), a4 = 360 - a1 - a2 - a3;
                 int sA = 90;
                 g2.setColor(SAGE); g2.fillArc(x, y, size, size, sA, a1); sA += a1;
-                g2.setColor(GOLD); g2.fillArc(x, y, size, size, sA, a2); sA += a2;
-                g2.setColor(TERRACOTTA); g2.fillArc(x, y, size, size, sA, a3); sA += a3;
-                g2.setColor(MUTED); g2.fillArc(x, y, size, size, sA, a4);
+                g2.setColor(INK); g2.fillArc(x, y, size, size, sA, a2); sA += a2;
+                g2.setColor(GOLD); g2.fillArc(x, y, size, size, sA, a3); sA += a3;
+                g2.setColor(TERRACOTTA); g2.fillArc(x, y, size, size, sA, a4);
                 
                 int hole = (int)(size * 0.62);
                 g2.setColor(new Color(255, 252, 246)); 
@@ -1194,10 +1195,10 @@ public class GUI extends JFrame {
                 int legendH = 4 * 18 - 8;
                 int ly = y + (size - legendH) / 2;
                 g2.setFont(new Font("SansSerif", Font.PLAIN, 10));
-                g2.setColor(SAGE); g2.fillRoundRect(lx, ly, 10, 10, 4, 4); g2.setColor(INK); g2.drawString("Comp Sci (" + cs + ")", lx + 18, ly + 9); ly += 18;
-                g2.setColor(GOLD); g2.fillRoundRect(lx, ly, 10, 10, 4, 4); g2.setColor(INK); g2.drawString("Self-Help (" + sh + ")", lx + 18, ly + 9); ly += 18;
-                g2.setColor(TERRACOTTA); g2.fillRoundRect(lx, ly, 10, 10, 4, 4); g2.setColor(INK); g2.drawString("Fiction (" + fic + ")", lx + 18, ly + 9); ly += 18;
-                g2.setColor(MUTED); g2.fillRoundRect(lx, ly, 10, 10, 4, 4); g2.setColor(INK); g2.drawString("Classics (" + cla + ")", lx + 18, ly + 9);
+                g2.setColor(SAGE); g2.fillRoundRect(lx, ly, 10, 10, 4, 4); g2.setColor(INK); g2.drawString("Academic (" + acad + ")", lx + 18, ly + 9); ly += 18;
+                g2.setColor(INK); g2.fillRoundRect(lx, ly, 10, 10, 4, 4); g2.setColor(INK); g2.drawString("Reference (" + ref + ")", lx + 18, ly + 9); ly += 18;
+                g2.setColor(GOLD); g2.fillRoundRect(lx, ly, 10, 10, 4, 4); g2.setColor(INK); g2.drawString("General (" + gen + ")", lx + 18, ly + 9); ly += 18;
+                g2.setColor(TERRACOTTA); g2.fillRoundRect(lx, ly, 10, 10, 4, 4); g2.setColor(INK); g2.drawString("Fiction (" + fic + ")", lx + 18, ly + 9);
                 g2.dispose();
             }
         };
@@ -1236,7 +1237,7 @@ public class GUI extends JFrame {
                     String studentStr = r.getStudent().getName().split(" ")[0];
                     JLabel lblInfo = new JLabel("<html><b>" + titleStr + "</b> <span style='color: #8C8075;'>· " + studentStr + "</span></html>");
                     lblInfo.setFont(SMALL);
-                    double fineAmt = LibRecord.calculateFineAmount(late);
+                    double fineAmt = LibRecord.calculateFineAmount(late, r.getBook() != null ? r.getBook().getCategory() : "General");
                     JLabel lblDetails = new JLabel(late + "d (₹" + (int)fineAmt + ")  ");
                     lblDetails.setFont(SMALL_BOLD);
                     lblDetails.setForeground(TERRACOTTA);
@@ -2093,7 +2094,7 @@ JPanel statCard(String heading, String value, String caption, Color accent) {
         actionsPanel.setOpaque(false);
         
         // Category Chips
-        String[] categories = {"All", "Computer Science", "Self-Help", "Fiction", "Classics"};
+        String[] categories = {"All", "Academic", "Reference", "General", "Fiction"};
         JPanel chipsPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 5, 0));
         chipsPanel.setOpaque(false);
         String[] activeCategory = {"All"};
@@ -2104,12 +2105,8 @@ JPanel statCard(String heading, String value, String caption, Color accent) {
             int count = 0;
             if (cat.equals("All")) count = books.size();
             else {
-                for(Book b: books) {
-                    String bc = b.getCategory();
-                    if(cat.equals("Computer Science") && (bc.equals("CS") || bc.equals("Academic") || bc.equals("Programming") || bc.equals("Computer Science"))) count++;
-                    else if(cat.equals("Self-Help") && (bc.equals("Self-Help") || bc.equals("Reference"))) count++;
-                    else if(cat.equals("Fiction") && bc.equals("Fiction")) count++;
-                    else if(cat.equals("Classics") && !bc.equals("Fiction") && !bc.equals("Self-Help") && !bc.equals("Reference") && !bc.equals("CS") && !bc.equals("Academic") && !bc.equals("Programming") && !bc.equals("Computer Science")) count++;
+                for (Book b : books) {
+                    if (b.getCategory().equalsIgnoreCase(cat)) count++;
                 }
             }
             String chipText = cat.equals("All") ? "All " + count : cat + " " + count;
@@ -2249,10 +2246,7 @@ JPanel statCard(String heading, String value, String caption, Color accent) {
                 boolean matchesCat = false;
                 String bc = book.getCategory();
                 if (cat.equals("All")) matchesCat = true;
-                else if(cat.equals("Computer Science") && (bc.equals("CS") || bc.equals("Academic") || bc.equals("Programming") || bc.equals("Computer Science"))) matchesCat = true;
-                else if(cat.equals("Self-Help") && (bc.equals("Self-Help") || bc.equals("Reference"))) matchesCat = true;
-                else if(cat.equals("Fiction") && bc.equals("Fiction")) matchesCat = true;
-                else if(cat.equals("Classics") && !bc.equals("Fiction") && !bc.equals("Self-Help") && !bc.equals("Reference") && !bc.equals("CS") && !bc.equals("Academic") && !bc.equals("Programming") && !bc.equals("Computer Science")) matchesCat = true;
+                else matchesCat = bc.equalsIgnoreCase(cat);
                 
                 boolean matchesQuery = true;
                 if (!query.isEmpty()) {
@@ -4844,22 +4838,23 @@ JButton smallButton(
                 final int daysLateFinal = daysLate;
                 final int daysKeptFinal = daysKept;
 
-                // Fine calculation logic (strictly preserved slabs)
-                double fineAmount = LibRecord.calculateFineAmount(daysLate);
+                // Fine calculation logic (category-dependent with delayed days slabs)
+                double fineAmount = LibRecord.calculateFineAmount(daysLate, book.getCategory());
                 String slabName;
                 String rateDesc;
+                double multiplier = book.getCategory().equalsIgnoreCase("Reference") ? 1.5 : (book.getCategory().equalsIgnoreCase("General") ? 0.8 : 1.0);
                 if (daysLate == 0) {
                     slabName = "On Time (No slab)";
                     rateDesc = "₹0 / day";
                 } else if (daysLate <= 7) {
-                    slabName = "Slab 1: 1–7 days";
-                    rateDesc = "₹5 / day";
+                    slabName = "Slab 1: 1–7 days (" + book.getCategory() + ")";
+                    rateDesc = "₹" + (int)(5 * multiplier) + " / day";
                 } else if (daysLate <= 14) {
-                    slabName = "Slab 2: 8–14 days";
-                    rateDesc = "₹10 / day";
+                    slabName = "Slab 2: 8–14 days (" + book.getCategory() + ")";
+                    rateDesc = "₹" + (int)(10 * multiplier) + " / day";
                 } else {
-                    slabName = "Slab 3: 15+ days";
-                    rateDesc = "₹20 / day";
+                    slabName = "Slab 3: 15+ days (" + book.getCategory() + ")";
+                    rateDesc = "₹" + (int)(20 * multiplier) + " / day";
                 }
 
                 returnBtn.setEnabled(true);
@@ -5040,7 +5035,7 @@ JButton smallButton(
             int allowedDays = record.getAllowedDays();
             int daysLate = daysKept - allowedDays;
             if (daysLate < 0) daysLate = 0;
-            double fineAmount = LibRecord.calculateFineAmount(daysLate);
+            double fineAmount = LibRecord.calculateFineAmount(daysLate, record.getBook() != null ? record.getBook().getCategory() : "General");
 
             // Execute return record update
             record.setReturnData(daysKept, daysLate, fineAmount, fineAmount > 0 ? "UNPAID" : "NONE");
@@ -5176,8 +5171,10 @@ JButton smallButton(
 
         // Receipt Card Data
         long receiptNo = System.currentTimeMillis() % 1000000L;
-        String slabApplied = daysLate == 0 ? "None (On time)" : (daysLate <= 7 ? "Slab 1 (1-7d)" : (daysLate <= 14 ? "Slab 2 (8-14d)" : "Slab 3 (15+d)"));
-        String rateText = daysLate == 0 ? "₹0/day" : (daysLate <= 7 ? "₹5/day" : (daysLate <= 14 ? "₹10/day" : "₹20/day"));
+        String bCat = record.getBook() != null ? record.getBook().getCategory() : "General";
+        double mult = bCat.equalsIgnoreCase("Reference") ? 1.5 : (bCat.equalsIgnoreCase("General") ? 0.8 : 1.0);
+        String slabApplied = daysLate == 0 ? "None (On time)" : (daysLate <= 7 ? "Slab 1 (1-7d, " + bCat + ")" : (daysLate <= 14 ? "Slab 2 (8-14d, " + bCat + ")" : "Slab 3 (15+d, " + bCat + ")"));
+        String rateText = daysLate == 0 ? "₹0/day" : (daysLate <= 7 ? "₹" + (int)(5 * mult) + "/day" : (daysLate <= 14 ? "₹" + (int)(10 * mult) + "/day" : "₹" + (int)(20 * mult) + "/day"));
         java.time.format.DateTimeFormatter dtf = java.time.format.DateTimeFormatter.ofPattern("d MMM yyyy");
         java.time.LocalDate dueDate = record.getIssueDate().plusDays(record.getAllowedDays());
 

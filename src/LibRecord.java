@@ -39,7 +39,7 @@ public class LibRecord {
         delayedDays = actualDays - allowedDays;
         if (delayedDays < 0) delayedDays = 0;
 
-        fine = calculateFineAmount(delayedDays);
+        fine = calculateFineAmount(delayedDays, book != null ? book.getCategory() : "General");
         returned = true;
         fineStatus = fine > 0 ? "UNPAID" : "NONE";
     }
@@ -52,12 +52,48 @@ public class LibRecord {
         this.fineStatus = fineStatus;
     }
 
-    // Calculate fine
-    public static double calculateFineAmount(int delayedDays) {
+    // Calculate fine with book category (switch requirement) and delayed days (if-else slabs)
+    public static double calculateFineAmount(int delayedDays, String category) {
         if (delayedDays <= 0) return 0.0;
-        if (delayedDays <= 7) return delayedDays * 5.0;
-        if (delayedDays <= 14) return delayedDays * 10.0;
-        return delayedDays * 20.0;
+        
+        // Base rate multiplier determined by book category via switch statement
+        double categoryMultiplier = 1.0;
+        if (category != null) {
+            switch (category.trim()) {
+                case "Academic":
+                    categoryMultiplier = 1.0;
+                    break;
+                case "Reference":
+                    categoryMultiplier = 1.5;
+                    break;
+                case "General":
+                    categoryMultiplier = 0.8;
+                    break;
+                case "Fiction":
+                    categoryMultiplier = 1.0;
+                    break;
+                default:
+                    categoryMultiplier = 1.0;
+                    break;
+            }
+        }
+        
+        // Tiered delayed-day slab calculation
+        double baseFine;
+        if (delayedDays <= 7) {
+            baseFine = delayedDays * 5.0;
+        } else if (delayedDays <= 14) {
+            baseFine = delayedDays * 10.0;
+        } else {
+            baseFine = delayedDays * 20.0;
+        }
+        
+        return Math.round(baseFine * categoryMultiplier);
+    }
+
+    // Overload for backward compatibility
+    public static double calculateFineAmount(int delayedDays) {
+        return calculateFineAmount(delayedDays, "Academic");
     }
     
     public LocalDate getIssueDate() { return issueDate; }
