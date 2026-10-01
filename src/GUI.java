@@ -604,8 +604,9 @@ public class GUI extends JFrame {
         pLabel.setForeground(WHITE);
         pLabel.setFont(SMALL_BOLD);
         profile.add(pLabel);
-        
-        // Removed search, bell, and profile as requested.
+        right.add(search);
+        right.add(bell);
+        right.add(profile);
 
         bar.add(
                 left,
@@ -1648,59 +1649,55 @@ JPanel statCard(String heading, String value, String caption, Color accent) {
                         int panelWidth =
                                 getWidth();
 
-                        int panelHeight =
-                                getHeight();
+                        int panelHeight = getHeight();
 
-                        int pad = 6;
-                        int pw = panelWidth - pad*2;
-                        int ph = panelHeight - pad*2;
+                        int pad = 0; // Remove olive frame padding
+                        int pw = panelWidth - 8; // Leave space for shadow
+                        int ph = panelHeight - 8;
+                        
                         // Soft shadow
-                        g2.setColor(new Color(0, 0, 0, 20));
-                        g2.fillRoundRect(pad + 2, pad + 2, pw, ph, 12, 12);
+                        g2.setColor(new Color(0, 0, 0, 15));
+                        g2.fillRoundRect(2, 2, pw, ph, 8, 8);
                         g2.setColor(new Color(0, 0, 0, 10));
-                        g2.fillRoundRect(pad + 4, pad + 4, pw, ph, 12, 12);
+                        g2.fillRoundRect(4, 4, pw, ph, 8, 8);
 
-                        java.awt.Shape clip = new java.awt.geom.RoundRectangle2D.Float(pad, pad, pw, ph, 12, 12);
+                        java.awt.Shape clip = new java.awt.geom.RoundRectangle2D.Float(0, 0, pw, ph, 8, 8);
                         g2.setClip(clip);
+
+                        g2.setColor(CREAM);
+                        g2.fillRect(0, 0, pw, ph);
 
                         if (finalCoverImage != null) {
                             int imageWidth = finalCoverImage.getWidth();
                             int imageHeight = finalCoverImage.getHeight();
-                            double scale = Math.max((double) pw / imageWidth, (double) ph / imageHeight);
+                            double scale = Math.min((double) pw / imageWidth, (double) ph / imageHeight);
                             int drawWidth = Math.max(1, (int) Math.ceil(imageWidth * scale));
                             int drawHeight = Math.max(1, (int) Math.ceil(imageHeight * scale));
-                            int x = pad + (pw - drawWidth) / 2;
-                            int y = pad + (ph - drawHeight) / 2;
+                            int x = (pw - drawWidth) / 2;
+                            int y = (ph - drawHeight) / 2;
                             g2.drawImage(finalCoverImage, x, y, drawWidth, drawHeight, null);
                         } else {
                             g2.setColor(categoryColor(book.getCategory()));
-                            g2.fillRect(pad, pad, pw, ph);
+                            g2.fillRect(0, 0, pw, ph);
                             g2.setColor(WHITE);
                             g2.setFont(SMALL_BOLD);
                             String text = "NO COVER";
                             FontMetrics metrics = g2.getFontMetrics();
-                            int x = pad + (pw - metrics.stringWidth(text)) / 2;
-                            int y = pad + ((ph - metrics.getHeight()) / 2) + metrics.getAscent();
+                            int x = (pw - metrics.stringWidth(text)) / 2;
+                            int y = ((ph - metrics.getHeight()) / 2) + metrics.getAscent();
                             g2.drawString(text, x, y);
                         }
                         
                         g2.setClip(null);
                         
                         // Inner border for polish
-                        g2.setColor(new Color(255, 255, 255, 50));
-                        g2.drawRoundRect(pad, pad, pw, ph, 12, 12);
+                        g2.setColor(new Color(0, 0, 0, 20));
+                        g2.drawRoundRect(0, 0, pw, ph, 8, 8);
                         g2.dispose();
                     }
                 };
 
-        cover.setBackground(
-                categoryColor(
-                        book.getCategory()
-                )
-        );
-
-        cover.setOpaque(true);
-
+        cover.setOpaque(false);
         return cover;
     }
 
@@ -1771,34 +1768,67 @@ JPanel statCard(String heading, String value, String caption, Color accent) {
         titlePanel.add(Box.createVerticalStrut(4));
         titlePanel.add(sub);
         
-        header.add(titlePanel, BorderLayout.WEST);
+        header.add(titlePanel, BorderLayout.NORTH);
+        header.add(Box.createVerticalStrut(20), BorderLayout.CENTER);
 
         // Filters and Search
-        JPanel actionsPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 15, 0));
+        JPanel actionsPanel = new JPanel(new BorderLayout());
         actionsPanel.setOpaque(false);
         
         // Category Chips
         String[] categories = {"All", "Computer Science", "Self-Help", "Fiction", "Classics"};
         JPanel chipsPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 5, 0));
         chipsPanel.setOpaque(false);
+        String[] activeCategory = {"All"};
+        java.util.List<JButton> chipButtons = new java.util.ArrayList<>();
+        Runnable[] applyFilters = new Runnable[1];
+        
         for (String cat : categories) {
-            JButton chip = new JButton(cat);
+            int count = 0;
+            if (cat.equals("All")) count = books.size();
+            else {
+                for(Book b: books) {
+                    String bc = b.getCategory();
+                    if(cat.equals("Computer Science") && (bc.equals("CS") || bc.equals("Academic") || bc.equals("Programming") || bc.equals("Computer Science"))) count++;
+                    else if(cat.equals("Self-Help") && (bc.equals("Self-Help") || bc.equals("Reference"))) count++;
+                    else if(cat.equals("Fiction") && bc.equals("Fiction")) count++;
+                    else if(cat.equals("Classics") && !bc.equals("Fiction") && !bc.equals("Self-Help") && !bc.equals("Reference") && !bc.equals("CS") && !bc.equals("Academic") && !bc.equals("Programming") && !bc.equals("Computer Science")) count++;
+                }
+            }
+            String chipText = cat.equals("All") ? "All " + count : cat + " " + count;
+            JButton chip = new JButton(chipText);
             chip.setFont(SMALL_BOLD);
             chip.setForeground(cat.equals("All") ? WHITE : MUTED);
             chip.setBackground(cat.equals("All") ? TERRACOTTA : CREAM);
             chip.setOpaque(true);
-            chip.setBorderPainted(false);
+            chip.setBorderPainted(true);
+            chip.setBorder(BorderFactory.createCompoundBorder(new LineBorder(SAND, 1, true), new EmptyBorder(6, 14, 6, 14)));
             chip.setFocusPainted(false);
             chip.setCursor(new Cursor(Cursor.HAND_CURSOR));
+            chip.addActionListener(e -> {
+                activeCategory[0] = cat;
+                for (JButton b : chipButtons) {
+                    boolean isActive = b.getText().startsWith(cat + " ") || (cat.equals("All") && b.getText().startsWith("All "));
+                    b.setForeground(isActive ? WHITE : MUTED);
+                    b.setBackground(isActive ? TERRACOTTA : CREAM);
+                }
+                if (applyFilters[0] != null) applyFilters[0].run();
+            });
+            chipButtons.add(chip);
             chipsPanel.add(chip);
         }
-        actionsPanel.add(chipsPanel);
+        actionsPanel.add(chipsPanel, BorderLayout.WEST);
+        JPanel rightActions = new JPanel(new FlowLayout(FlowLayout.RIGHT, 15, 0));
+        rightActions.setOpaque(false);
         
         // Sort Menu
         String[] sortOptions = {"Sort by Title", "Sort by Author", "Sort by Availability"};
         JComboBox<String> sortMenu = new JComboBox<>(sortOptions);
+        sortMenu.setUI(new javax.swing.plaf.basic.BasicComboBoxUI());
+        sortMenu.setBackground(CREAM);
+        sortMenu.setBorder(BorderFactory.createCompoundBorder(new LineBorder(SAND, 1, true), new EmptyBorder(4, 8, 4, 8)));
         sortMenu.setFont(SMALL);
-        actionsPanel.add(sortMenu);
+        rightActions.add(sortMenu);
 
         // Search box
         JPanel searchBox = new JPanel(new BorderLayout()) {
@@ -1809,7 +1839,7 @@ JPanel statCard(String heading, String value, String caption, Color accent) {
                 g2.setColor(WHITE);
                 g2.fillRoundRect(0, 0, getWidth() - 1, getHeight() - 1, 14, 14);
                 if (((JTextField)((BorderLayout)getLayout()).getLayoutComponent(BorderLayout.CENTER)).hasFocus()) {
-                    g2.setColor(new Color(60, 160, 150)); // Teal
+                    g2.setColor(TERRACOTTA);
                     g2.setStroke(new BasicStroke(2f));
                 } else {
                     g2.setColor(SAND);
@@ -1837,7 +1867,8 @@ JPanel statCard(String heading, String value, String caption, Color accent) {
                     Graphics2D g2 = (Graphics2D)g.create();
                     g2.setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING, RenderingHints.VALUE_TEXT_ANTIALIAS_ON);
                     g2.setColor(MUTED);
-                    g2.drawString("Search by title, author or ISBN...", getInsets().left, g.getFontMetrics().getMaxAscent() + getInsets().top);
+                    int y = (getHeight() - g.getFontMetrics().getHeight()) / 2 + g.getFontMetrics().getAscent();
+                    g2.drawString("Search by title, author or ISBN...", getInsets().left, y);
                     g2.dispose();
                 }
             }
@@ -1852,51 +1883,104 @@ JPanel statCard(String heading, String value, String caption, Color accent) {
         searchBox.add(searchIcon, BorderLayout.WEST);
         searchBox.add(search, BorderLayout.CENTER);
         
-        actionsPanel.add(searchBox);
+        rightActions.add(searchBox);
 
         JButton addBookBtn = new JButton("+ Add Book");
         addBookBtn.setFont(SMALL_BOLD);
         addBookBtn.setForeground(WHITE);
-        addBookBtn.setBackground(INK);
+        addBookBtn.setBackground(TERRACOTTA);
+        addBookBtn.setOpaque(true);
+        addBookBtn.setBorderPainted(false);
         addBookBtn.setFocusPainted(false);
-        addBookBtn.setBorder(new EmptyBorder(10, 15, 10, 15));
         addBookBtn.setCursor(new Cursor(Cursor.HAND_CURSOR));
-        actionsPanel.add(addBookBtn);
+        addBookBtn.addActionListener(e -> {
+            JOptionPane.showMessageDialog(page, "Add Book feature is coming soon!", "Add Book", JOptionPane.INFORMATION_MESSAGE);
+        });
+        rightActions.add(addBookBtn);
+        
+        actionsPanel.add(rightActions, BorderLayout.EAST);
 
-        header.add(actionsPanel, BorderLayout.EAST);
+        JPanel headerBottom = new JPanel(new BorderLayout());
+        headerBottom.setOpaque(false);
+        headerBottom.setBorder(new EmptyBorder(20, 0, 0, 0));
+        JLabel resultsCount = new JLabel("Showing " + books.size() + " of 40 titles");
+        resultsCount.setFont(SMALL);
+        resultsCount.setForeground(MUTED);
+        headerBottom.add(resultsCount, BorderLayout.WEST);
+        
+        JPanel filtersAndCount = new JPanel(new BorderLayout());
+        filtersAndCount.setOpaque(false);
+        filtersAndCount.add(actionsPanel, BorderLayout.CENTER);
+        filtersAndCount.add(headerBottom, BorderLayout.SOUTH);
+        
+        header.add(filtersAndCount, BorderLayout.SOUTH);
         page.add(header, BorderLayout.NORTH);
 
-        JPanel grid = new JPanel(new GridLayout(0, 6, 20, 20)); // 6 covers per row
+        JPanel grid = new JPanel(new GridLayout(0, 6, 20, 32)); // 6 covers per row
         grid.setBackground(CREAM);
-        grid.setBorder(new EmptyBorder(30, 35, 30, 35));
+        grid.setBorder(new EmptyBorder(10, 35, 30, 35));
 
-        for (Book book : books) {
-            grid.add(bookCard(book));
-        }
+        applyFilters[0] = () -> {
+            grid.removeAll();
+            String query = search.getText().toLowerCase().trim();
+            if (query.equals("search by title, author or isbn...")) query = "";
+            
+            java.util.List<Book> filtered = new java.util.ArrayList<>();
+            String cat = activeCategory[0];
+            
+            for (Book book : books) {
+                boolean matchesCat = false;
+                String bc = book.getCategory();
+                if (cat.equals("All")) matchesCat = true;
+                else if(cat.equals("Computer Science") && (bc.equals("CS") || bc.equals("Academic") || bc.equals("Programming") || bc.equals("Computer Science"))) matchesCat = true;
+                else if(cat.equals("Self-Help") && (bc.equals("Self-Help") || bc.equals("Reference"))) matchesCat = true;
+                else if(cat.equals("Fiction") && bc.equals("Fiction")) matchesCat = true;
+                else if(cat.equals("Classics") && !bc.equals("Fiction") && !bc.equals("Self-Help") && !bc.equals("Reference") && !bc.equals("CS") && !bc.equals("Academic") && !bc.equals("Programming") && !bc.equals("Computer Science")) matchesCat = true;
+                
+                boolean matchesQuery = true;
+                if (!query.isEmpty()) {
+                    matchesQuery = book.getTitle().toLowerCase().contains(query) || book.getAuthor().toLowerCase().contains(query);
+                }
+                
+                if (matchesCat && matchesQuery) {
+                    filtered.add(book);
+                }
+            }
+            
+            int sortIdx = sortMenu.getSelectedIndex();
+            if (sortIdx == 0) {
+                filtered.sort(java.util.Comparator.comparing(Book::getTitle));
+            } else if (sortIdx == 1) {
+                filtered.sort(java.util.Comparator.comparing(Book::getAuthor));
+            } else if (sortIdx == 2) {
+                filtered.sort((a, b) -> Integer.compare(b.getAvailableCopies(), a.getAvailableCopies()));
+            }
+            
+            for (Book book : filtered) {
+                grid.add(bookCard(book));
+            }
+            
+            if (filtered.isEmpty()) {
+                JLabel empty = new JLabel("No books match your search");
+                empty.setFont(BODY);
+                empty.setForeground(MUTED);
+                grid.add(empty);
+            }
+            
+            resultsCount.setText("Showing " + filtered.size() + " of 40 titles");
+            grid.revalidate();
+            grid.repaint();
+        };
+
+        applyFilters[0].run();
 
         search.addKeyListener(new KeyAdapter() {
             public void keyReleased(KeyEvent e) {
-                String query = search.getText().toLowerCase().trim();
-                grid.removeAll();
-                int count = 0;
-                for (Book book : books) {
-                    if (book.getTitle().toLowerCase().contains(query) ||
-                        book.getAuthor().toLowerCase().contains(query)) {
-                        grid.add(bookCard(book));
-                        count++;
-                    }
-                }
-                if (count == 0) {
-                    JLabel empty = new JLabel("No books match '" + search.getText() + "'");
-                    empty.setFont(BODY);
-                    empty.setForeground(MUTED);
-                    grid.add(empty);
-                }
-                sub.setText("Showing " + count + " of " + books.size() + " titles");
-                grid.revalidate();
-                grid.repaint();
+                applyFilters[0].run();
             }
         });
+        
+        sortMenu.addActionListener(e -> applyFilters[0].run());
 
         search.addFocusListener(new FocusAdapter() {
             public void focusGained(FocusEvent e) { searchBox.repaint(); }
@@ -1912,7 +1996,6 @@ JPanel statCard(String heading, String value, String caption, Color accent) {
     }
 
     JPanel bookCard(Book book) {
-        // We use an OverlayLayout to put the hover overlay on top of the card content
         JPanel container = new JPanel();
         container.setLayout(new OverlayLayout(container));
         container.setOpaque(false);
@@ -1932,66 +2015,83 @@ JPanel statCard(String heading, String value, String caption, Color accent) {
         overlay.setOpaque(false);
         overlay.setVisible(false);
         
-        JButton details = smallButton("VIEW DETAILS");
+        JPanel overlayBtns = new JPanel(new GridLayout(2, 1, 0, 10));
+        overlayBtns.setOpaque(false);
+        JButton details = smallButton("Details");
         details.addActionListener(e -> showBookDetails(book));
-        overlay.add(details);
+        JButton issue = smallButton("Issue");
+        issue.setBackground(TERRACOTTA);
+        issue.setForeground(WHITE);
+        issue.addActionListener(e -> {
+            preselectedBook = book.getTitle();
+            showPage("ISSUE");
+        });
+        overlayBtns.add(details);
+        overlayBtns.add(issue);
+        overlay.add(overlayBtns);
         
         // 2. Main Content
         GlassPanel card = new GlassPanel(new Color(255, 252, 246, 225), new Color(255, 255, 255, 170));
         card.setLayout(new BorderLayout());
         
         JPanel cover = createCover(book);
-        cover.setPreferredSize(new Dimension(140, 210)); // Tall cover
-
+        cover.setPreferredSize(new Dimension(140, 210));
+        
         JPanel info = new JPanel();
         info.setOpaque(false);
         info.setLayout(new BoxLayout(info, BoxLayout.Y_AXIS));
         info.setBorder(new EmptyBorder(12, 10, 15, 10));
-
+        
+        JLabel category = new JLabel(book.getCategory().toUpperCase());
+        category.setFont(new Font("SansSerif", Font.BOLD, 9));
+        category.setForeground(categoryColor(book.getCategory()));
+        category.setAlignmentX(Component.CENTER_ALIGNMENT);
+        
         JLabel title = new JLabel("<html><div style='width:120px; text-align:center'>" + book.getTitle() + "</div></html>");
         title.setFont(BODY_BOLD);
         title.setForeground(INK);
         title.setAlignmentX(Component.CENTER_ALIGNMENT);
-
-        JLabel author = new JLabel("<html><div style='width:120px; text-align:center'>" + book.getAuthor() + "</div></html>");
+        
+        String authorText = book.getAuthor();
+        if (authorText.length() > 18) authorText = authorText.substring(0, 15) + "...";
+        JLabel author = new JLabel(authorText);
         author.setFont(SMALL);
         author.setForeground(MUTED);
+        author.setToolTipText(book.getAuthor());
         author.setAlignmentX(Component.CENTER_ALIGNMENT);
-
-        JLabel availability = new JLabel(book.getAvailableCopies() + " / " + book.getTotalCopies() + " available");
+        
+        int avail = book.getAvailableCopies();
+        String availText = avail > 0 ? avail + " of " + book.getTotalCopies() + " available" : "Unavailable";
+        JLabel availability = new JLabel(availText);
         availability.setFont(SMALL_BOLD);
-        availability.setForeground(book.getAvailableCopies() > 0 ? SAGE : TERRACOTTA);
+        availability.setForeground(avail == 0 ? TERRACOTTA : (avail == 1 ? GOLD : SAGE));
         availability.setAlignmentX(Component.CENTER_ALIGNMENT);
-
+        
         info.add(title);
-        info.add(Box.createVerticalStrut(6));
+        info.add(Box.createVerticalStrut(4));
+        info.add(category);
+        info.add(Box.createVerticalStrut(4));
         info.add(author);
-        info.add(Box.createVerticalStrut(8));
-        info.add(Box.createVerticalGlue());
+        info.add(Box.createVerticalGlue()); // Push availability to bottom
         info.add(availability);
-
+        
         card.add(cover, BorderLayout.NORTH);
         card.add(info, BorderLayout.CENTER);
         
-        // Setup Hover effect
-        card.addMouseListener(new MouseAdapter() {
-            public void mouseEntered(MouseEvent e) { overlay.setVisible(true); }
-            public void mouseExited(MouseEvent e) { overlay.setVisible(false); }
-        });
-        overlay.addMouseListener(new MouseAdapter() {
-            public void mouseEntered(MouseEvent e) { overlay.setVisible(true); }
-            public void mouseExited(MouseEvent e) { overlay.setVisible(false); }
-        });
+        MouseAdapter hoverAdapter = new MouseAdapter() {
+            public void mouseEntered(MouseEvent e) { overlay.setVisible(true); card.setBorder(new EmptyBorder(-2, 0, 2, 0)); card.revalidate(); }
+            public void mouseExited(MouseEvent e) { overlay.setVisible(false); card.setBorder(null); card.revalidate(); }
+            public void mouseClicked(MouseEvent e) { showBookDetails(book); }
+        };
+        card.addMouseListener(hoverAdapter);
+        overlay.addMouseListener(hoverAdapter);
         
-        // Add components to OverlayLayout container
-        // Order matters: first added is on top!
         container.add(overlay);
         container.add(card);
         
-        // Wrap in another panel to prevent stretching in GridLayout if necessary
         JPanel wrapper = new JPanel(new BorderLayout());
         wrapper.setOpaque(false);
-        wrapper.add(container, BorderLayout.NORTH);
+        wrapper.add(container, BorderLayout.CENTER); // allow stretch to grid cell height
         
         return wrapper;
     }
