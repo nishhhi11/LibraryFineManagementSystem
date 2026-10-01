@@ -1,15 +1,15 @@
 A101|Java: The Complete Reference|Herbert Schildt|Academic|5|4
-A102|Database Management Systems|Raghu Ramakrishnan, Johannes Gehrke|Academic|4|0
-A103|Computer Networks|Andrew S. Tanenbaum, David J. Wetherall|Academic|4|4
-A104|Operating System Concepts|Abraham Silberschatz, Peter B. Galvin, Greg Gagne|Academic|4|4
-A105|Fundamentals of Data Structures|Ellis Horowitz, Sartaj Sahni|Academic|3|1
+A102|Database Management Systems|Raghu Ramakrishnan, Johannes Gehrke|Academic|4|3
+A103|Computer Networks|Andrew S. Tanenbaum, David J. Wetherall|Academic|4|3
+A104|Operating System Concepts|Abraham Silberschatz, Peter B. Galvin, Greg Gagne|Academic|4|3
+A105|Fundamentals of Data Structures|Ellis Horowitz, Sartaj Sahni|Academic|3|2
 A106|Python Programming|Vamsi Kurama|Academic|4|4
 A107|Software Engineering|Roger S. Pressman|Academic|3|3
 A108|Database System Concepts|Abraham Silberschatz, Henry F. Korth, S. Sudarshan|Academic|3|3
 A109|Artificial Intelligence: A Modern Approach|Stuart Russell, Peter Norvig|Academic|3|3
 A110|Introduction to Algorithms|Thomas H. Cormen, Charles E. Leiserson, Ronald L. Rivest, Clifford Stein|Academic|3|3
 R201|Clean Code|Robert C. Martin|Reference|3|2
-R202|Design Patterns|Erich Gamma, Richard Helm, Ralph Johnson, John Vlissides|Reference|2|2
+R202|Design Patterns|Erich Gamma, Richard Helm, Ralph Johnson, John Vlissides|Reference|2|1
 R203|Cryptography and Network Security|William Stallings|Reference|3|3
 R204|Fundamentals of Database Systems|Ramez Elmasri, Shamkant B. Navathe|Reference|3|3
 R205|Computer Security|William Stallings, Lawrie Brown|Reference|2|2
@@ -25,12 +25,12 @@ G304|How to Win Friends and Influence People|Dale Carnegie|General|3|3
 G305|Think and Grow Rich|Napoleon Hill|General|2|2
 G306|The Power of Now|Eckhart Tolle|General|2|2
 G307|Rich Dad Poor Dad|Robert T. Kiyosaki|General|3|3
-G308|Deep Work|Cal Newport|General|3|3
+G308|Deep Work|Cal Newport|General|3|2
 G309|The Psychology of Money|Morgan Housel|General|3|3
 G310|The Alchemist|Paulo Coelho|General|3|3
 F401|Harry Potter and the Philosophers Stone|J.K. Rowling|Fiction|4|3
-F402|The Hobbit|J.R.R. Tolkien|Fiction|3|3
-F403|1984|George Orwell|Fiction|3|0
+F402|The Hobbit|J.R.R. Tolkien|Fiction|3|2
+F403|1984|George Orwell|Fiction|3|3
 F404|The Great Gatsby|F. Scott Fitzgerald|Fiction|2|2
 F405|To Kill a Mockingbird|Harper Lee|Fiction|3|3
 F406|Pride and Prejudice|Jane Austen|Fiction|3|3

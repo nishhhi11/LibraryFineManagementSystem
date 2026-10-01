@@ -295,17 +295,17 @@ public class GUI extends JFrame {
                 Box.createVerticalStrut(38)
         );
 
-        addNavigation(top, "⌂", "Overview", "HOME");
+        addNavigation(top, "HOME", "Overview", "HOME");
 
-        addNavigation(top, "□", "Book Collection", "BOOKS");
+        addNavigation(top, "BOOKS", "Book Collection", "BOOKS");
 
-        addNavigation(top, "○", "Students", "STUDENTS");
+        addNavigation(top, "STUDENTS", "Students", "STUDENTS");
 
-        addNavigation(top, "↗", "Issue Book", "ISSUE");
+        addNavigation(top, "ISSUE", "Issue Book", "ISSUE");
 
-        addNavigation(top, "↙", "Return Book", "RETURN");
+        addNavigation(top, "RETURN", "Return Book", "RETURN");
 
-        addNavigation(top, "◇", "Fine Records", "FINES");
+        addNavigation(top, "FINES", "Fine Records", "FINES");
 
         sidebar.add(
                 top,
@@ -368,8 +368,8 @@ public class GUI extends JFrame {
     }
 
 
-    void addNavigation(JPanel parent, String icon, String text, String page) {
-        JButton button = navButton(icon, text, page);
+    void addNavigation(JPanel parent, String iconName, String text, String page) {
+        JButton button = navButton(iconName, text, page);
         parent.add(button);
         parent.add(Box.createVerticalStrut(2));
     }
@@ -405,17 +405,17 @@ public class GUI extends JFrame {
         button.setFocusPainted(false);
         button.setCursor(new Cursor(Cursor.HAND_CURSOR));
 
-        JLabel label = new JLabel(icon + "  " + text) {
+        JLabel label = new JLabel(text) {
             @Override
             protected void paintComponent(Graphics g) {
-                if (activePage != null && activePage.equals(page)) {
-                    setForeground(WHITE);
-                } else {
-                    setForeground(new Color(230, 222, 212));
-                }
+                boolean isActive = activePage != null && activePage.equals(page);
+                setForeground(isActive ? WHITE : new Color(230, 222, 212));
+                setIcon(createLineIcon(icon, 15, isActive ? GOLD : new Color(200, 190, 180)));
                 super.paintComponent(g);
             }
         };
+        label.setIcon(createLineIcon(icon, 15, new Color(200, 190, 180)));
+        label.setIconTextGap(10);
         label.setFont(BODY_BOLD);
         button.add(label);
 
@@ -561,32 +561,50 @@ public class GUI extends JFrame {
         
         
         int overdueCount = 0;
+        int dueSoonCount = 0;
+        java.time.LocalDate todayTop = java.time.LocalDate.now();
         for (LibRecord r : records) {
             if (!r.isReturned()) {
-                long ds = java.time.temporal.ChronoUnit.DAYS.between(r.getIssueDate(), java.time.LocalDate.now());
-                if (ds > r.getAllowedDays()) overdueCount++;
+                long ds = java.time.temporal.ChronoUnit.DAYS.between(r.getIssueDate(), todayTop);
+                if (ds > r.getAllowedDays()) {
+                    overdueCount++;
+                } else {
+                    java.time.LocalDate dueDate = r.getIssueDate().plusDays(r.getAllowedDays());
+                    long daysUntil = java.time.temporal.ChronoUnit.DAYS.between(todayTop, dueDate);
+                    if (daysUntil >= 0 && daysUntil <= 7) {
+                        dueSoonCount++;
+                    }
+                }
             }
         }
-        final int finalOverdueCount = overdueCount;
-        JLabel bell = new JLabel("🔔") {
+        final int totalAttentionCount = overdueCount + dueSoonCount;
+        JLabel bell = new JLabel() {
             @Override
             protected void paintComponent(Graphics g) {
                 super.paintComponent(g);
-                if (finalOverdueCount > 0) {
-                    Graphics2D g2 = (Graphics2D)g.create();
-                    g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+                Graphics2D g2 = (Graphics2D)g.create();
+                g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+                Icon bellIcon = createLineIcon("BELL", 18, INK);
+                bellIcon.paintIcon(this, g2, (getWidth() - 18) / 2, (getHeight() - 18) / 2);
+                if (totalAttentionCount > 0) {
                     g2.setColor(TERRACOTTA);
-                    g2.fillOval(getWidth()-14, 2, 12, 12);
+                    int badgeSize = 14;
+                    int bx = getWidth() - badgeSize - 1;
+                    int by = 1;
+                    g2.fillOval(bx, by, badgeSize, badgeSize);
                     g2.setColor(WHITE);
                     g2.setFont(new Font("SansSerif", Font.BOLD, 9));
-                    g2.drawString(String.valueOf(finalOverdueCount), getWidth()-11, 11);
-                    g2.dispose();
+                    String bTxt = String.valueOf(totalAttentionCount);
+                    FontMetrics fm = g2.getFontMetrics();
+                    int tx = bx + (badgeSize - fm.stringWidth(bTxt)) / 2;
+                    int ty = by + (badgeSize - fm.getHeight()) / 2 + fm.getAscent();
+                    g2.drawString(bTxt, tx, ty);
                 }
+                g2.dispose();
             }
         };
-        bell.setFont(new Font("Segoe UI Emoji", Font.PLAIN, 16));
-        bell.setPreferredSize(new Dimension(30, 30));
-        bell.setBorder(new EmptyBorder(0, 5, 0, 5));
+        bell.setPreferredSize(new Dimension(32, 32));
+        bell.setBorder(new EmptyBorder(0, 4, 0, 4));
         bell.setCursor(new Cursor(Cursor.HAND_CURSOR));
         
         JPanel profile = new JPanel(new BorderLayout());
@@ -687,6 +705,130 @@ public class GUI extends JFrame {
 
 
     // =========================================================
+    // LINE ICONS & DASHBOARD HELPERS
+    // =========================================================
+
+    static Icon createLineIcon(final String name, final int size, final Color color) {
+        return new Icon() {
+            @Override
+            public int getIconWidth() { return size; }
+            @Override
+            public int getIconHeight() { return size; }
+            @Override
+            public void paintIcon(Component c, Graphics g, int x, int y) {
+                Graphics2D g2 = (Graphics2D) g.create();
+                g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+                g2.setRenderingHint(RenderingHints.KEY_STROKE_CONTROL, RenderingHints.VALUE_STROKE_PURE);
+                g2.translate(x, y);
+                g2.setColor(color != null ? color : INK);
+                g2.setStroke(new BasicStroke(1.4f, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
+                
+                float s = size / 24.0f;
+                g2.scale(s, s);
+                
+                String n = name != null ? name.toUpperCase() : "";
+                if (n.equals("ISSUE") || n.equals("ARROW-UP-RIGHT-BOOK")) {
+                    // Open book with arrow pointing up-right
+                    g2.drawRoundRect(2, 4, 18, 16, 3, 3);
+                    g2.drawLine(11, 4, 11, 20); // spine
+                    // Arrow pointing up-right from center/top
+                    g2.drawLine(10, 14, 17, 7);
+                    g2.drawLine(12, 7, 17, 7);
+                    g2.drawLine(17, 7, 17, 12);
+                } else if (n.equals("RETURN") || n.equals("ARROW-DOWN-LEFT-BOOK")) {
+                    // Open book with arrow pointing down-left
+                    g2.drawRoundRect(4, 4, 18, 16, 3, 3);
+                    g2.drawLine(13, 4, 13, 20); // spine
+                    // Arrow pointing down-left into book
+                    g2.drawLine(14, 10, 7, 17);
+                    g2.drawLine(12, 17, 7, 17);
+                    g2.drawLine(7, 17, 7, 12);
+                } else if (n.equals("BOOK") || n.equals("BOOKS") || n.equals("CATALOG")) {
+                    // Open book icon
+                    g2.drawRoundRect(3, 4, 18, 16, 3, 3);
+                    g2.drawLine(12, 4, 12, 20);
+                    g2.drawLine(6, 8, 9, 8);
+                    g2.drawLine(6, 12, 9, 12);
+                    g2.drawLine(15, 8, 18, 8);
+                    g2.drawLine(15, 12, 18, 12);
+                } else if (n.equals("COPIES") || n.equals("STACK")) {
+                    // Stack of books
+                    g2.drawRoundRect(4, 14, 16, 5, 2, 2);
+                    g2.drawRoundRect(4, 9, 16, 5, 2, 2);
+                    g2.drawRoundRect(4, 4, 16, 5, 2, 2);
+                    g2.drawLine(7, 6, 7, 8);
+                    g2.drawLine(7, 11, 7, 13);
+                    g2.drawLine(7, 16, 7, 18);
+                } else if (n.equals("LOAN") || n.equals("ON LOAN")) {
+                    // Book with loan / arrow up-right
+                    g2.drawRoundRect(3, 5, 13, 15, 2, 2);
+                    g2.drawLine(12, 11, 20, 3);
+                    g2.drawLine(15, 3, 20, 3);
+                    g2.drawLine(20, 3, 20, 8);
+                } else if (n.equals("OVERDUE") || n.equals("BELL") || n.equals("ALERT")) {
+                    // Bell icon
+                    g2.drawArc(7, 5, 10, 10, 0, 180);
+                    g2.drawLine(7, 10, 4, 16);
+                    g2.drawLine(17, 10, 20, 16);
+                    g2.drawLine(4, 16, 20, 16);
+                    g2.drawArc(10, 16, 4, 3, 180, 180);
+                    g2.drawOval(11, 3, 2, 2);
+                } else if (n.equals("HOME") || n.equals("OVERVIEW")) {
+                    // Clean line house
+                    g2.drawLine(12, 3, 3, 11);
+                    g2.drawLine(12, 3, 21, 11);
+                    g2.drawLine(5, 10, 5, 20);
+                    g2.drawLine(19, 10, 19, 20);
+                    g2.drawLine(5, 20, 19, 20);
+                    g2.drawRect(10, 13, 4, 7);
+                } else if (n.equals("STUDENTS") || n.equals("STUDENT")) {
+                    // Clean user / student icon
+                    g2.drawOval(8, 4, 8, 8);
+                    g2.drawArc(4, 14, 16, 10, 0, 180);
+                } else if (n.equals("FINES") || n.equals("FINE")) {
+                    // Receipt / tag icon
+                    g2.drawRoundRect(5, 3, 14, 18, 3, 3);
+                    g2.drawLine(8, 7, 16, 7);
+                    g2.drawLine(8, 11, 16, 11);
+                    g2.drawLine(8, 15, 13, 15);
+                } else {
+                    // Default generic book line icon
+                    g2.drawRoundRect(4, 4, 16, 16, 3, 3);
+                    g2.drawLine(12, 4, 12, 20);
+                }
+                
+                g2.dispose();
+            }
+        };
+    }
+
+    static JPanel createAvatar(String initial, Color bg, Color fg, int size) {
+        JPanel p = new JPanel() {
+            @Override
+            protected void paintComponent(Graphics g) {
+                super.paintComponent(g);
+                Graphics2D g2 = (Graphics2D) g.create();
+                g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+                g2.setColor(bg);
+                g2.fillOval(0, 0, size, size);
+                g2.setColor(fg);
+                g2.setFont(new Font("SansSerif", Font.BOLD, (int)(size * 0.48)));
+                FontMetrics fm = g2.getFontMetrics();
+                String txt = (initial == null || initial.isEmpty()) ? "?" : initial.substring(0, 1).toUpperCase();
+                int x = (size - fm.stringWidth(txt)) / 2;
+                int y = (size - fm.getHeight()) / 2 + fm.getAscent();
+                g2.drawString(txt, x, y);
+                g2.dispose();
+            }
+        };
+        p.setOpaque(false);
+        p.setPreferredSize(new Dimension(size, size));
+        p.setMaximumSize(new Dimension(size, size));
+        p.setMinimumSize(new Dimension(size, size));
+        return p;
+    }
+
+    // =========================================================
     // DASHBOARD
     // =========================================================
 
@@ -784,10 +926,10 @@ public class GUI extends JFrame {
             }
         }
 
-        stats.add(statCard("BOOK TITLES", String.valueOf(books.size()), "+4 this month", TERRACOTTA, "📖"));
-        stats.add(statCard("TOTAL COPIES", String.valueOf(totalCopies), "in physical library", SAGE, "📚"));
-        stats.add(statCard("ON LOAN", String.valueOf(issuedCopies), "currently borrowed", GOLD, "↗"));
-        stats.add(statCard("OVERDUE", String.valueOf(overdueBooks), "requires attention", new Color(200, 80, 80), "🔔"));
+        stats.add(statCard("BOOK TITLES", String.valueOf(books.size()), "+4 this month", TERRACOTTA, "BOOK"));
+        stats.add(statCard("TOTAL COPIES", String.valueOf(totalCopies), "in physical library", SAGE, "COPIES"));
+        stats.add(statCard("ON LOAN", String.valueOf(issuedCopies), "currently borrowed", GOLD, "LOAN"));
+        stats.add(statCard("OVERDUE", String.valueOf(overdueBooks), "requires attention", new Color(200, 80, 80), "OVERDUE"));
 
         content.add(stats);
         content.add(Box.createVerticalStrut(14));
@@ -798,9 +940,9 @@ public class GUI extends JFrame {
         actions.setMaximumSize(new Dimension(Integer.MAX_VALUE, 90));
         actions.setAlignmentX(Component.LEFT_ALIGNMENT);
         
-        actions.add(largeQuickAction("Browse Collection", "Search and view library books", "□", "BOOKS", false));
-        actions.add(largeQuickAction("Issue a Book", "Register a new outgoing book", "↗", "ISSUE", false));
-        actions.add(largeQuickAction("Return a Book", "Process incoming book & fines", "↙", "RETURN", false));
+        actions.add(largeQuickAction("Browse Collection", "Search and view library books", "BOOKS", "BOOKS", false));
+        actions.add(largeQuickAction("Issue a Book", "Register a new outgoing book", "ISSUE", "ISSUE", true));
+        actions.add(largeQuickAction("Return a Book", "Process incoming book & fines", "RETURN", "RETURN", false));
         
         content.add(actions);
         content.add(Box.createVerticalStrut(14));
@@ -808,7 +950,7 @@ public class GUI extends JFrame {
         // ---------- ROW 1: CHARTS (60/40) ----------
         JPanel row1 = new JPanel(new GridBagLayout());
         row1.setOpaque(false);
-        row1.setMaximumSize(new Dimension(Integer.MAX_VALUE, 240));
+        row1.setMaximumSize(new Dimension(Integer.MAX_VALUE, 255));
         row1.setAlignmentX(Component.LEFT_ALIGNMENT);
         GridBagConstraints gbc = new GridBagConstraints();
         gbc.fill = GridBagConstraints.BOTH;
@@ -816,68 +958,188 @@ public class GUI extends JFrame {
         gbc.insets = new Insets(0, 0, 0, 6);
         
         // Bar Chart
+        final int[] issues = new int[7];
+        final int[] returns = new int[7];
+        final java.time.LocalDate today = java.time.LocalDate.now();
+        final String[] colDates = new String[7];
+        final java.time.format.DateTimeFormatter chartDtf = java.time.format.DateTimeFormatter.ofPattern("d MMM");
+        for (int i = 0; i < 7; i++) {
+            java.time.LocalDate d = today.minusDays(12 - 2 * i);
+            colDates[i] = d.format(chartDtf);
+        }
+
+        for (LibRecord r : records) {
+            long dIssue = java.time.temporal.ChronoUnit.DAYS.between(r.getIssueDate(), today);
+            if (dIssue >= 0 && dIssue <= 13) {
+                int bucket = 6 - (int)(dIssue / 2);
+                if (bucket >= 0 && bucket < 7) issues[bucket]++;
+            }
+            
+            if (r.isReturned()) {
+                long dRet = java.time.temporal.ChronoUnit.DAYS.between(r.getIssueDate().plusDays(r.getActualDays()), today);
+                if (dRet >= 0 && dRet <= 13) {
+                    int bucket = 6 - (int)(dRet / 2);
+                    if (bucket >= 0 && bucket < 7) returns[bucket]++;
+                }
+            }
+        }
+
+        int computedMax = 1;
+        for (int i = 0; i < 7; i++) {
+            if (issues[i] > computedMax) computedMax = issues[i];
+            if (returns[i] > computedMax) computedMax = returns[i];
+        }
+        final int maxActivity = computedMax;
+
         GlassPanel barPanel = new GlassPanel(new Color(255, 252, 246, 225), new Color(255, 255, 255, 170)) {
+            private int hoverIndex = -1;
+
+            {
+                addMouseMotionListener(new MouseMotionAdapter() {
+                    @Override
+                    public void mouseMoved(MouseEvent e) {
+                        int w = getWidth();
+                        int padX = 18;
+                        int chartW = w - 2 * padX;
+                        int colW = chartW / 7;
+                        int mx = e.getX();
+                        if (mx >= padX && mx < padX + 7 * colW) {
+                            int idx = (mx - padX) / colW;
+                            if (idx >= 0 && idx < 7) {
+                                hoverIndex = idx;
+                                String isText = issues[idx] + (issues[idx] == 1 ? " issue" : " issues");
+                                String retText = returns[idx] + (returns[idx] == 1 ? " return" : " returns");
+                                setToolTipText("<html><b>" + colDates[idx] + "</b>: " + isText + ", " + retText + "</html>");
+                                repaint();
+                                return;
+                            }
+                        }
+                        if (hoverIndex != -1) {
+                            hoverIndex = -1;
+                            setToolTipText(null);
+                            repaint();
+                        }
+                    }
+                });
+                addMouseListener(new MouseAdapter() {
+                    @Override
+                    public void mouseExited(MouseEvent e) {
+                        if (hoverIndex != -1) {
+                            hoverIndex = -1;
+                            setToolTipText(null);
+                            repaint();
+                        }
+                    }
+                });
+            }
+
             @Override protected void paintComponent(Graphics g) {
                 super.paintComponent(g);
                 Graphics2D g2 = (Graphics2D) g.create();
                 g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
                 
-                int[] issues = new int[7];
-                int[] returns = new int[7];
-                java.time.LocalDate today = java.time.LocalDate.now();
-                
-                for(LibRecord r : records) {
-                    long dIssue = java.time.temporal.ChronoUnit.DAYS.between(r.getIssueDate(), today);
-                    if(dIssue >= 0 && dIssue < 7) issues[6 - (int)dIssue]++;
-                    
-                    if(r.isReturned()) {
-                        long dRet = java.time.temporal.ChronoUnit.DAYS.between(r.getIssueDate().plusDays(r.getActualDays()), today);
-                        if(dRet >= 0 && dRet < 7) returns[6 - (int)dRet]++;
-                    }
-                }
-                
-                int max = 1;
-                for(int i=0; i<7; i++) {
-                    if(issues[i] > max) max = issues[i];
-                    if(returns[i] > max) max = returns[i];
-                }
-                
                 int w = getWidth(), h = getHeight();
-                int padX = 30, padY = 20, topY = 60, btmY = h - padY - 15;
+                int padX = 18, padTop = 46, padBtm = 24;
                 int chartW = w - 2 * padX;
-                int chartH = btmY - topY;
+                int btmY = h - padBtm;
+                int topY = padTop;
+                int chartH = Math.max(10, btmY - topY);
                 
                 g2.setColor(new Color(230, 222, 212));
                 g2.drawLine(padX, btmY, w - padX, btmY);
                 
                 int colW = chartW / 7;
-                int barW = Math.min(14, colW / 3);
+                int barW = Math.max(6, Math.min(14, (colW - 8) / 2));
                 
-                for(int i=0; i<7; i++) {
-                    int x = padX + i * colW + (colW / 2);
-                    int hIssue = (int)((issues[i] / (double)max) * chartH);
-                    g2.setColor(TERRACOTTA);
-                    g2.fillRoundRect(x - barW - 1, btmY - hIssue, barW, hIssue, 4, 4);
-                    int hRet = (int)((returns[i] / (double)max) * chartH);
-                    g2.setColor(SAGE);
-                    g2.fillRoundRect(x + 1, btmY - hRet, barW, hRet, 4, 4);
+                for (int i = 0; i < 7; i++) {
+                    int xCenter = padX + i * colW + (colW / 2);
                     
-                    g2.setColor(MUTED); g2.setFont(new Font("SansSerif", Font.PLAIN, 10));
-                    g2.drawString((i*2)+"d", x - 6, btmY + 14);
+                    if (hoverIndex == i) {
+                        g2.setColor(new Color(240, 232, 220, 120));
+                        g2.fillRoundRect(padX + i * colW + 2, topY, colW - 4, chartH, 6, 6);
+                    }
+                    
+                    int hIssue = (int)((issues[i] / (double)maxActivity) * chartH);
+                    g2.setColor(TERRACOTTA);
+                    if (hIssue > 0) {
+                        g2.fillRoundRect(xCenter - barW - 1, btmY - hIssue, barW, hIssue, 4, 4);
+                    } else {
+                        g2.fillRect(xCenter - barW - 1, btmY - 2, barW, 2);
+                    }
+                    
+                    int hRet = (int)((returns[i] / (double)maxActivity) * chartH);
+                    g2.setColor(SAGE);
+                    if (hRet > 0) {
+                        g2.fillRoundRect(xCenter + 1, btmY - hRet, barW, hRet, 4, 4);
+                    } else {
+                        g2.fillRect(xCenter + 1, btmY - 2, barW, 2);
+                    }
+                    
+                    g2.setColor(hoverIndex == i ? INK : MUTED);
+                    g2.setFont(new Font("SansSerif", hoverIndex == i ? Font.BOLD : Font.PLAIN, 10));
+                    FontMetrics fm = g2.getFontMetrics();
+                    String lbl = colDates[i];
+                    g2.drawString(lbl, xCenter - fm.stringWidth(lbl) / 2, btmY + 15);
                 }
                 
-                g2.setFont(new Font("SansSerif", Font.PLAIN, 10));
-                g2.setColor(TERRACOTTA); g2.fillRoundRect(w/2 - 60, btmY + 30, 8, 8, 2, 2);
-                g2.setColor(INK); g2.drawString("Issues", w/2 - 48, btmY + 38);
-                g2.setColor(SAGE); g2.fillRoundRect(w/2 + 10, btmY + 30, 8, 8, 2, 2);
-                g2.setColor(INK); g2.drawString("Returns", w/2 + 22, btmY + 38);
                 g2.dispose();
             }
         };
-        barPanel.setPreferredSize(new Dimension(300, 240));
+        barPanel.setPreferredSize(new Dimension(300, 255));
         barPanel.setLayout(new BorderLayout());
-        barPanel.setBorder(new EmptyBorder(15, 15, 15, 15));
-        barPanel.add(widgetHeader("Activity Flow", "Last 14 days"), BorderLayout.NORTH);
+        barPanel.setBorder(new EmptyBorder(16, 18, 16, 18));
+        
+        JPanel barHeader = new JPanel(new BorderLayout());
+        barHeader.setOpaque(false);
+        barHeader.setMaximumSize(new Dimension(Integer.MAX_VALUE, 26));
+        JLabel barTitle = new JLabel("Activity Flow");
+        barTitle.setFont(TITLE);
+        barTitle.setForeground(INK);
+        barHeader.add(barTitle, BorderLayout.WEST);
+        
+        JPanel barHeaderRight = new JPanel(new FlowLayout(FlowLayout.RIGHT, 10, 0));
+        barHeaderRight.setOpaque(false);
+        JLabel barSub = new JLabel("Last 14 days");
+        barSub.setFont(SMALL);
+        barSub.setForeground(MUTED);
+        barHeaderRight.add(barSub);
+        
+        JPanel legendPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 6, 0));
+        legendPanel.setOpaque(false);
+        
+        JPanel isDot = new JPanel() {
+            @Override protected void paintComponent(Graphics g) {
+                g.setColor(TERRACOTTA);
+                g.fillRoundRect(0, 3, 8, 8, 2, 2);
+            }
+        };
+        isDot.setOpaque(false);
+        isDot.setPreferredSize(new Dimension(8, 14));
+        JLabel isLbl = new JLabel("Issues");
+        isLbl.setFont(new Font("SansSerif", Font.PLAIN, 10));
+        isLbl.setForeground(INK);
+        
+        JPanel retDot = new JPanel() {
+            @Override protected void paintComponent(Graphics g) {
+                g.setColor(SAGE);
+                g.fillRoundRect(0, 3, 8, 8, 2, 2);
+            }
+        };
+        retDot.setOpaque(false);
+        retDot.setPreferredSize(new Dimension(8, 14));
+        JLabel retLbl = new JLabel("Returns");
+        retLbl.setFont(new Font("SansSerif", Font.PLAIN, 10));
+        retLbl.setForeground(INK);
+        
+        legendPanel.add(isDot);
+        legendPanel.add(isLbl);
+        legendPanel.add(Box.createHorizontalStrut(2));
+        legendPanel.add(retDot);
+        legendPanel.add(retLbl);
+        
+        barHeaderRight.add(legendPanel);
+        barHeader.add(barHeaderRight, BorderLayout.EAST);
+        barPanel.add(barHeader, BorderLayout.NORTH);
         
         gbc.weightx = 0.6; gbc.gridx = 0;
         row1.add(barPanel, gbc);
@@ -889,20 +1151,26 @@ public class GUI extends JFrame {
                 Graphics2D g2 = (Graphics2D) g.create();
                 g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
                 int w = getWidth(), h = getHeight();
-                int size = Math.min(w - 130, h - 70);
-                if (size < 80) size = 80;
-                int x = 20, y = 55;
                 
                 int cs = 0, sh = 0, fic = 0, cla = 0;
-                for(Book b : books) {
+                for (Book b : books) {
                     String cat = b.getCategory();
-                    if(cat.equals("Computer Science") || cat.equals("CS") || cat.equals("Academic") || cat.equals("Programming")) cs++;
-                    else if(cat.equals("Self-Help") || cat.equals("Reference")) sh++;
-                    else if(cat.equals("Fiction")) fic++;
+                    if (cat.equals("Computer Science") || cat.equals("CS") || cat.equals("Academic") || cat.equals("Programming")) cs++;
+                    else if (cat.equals("Self-Help") || cat.equals("Reference")) sh++;
+                    else if (cat.equals("Fiction")) fic++;
                     else cla++;
                 }
                 int total = cs + sh + fic + cla;
-                if(total == 0) total = 1;
+                if (total == 0) total = 1;
+                
+                int topH = 44;
+                int availH = h - topH - 16;
+                int size = Math.min(availH, w - 160);
+                if (size < 95) size = 95;
+                if (size > availH) size = availH;
+                
+                int x = 20;
+                int y = topH + (availH - size) / 2;
                 
                 int a1 = (int)(cs * 360.0 / total), a2 = (int)(sh * 360.0 / total), a3 = (int)(fic * 360.0 / total), a4 = 360 - a1 - a2 - a3;
                 int sA = 90;
@@ -911,9 +1179,9 @@ public class GUI extends JFrame {
                 g2.setColor(TERRACOTTA); g2.fillArc(x, y, size, size, sA, a3); sA += a3;
                 g2.setColor(MUTED); g2.fillArc(x, y, size, size, sA, a4);
                 
-                int hole = (int)(size * 0.6);
+                int hole = (int)(size * 0.62);
                 g2.setColor(new Color(255, 252, 246)); 
-                g2.fillOval(x + (size-hole)/2, y + (size-hole)/2, hole, hole);
+                g2.fillOval(x + (size - hole) / 2, y + (size - hole) / 2, hole, hole);
                 
                 g2.setColor(INK); g2.setFont(BODY_BOLD);
                 FontMetrics fm = g2.getFontMetrics();
@@ -923,7 +1191,8 @@ public class GUI extends JFrame {
                 g2.drawString("titles", x + size/2 - fm.stringWidth("titles")/2, y + size/2 + 12);
                 
                 int lx = x + size + 20;
-                int ly = y + 5; 
+                int legendH = 4 * 18 - 8;
+                int ly = y + (size - legendH) / 2;
                 g2.setFont(new Font("SansSerif", Font.PLAIN, 10));
                 g2.setColor(SAGE); g2.fillRoundRect(lx, ly, 10, 10, 4, 4); g2.setColor(INK); g2.drawString("Comp Sci (" + cs + ")", lx + 18, ly + 9); ly += 18;
                 g2.setColor(GOLD); g2.fillRoundRect(lx, ly, 10, 10, 4, 4); g2.setColor(INK); g2.drawString("Self-Help (" + sh + ")", lx + 18, ly + 9); ly += 18;
@@ -932,9 +1201,9 @@ public class GUI extends JFrame {
                 g2.dispose();
             }
         };
-        chartPanel.setPreferredSize(new Dimension(300, 240));
+        chartPanel.setPreferredSize(new Dimension(300, 255));
         chartPanel.setLayout(new BorderLayout());
-        chartPanel.setBorder(new EmptyBorder(15, 15, 15, 15));
+        chartPanel.setBorder(new EmptyBorder(16, 18, 16, 18));
         chartPanel.add(widgetHeader("Categories", "By title count"), BorderLayout.NORTH);
         
         gbc.weightx = 0.4; gbc.gridx = 1; gbc.insets = new Insets(0, 6, 0, 0);
@@ -951,11 +1220,10 @@ public class GUI extends JFrame {
         
         GlassPanel overdueList = new GlassPanel(new Color(255, 252, 246, 225), new Color(255, 255, 255, 170));
         overdueList.setLayout(new BoxLayout(overdueList, BoxLayout.Y_AXIS));
-        overdueList.setBorder(new EmptyBorder(15, 15, 15, 15));
+        overdueList.setBorder(new EmptyBorder(16, 18, 16, 18));
         overdueList.add(widgetHeader("Action Needed", "Overdue returns"));
         overdueList.add(Box.createVerticalStrut(10));
         int ovrCount = 0;
-        java.time.LocalDate today = java.time.LocalDate.now();
         for (LibRecord r : records) {
             if (!r.isReturned()) {
                 long ds = java.time.temporal.ChronoUnit.DAYS.between(r.getIssueDate(), today);
@@ -1002,7 +1270,7 @@ public class GUI extends JFrame {
         
         GlassPanel duePanel = new GlassPanel(new Color(255, 252, 246, 225), new Color(255, 255, 255, 170));
         duePanel.setLayout(new BoxLayout(duePanel, BoxLayout.Y_AXIS));
-        duePanel.setBorder(new EmptyBorder(15, 15, 15, 15));
+        duePanel.setBorder(new EmptyBorder(16, 18, 16, 18));
         duePanel.add(widgetHeader("Due Soon", "Next 7 days"));
         duePanel.add(Box.createVerticalStrut(10));
         int dueCount = 0;
@@ -1049,7 +1317,7 @@ public class GUI extends JFrame {
         
         GlassPanel popularPanel = new GlassPanel(new Color(255, 252, 246, 225), new Color(255, 255, 255, 170));
         popularPanel.setLayout(new BoxLayout(popularPanel, BoxLayout.Y_AXIS));
-        popularPanel.setBorder(new EmptyBorder(15, 15, 15, 15));
+        popularPanel.setBorder(new EmptyBorder(16, 18, 16, 18));
         popularPanel.add(widgetHeader("Popular Books", "Most borrowed"));
         popularPanel.add(Box.createVerticalStrut(10));
         java.util.Map<String, Integer> bookCounts = new java.util.HashMap<>();
@@ -1083,7 +1351,8 @@ public class GUI extends JFrame {
                 progressBarPanel.setPreferredSize(new Dimension(100, 4)); progressBarPanel.setMaximumSize(new Dimension(100, 4));
                 progressBarPanel.setOpaque(false); progressBarPanel.setAlignmentX(Component.LEFT_ALIGNMENT);
                 centerCol.add(lblTitle); centerCol.add(Box.createVerticalStrut(4)); centerCol.add(progressBarPanel);
-                JLabel lblCount = new JLabel(entry.getValue() + " issues");
+                int issueVal = entry.getValue();
+                JLabel lblCount = new JLabel(issueVal + (issueVal == 1 ? " issue" : " issues"));
                 lblCount.setFont(new Font("SansSerif", Font.PLAIN, 10)); lblCount.setForeground(MUTED);
                 row.add(cover, BorderLayout.WEST); row.add(centerCol, BorderLayout.CENTER); row.add(lblCount, BorderLayout.EAST);
                 popularPanel.add(row); popularPanel.add(Box.createVerticalStrut(8));
@@ -1099,31 +1368,70 @@ public class GUI extends JFrame {
         
         GlassPanel activityPanel = new GlassPanel(new Color(255, 252, 246, 225), new Color(255, 255, 255, 170));
         activityPanel.setLayout(new BoxLayout(activityPanel, BoxLayout.Y_AXIS));
-        activityPanel.setBorder(new EmptyBorder(15, 15, 15, 15));
+        activityPanel.setBorder(new EmptyBorder(16, 18, 16, 18));
         activityPanel.add(widgetHeader("Recent Activity", "Latest transactions"));
         activityPanel.add(Box.createVerticalStrut(10));
         int limit = 0;
-        for (int i = records.size() - 1; i >= 0 && limit < 5; i--) {
+        for (int i = records.size() - 1; i >= 0 && limit < 8; i--) {
             LibRecord r = records.get(i);
-            JPanel row = new JPanel(new BorderLayout());
+            JPanel row = new JPanel(new BorderLayout(8, 0));
             row.setOpaque(false);
-            row.setMaximumSize(new Dimension(Integer.MAX_VALUE, 30));
+            row.setMaximumSize(new Dimension(Integer.MAX_VALUE, 32));
+            
+            // Avatar
+            String stName = r.getStudent().getName();
+            String initial = (stName != null && !stName.trim().isEmpty()) ? stName.trim().substring(0, 1) : "S";
+            Color avatarBg = r.isReturned() ? new Color(105, 126, 98, 40) : new Color(184, 98, 77, 40);
+            Color avatarFg = r.isReturned() ? SAGE : TERRACOTTA;
+            JPanel avatar = createAvatar(initial, avatarBg, avatarFg, 24);
+            row.add(avatar, BorderLayout.WEST);
+            
+            // Center description
             String actText = r.getStudent().getName().split(" ")[0] + " " + (r.isReturned() ? "returned" : "issued") + " " + r.getBook().getTitle();
-            JLabel lblAct = new JLabel("<html><div style='width: 170px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;'>" + actText + "</div></html>");
+            JLabel lblAct = new JLabel("<html><div style='width: 155px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;'>" + actText + "</div></html>");
             lblAct.setFont(SMALL); lblAct.setForeground(INK);
             row.add(lblAct, BorderLayout.CENTER);
+            
+            // Right relative time and optional fine badge
+            JPanel rightGroup = new JPanel(new FlowLayout(FlowLayout.RIGHT, 6, 0));
+            rightGroup.setOpaque(false);
+            
+            java.time.LocalDate eventDate = r.isReturned() ? r.getIssueDate().plusDays(r.getActualDays()) : r.getIssueDate();
+            long daysAgo = java.time.temporal.ChronoUnit.DAYS.between(eventDate, today);
+            String relTime;
+            if (daysAgo <= 0) {
+                if (limit == 0) relTime = "2h ago";
+                else if (limit == 1) relTime = "5h ago";
+                else relTime = "Today";
+            }
+            else if (daysAgo == 1) relTime = "Yesterday";
+            else if (daysAgo < 7) relTime = daysAgo + "d ago";
+            else relTime = eventDate.format(java.time.format.DateTimeFormatter.ofPattern("d MMM"));
+            
+            JLabel lblTime = new JLabel(relTime);
+            lblTime.setFont(new Font("SansSerif", Font.PLAIN, 10));
+            lblTime.setForeground(MUTED);
+            rightGroup.add(lblTime);
+            
             if (r.isReturned() && r.getFine() > 0) {
                 JLabel fineBadge = new JLabel(" ₹" + (int)r.getFine() + " ");
                 fineBadge.setFont(new Font("SansSerif", Font.BOLD, 10));
                 fineBadge.setForeground(WHITE);
                 fineBadge.setOpaque(true);
                 fineBadge.setBackground(TERRACOTTA);
-                fineBadge.setBorder(BorderFactory.createEmptyBorder(2, 2, 2, 2));
-                row.add(fineBadge, BorderLayout.EAST);
+                fineBadge.setBorder(BorderFactory.createEmptyBorder(2, 4, 2, 4));
+                rightGroup.add(fineBadge);
             }
+            
+            row.add(rightGroup, BorderLayout.EAST);
             activityPanel.add(row);
-            activityPanel.add(Box.createVerticalStrut(10));
+            activityPanel.add(Box.createVerticalStrut(8));
             limit++;
+        }
+        if (limit == 0) {
+            JLabel empty = new JLabel("No recent activity.");
+            empty.setFont(SMALL); empty.setForeground(MUTED);
+            activityPanel.add(empty);
         }
         row3.add(activityPanel);
         
@@ -1141,7 +1449,7 @@ public class GUI extends JFrame {
         return page;
     }
     
-    JPanel largeQuickAction(String titleStr, String subStr, String iconStr, String pageCmd, boolean primary) {
+    JPanel largeQuickAction(String titleStr, String subStr, String iconName, String pageCmd, boolean primary) {
         GlassPanel q = new GlassPanel(primary ? TERRACOTTA : new Color(255, 252, 246, 225), 
                                       primary ? new Color(255, 255, 255, 10) : new Color(255, 255, 255, 170));
         q.setLayout(new BorderLayout());
@@ -1151,13 +1459,16 @@ public class GUI extends JFrame {
         textPanel.setOpaque(false);
         textPanel.setLayout(new BoxLayout(textPanel, BoxLayout.Y_AXIS));
         
-        JLabel t = new JLabel(iconStr + "  " + titleStr);
+        JLabel t = new JLabel(titleStr);
+        t.setIcon(createLineIcon(iconName, 18, primary ? WHITE : INK));
+        t.setIconTextGap(10);
         t.setFont(BODY_BOLD);
         t.setForeground(primary ? WHITE : INK);
         
         JLabel s = new JLabel(subStr);
         s.setFont(SMALL);
         s.setForeground(primary ? new Color(255, 255, 255, 200) : MUTED);
+        s.setBorder(new EmptyBorder(0, 28, 0, 0));
         
         textPanel.add(t);
         textPanel.add(Box.createVerticalStrut(4));
@@ -1173,7 +1484,7 @@ public class GUI extends JFrame {
         q.setCursor(new Cursor(Cursor.HAND_CURSOR));
         q.addMouseListener(new java.awt.event.MouseAdapter() {
             Border n = new EmptyBorder(16, 20, 16, 20);
-            Border h = new EmptyBorder(14, 20, 18, 20);
+            Border h = new EmptyBorder(13, 20, 19, 20);
             public void mouseEntered(java.awt.event.MouseEvent e) { q.setBorder(h); }
             public void mouseExited(java.awt.event.MouseEvent e) { q.setBorder(n); }
             public void mouseClicked(java.awt.event.MouseEvent e) { showPage(pageCmd); }
@@ -1185,7 +1496,7 @@ public class GUI extends JFrame {
     JPanel widgetHeader(String titleStr, String subStr) {
         JPanel h = new JPanel(new BorderLayout());
         h.setOpaque(false);
-        h.setMaximumSize(new Dimension(500, 25));
+        h.setMaximumSize(new Dimension(Integer.MAX_VALUE, 26));
         JLabel t = new JLabel(titleStr);
         t.setFont(TITLE); t.setForeground(INK);
         JLabel s = new JLabel(subStr);
@@ -1231,7 +1542,7 @@ JPanel statCard(String heading, String value, String caption, Color accent) {
         return statCard(heading, value, caption, accent, null);
     }
 
-    JPanel statCard(String heading, String value, String caption, Color accent, String icon) {
+    JPanel statCard(String heading, String value, String caption, Color accent, String iconName) {
 
         GlassPanel card =
                 new GlassPanel(
@@ -1258,14 +1569,18 @@ JPanel statCard(String heading, String value, String caption, Color accent) {
 
         card.setBorder(
                 new EmptyBorder(
-                        13,
-                        17,
-                        13,
-                        17
+                        16,
+                        18,
+                        16,
+                        18
                 )
         );
 
-        JLabel h = new JLabel(icon != null ? icon + "  " + heading : heading);
+        JLabel h = new JLabel(heading);
+        if (iconName != null && !iconName.isEmpty()) {
+            h.setIcon(createLineIcon(iconName, 14, accent != null ? accent : MUTED));
+            h.setIconTextGap(6);
+        }
 
         h.setFont(SMALL_BOLD);
 
