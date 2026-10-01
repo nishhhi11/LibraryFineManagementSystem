@@ -2219,447 +2219,671 @@ JButton smallButton(
     // =========================================================
 
     JPanel createStudentsPage() {
-
-        JPanel page =
-                new JPanel(
-                        new BorderLayout()
-                );
-
+        JPanel page = new JPanel(new BorderLayout());
         page.setBackground(CREAM);
 
-        JPanel header =
-                new JPanel(
-                        new BorderLayout()
-                );
-
+        // ── HEADER ──────────────────────────────────────────────
+        JPanel header = new JPanel(new BorderLayout());
         header.setOpaque(false);
+        header.setBorder(new EmptyBorder(30, 35, 0, 35));
 
-        header.setBorder(
-                new EmptyBorder(
-                        30,
-                        35,
-                        18,
-                        35
-                )
-        );
-
-        JPanel titleBox =
-                new JPanel();
-
+        // Title + subtitle
+        JPanel titleBox = new JPanel();
         titleBox.setOpaque(false);
-
-        titleBox.setLayout(
-                new BoxLayout(
-                        titleBox,
-                        BoxLayout.Y_AXIS
-                )
-        );
-
-        JLabel title =
-                new JLabel(
-                        "Students"
-                );
-
+        titleBox.setLayout(new BoxLayout(titleBox, BoxLayout.Y_AXIS));
+        JLabel title = new JLabel("Students");
         title.setFont(DISPLAY);
-
         title.setForeground(INK);
-
-        JLabel sub =
-                new JLabel(
-                        students.size()
-                                + " registered students"
-                );
-
+        JLabel sub = new JLabel(students.size() + " registered students");
         sub.setFont(BODY);
-
         sub.setForeground(MUTED);
-
         titleBox.add(title);
-
-        titleBox.add(
-                Box.createVerticalStrut(4)
-        );
-
+        titleBox.add(Box.createVerticalStrut(3));
         titleBox.add(sub);
+        header.add(titleBox, BorderLayout.WEST);
 
-        header.add(
-                titleBox,
-                BorderLayout.WEST
-        );
+        // Top-right: search + add button
+        JPanel topRight = new JPanel(new FlowLayout(FlowLayout.RIGHT, 10, 0));
+        topRight.setOpaque(false);
 
-        // Student search box
-        JPanel searchBox =
-                new JPanel(
-                        new BorderLayout()
-                );
+        // Styled search box
+        JPanel searchBox = new JPanel(new BorderLayout()) {
+            @Override protected void paintComponent(Graphics g) {
+                Graphics2D g2 = (Graphics2D) g.create();
+                g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+                g2.setColor(WHITE);
+                g2.fillRoundRect(0, 0, getWidth()-1, getHeight()-1, 14, 14);
+                Component center = ((BorderLayout)getLayout()).getLayoutComponent(BorderLayout.CENTER);
+                boolean focused = center != null && center.hasFocus();
+                g2.setColor(focused ? TERRACOTTA : SAND);
+                g2.setStroke(new BasicStroke(focused ? 2f : 1f));
+                g2.drawRoundRect(0, 0, getWidth()-1, getHeight()-1, 14, 14);
+                g2.dispose();
+                super.paintComponent(g);
+            }
+        };
+        searchBox.setOpaque(false);
+        searchBox.setPreferredSize(new Dimension(260, 44));
+        searchBox.setBorder(new EmptyBorder(0, 12, 0, 12));
 
-        searchBox.setPreferredSize(
-                new Dimension(
-                        300,
-                        42
-                )
-        );
+        JLabel sIcon = new JLabel("⌕");
+        sIcon.setFont(customSerif.deriveFont(Font.BOLD, 22f));
+        sIcon.setForeground(MUTED);
+        sIcon.setBorder(new EmptyBorder(0, 2, 1, 7));
 
-        searchBox.setBackground(PAPER);
-
-        searchBox.setBorder(
-                BorderFactory.createCompoundBorder(
-                        new LineBorder(
-                                SAND,
-                                1
-                        ),
-                        new EmptyBorder(
-                                0,
-                                10,
-                                0,
-                                10
-                        )
-                )
-        );
-
-        JLabel searchIcon =
-                new JLabel("⌕");
-
-        searchIcon.setFont(
-                new Font(
-                        "SansSerif",
-                        Font.BOLD,
-                        20
-                )
-        );
-
-        searchIcon.setForeground(MUTED);
-
-        searchBox.add(
-                searchIcon,
-                BorderLayout.WEST
-        );
-
-        JTextField search =
-                new JTextField();
-
-        search.setFont(BODY);
-
-        search.setForeground(INK);
-
-        search.setBackground(PAPER);
-
-        search.setBorder(
-                BorderFactory.createEmptyBorder(
-                        0,
-                        8,
-                        0,
-                        5
-                )
-        );
-
-        search.setToolTipText(
-                "Search by student name, ID or course"
-        );
-
-        final String placeholder =
-                "Search students...";
-
-        search.setText(placeholder);
-
-        search.setForeground(MUTED);
-
-        search.addFocusListener(
-                new FocusAdapter() {
-
-                    public void focusGained(
-                            FocusEvent e) {
-
-                        if (search.getText()
-                                .equals(placeholder)) {
-
-                            search.setText("");
-
-                            search.setForeground(INK);
-                        }
-                    }
-
-                    public void focusLost(
-                            FocusEvent e) {
-
-                        if (search.getText()
-                                .trim()
-                                .isEmpty()) {
-
-                            search.setText(
-                                    placeholder
-                            );
-
-                            search.setForeground(
-                                    MUTED
-                            );
-                        }
-                    }
+        JTextField search = new JTextField() {
+            @Override protected void paintComponent(Graphics g) {
+                super.paintComponent(g);
+                if (getText().isEmpty() && !hasFocus()) {
+                    Graphics2D g2 = (Graphics2D) g.create();
+                    g2.setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING, RenderingHints.VALUE_TEXT_ANTIALIAS_ON);
+                    g2.setColor(MUTED);
+                    int y = (getHeight() - g.getFontMetrics().getHeight()) / 2 + g.getFontMetrics().getAscent();
+                    g2.drawString("Search by name, ID or phone...", getInsets().left, y);
+                    g2.dispose();
                 }
-        );
+            }
+        };
+        search.setFont(new Font("SansSerif", Font.PLAIN, 14));
+        search.setForeground(INK);
+        search.setOpaque(false);
+        search.setBackground(new Color(255,255,255,0));
+        search.setBorder(BorderFactory.createEmptyBorder());
+        search.addFocusListener(new FocusAdapter() {
+            public void focusGained(FocusEvent e) { searchBox.repaint(); }
+            public void focusLost(FocusEvent e)   { searchBox.repaint(); }
+        });
+        searchBox.add(sIcon, BorderLayout.WEST);
+        searchBox.add(search, BorderLayout.CENTER);
+        topRight.add(searchBox);
 
-        searchBox.add(
-                search,
-                BorderLayout.CENTER
-        );
+        // + Add Student button
+        JButton addBtn = new JButton("+ Add Student");
+        addBtn.setFont(SMALL_BOLD);
+        addBtn.setForeground(WHITE);
+        addBtn.setBackground(TERRACOTTA);
+        addBtn.setOpaque(true);
+        addBtn.setBorderPainted(false);
+        addBtn.setFocusPainted(false);
+        addBtn.setCursor(new Cursor(Cursor.HAND_CURSOR));
+        addBtn.setBorder(new EmptyBorder(10, 18, 10, 18));
+        addBtn.addActionListener(e -> showAddStudentDialog(page));
+        topRight.add(addBtn);
+        header.add(topRight, BorderLayout.EAST);
 
-        header.add(
-                searchBox,
-                BorderLayout.EAST
-        );
+        // ── FILTER CHIPS + COUNT ────────────────────────────────
+        JPanel filtersRow = new JPanel(new BorderLayout());
+        filtersRow.setOpaque(false);
+        filtersRow.setBorder(new EmptyBorder(18, 0, 0, 0));
 
-        page.add(
-                header,
-                BorderLayout.NORTH
-        );
+        JPanel chipsPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 6, 0));
+        chipsPanel.setOpaque(false);
 
-        JPanel list =
-                new JPanel();
+        String[] chipNames = {"All", "With issued books", "With fines", "Overdue"};
+        String[] activeFilter = {"All"};
+        java.util.List<JButton> chipButtons = new java.util.ArrayList<>();
+        Runnable[] applyFilters = new Runnable[1];
 
-        list.setBackground(CREAM);
-
-        list.setLayout(
-                new BoxLayout(
-                        list,
-                        BoxLayout.Y_AXIS
-                )
-        );
-
-        list.setBorder(
-                new EmptyBorder(
-                        0,
-                        35,
-                        30,
-                        35
-                )
-        );
-
-        for (Student student :
-                students) {
-
-            list.add(
-                    studentCard(student)
-            );
-
-            list.add(
-                    Box.createVerticalStrut(10)
-            );
+        // Count for each chip
+        int[] chipCounts = new int[chipNames.length];
+        chipCounts[0] = students.size();
+        for (Student s : students) {
+            boolean hasIssued = false, hasFine = false, hasOverdue = false;
+            for (LibRecord r : records) {
+                if (!r.getStudent().getId().equals(s.getId())) continue;
+                if (!r.isReturned()) hasIssued = true;
+                if (!r.isReturned()) {
+                    long days = java.time.temporal.ChronoUnit.DAYS.between(r.getIssueDate(), java.time.LocalDate.now());
+                    if (days > r.getAllowedDays()) hasOverdue = true;
+                }
+                if (r.isReturned() && r.getFine() > 0 && !r.getFineStatus().equals("PAID")) hasFine = true;
+            }
+            if (hasIssued) chipCounts[1]++;
+            if (hasFine)   chipCounts[2]++;
+            if (hasOverdue) chipCounts[3]++;
         }
 
-        search.addKeyListener(
-                new KeyAdapter() {
-
-                    public void keyReleased(
-                            KeyEvent e) {
-
-                        String query =
-                                search.getText()
-                                        .toLowerCase()
-                                        .trim();
-
-                        if (query.equals(
-                                placeholder.toLowerCase()
-                        )) {
-                            query = "";
-                        }
-
-                        list.removeAll();
-
-                        for (Student student :
-                                students) {
-
-                            if (
-                                    student.getName()
-                                            .toLowerCase()
-                                            .contains(query)
-                                            ||
-                                            student.getId()
-                                                    .toLowerCase()
-                                                    .contains(query)
-                                            ||
-                                            student.getCourse()
-                                                    .toLowerCase()
-                                                    .contains(query)
-                                            ||
-                                            student.getContact()
-                                                    .toLowerCase()
-                                                    .contains(query)
-                            ) {
-
-                                list.add(
-                                        studentCard(
-                                                student
-                                        )
-                                );
-
-                                list.add(
-                                        Box.createVerticalStrut(
-                                                10
-                                        )
-                                );
-                            }
-                        }
-
-                        list.revalidate();
-
-                        list.repaint();
-                    }
+        for (int i = 0; i < chipNames.length; i++) {
+            String cn = chipNames[i];
+            int cnt = chipCounts[i];
+            String chipText = cn + " " + cnt;
+            JButton chip = new JButton(chipText);
+            chip.setFont(SMALL_BOLD);
+            chip.setForeground(i == 0 ? WHITE : MUTED);
+            chip.setBackground(i == 0 ? TERRACOTTA : CREAM);
+            chip.setOpaque(true);
+            chip.setBorderPainted(true);
+            chip.setBorder(BorderFactory.createCompoundBorder(new LineBorder(SAND, 1, true), new EmptyBorder(6, 14, 6, 14)));
+            chip.setFocusPainted(false);
+            chip.setCursor(new Cursor(Cursor.HAND_CURSOR));
+            chip.addActionListener(ev -> {
+                activeFilter[0] = cn;
+                for (JButton b : chipButtons) {
+                    boolean active = b.getText().startsWith(cn + " ");
+                    b.setForeground(active ? WHITE : MUTED);
+                    b.setBackground(active ? TERRACOTTA : CREAM);
                 }
-        );
+                if (applyFilters[0] != null) applyFilters[0].run();
+            });
+            chipButtons.add(chip);
+            chipsPanel.add(chip);
+        }
+        filtersRow.add(chipsPanel, BorderLayout.WEST);
 
+        JPanel headerWrapper = new JPanel(new BorderLayout());
+        headerWrapper.setOpaque(false);
+        headerWrapper.setBorder(new EmptyBorder(30, 35, 0, 35));
+        headerWrapper.add(header, BorderLayout.NORTH);
+        headerWrapper.add(filtersRow, BorderLayout.SOUTH);
+
+        // ── RESULTS COUNT ───────────────────────────────────────
+        JPanel countRow = new JPanel(new BorderLayout());
+        countRow.setOpaque(false);
+        countRow.setBorder(new EmptyBorder(10, 35, 6, 35));
+        JLabel resultsCount = new JLabel("Showing " + students.size() + " of " + students.size() + " students");
+        resultsCount.setFont(SMALL);
+        resultsCount.setForeground(MUTED);
+        countRow.add(resultsCount, BorderLayout.WEST);
+
+        JPanel topSection = new JPanel(new BorderLayout());
+        topSection.setOpaque(false);
+        topSection.add(headerWrapper, BorderLayout.NORTH);
+        topSection.add(countRow, BorderLayout.SOUTH);
+        page.add(topSection, BorderLayout.NORTH);
+
+        // ── TABLE HEADER ROW ────────────────────────────────────
+        JPanel tableHeader = new JPanel(null);
+        tableHeader.setBackground(new Color(235, 228, 213));
+        tableHeader.setPreferredSize(new Dimension(0, 32));
+        tableHeader.setBorder(new EmptyBorder(0, 35, 0, 35));
+        // columns: avatar(58), name+id(180), course(200), phone(130), issued(80), fine(90), status(110), chevron(30)
+        String[] colTitles  = {"", "STUDENT", "COURSE", "PHONE", "ISSUED", "FINE DUE", "STATUS", ""};
+        int[]    colXs      = {35, 103, 283, 483, 613, 693, 783, 893};
+        for (int i = 1; i < colTitles.length - 1; i++) {
+            JLabel lbl = new JLabel(colTitles[i]);
+            lbl.setFont(new Font("SansSerif", Font.BOLD, 10));
+            lbl.setForeground(MUTED);
+            lbl.setBounds(colXs[i], 8, 150, 16);
+            tableHeader.add(lbl);
+        }
+
+        // ── LIST ────────────────────────────────────────────────
+        JPanel list = new JPanel();
+        list.setBackground(CREAM);
+        list.setLayout(new BoxLayout(list, BoxLayout.Y_AXIS));
+        list.setBorder(new EmptyBorder(0, 35, 30, 35));
+
+        // Avatar tint colours (cycles)
+        Color[] avatarTints = {SAGE, new Color(180, 130, 100), SAND, new Color(120, 150, 175), GOLD};
+
+        // ── APPLY FILTERS LOGIC ─────────────────────────────────
+        applyFilters[0] = () -> {
+            list.removeAll();
+            String query = search.getText().toLowerCase().trim();
+            String filter = activeFilter[0];
+            java.util.List<Student> visible = new java.util.ArrayList<>();
+
+            for (Student s : students) {
+                // compute derived stats
+                int issued = 0;
+                double fine = 0;
+                boolean overdue = false;
+                for (LibRecord r : records) {
+                    if (!r.getStudent().getId().equals(s.getId())) continue;
+                    if (!r.isReturned()) {
+                        issued++;
+                        long days = java.time.temporal.ChronoUnit.DAYS.between(r.getIssueDate(), java.time.LocalDate.now());
+                        if (days > r.getAllowedDays()) overdue = true;
+                    }
+                    if (r.isReturned() && r.getFine() > 0 && !r.getFineStatus().equals("PAID")) fine += r.getFine();
+                }
+
+                boolean matchFilter = switch (filter) {
+                    case "With issued books" -> issued > 0;
+                    case "With fines"        -> fine > 0;
+                    case "Overdue"           -> overdue;
+                    default                  -> true;
+                };
+                boolean matchQuery = query.isEmpty()
+                    || s.getName().toLowerCase().contains(query)
+                    || s.getId().toLowerCase().contains(query)
+                    || s.getContact().toLowerCase().contains(query);
+
+                if (matchFilter && matchQuery) visible.add(s);
+            }
+
+            int[] idx = {0};
+            for (Student s : visible) {
+                int issued = 0;
+                double fine = 0;
+                boolean overdue = false;
+                for (LibRecord r : records) {
+                    if (!r.getStudent().getId().equals(s.getId())) continue;
+                    if (!r.isReturned()) {
+                        issued++;
+                        long days = java.time.temporal.ChronoUnit.DAYS.between(r.getIssueDate(), java.time.LocalDate.now());
+                        if (days > r.getAllowedDays()) overdue = true;
+                    }
+                    if (r.isReturned() && r.getFine() > 0 && !r.getFineStatus().equals("PAID")) fine += r.getFine();
+                }
+                Color tint = avatarTints[idx[0] % avatarTints.length];
+                list.add(studentRow(s, issued, fine, overdue, tint));
+                idx[0]++;
+            }
+
+            if (visible.isEmpty()) {
+                JLabel empty = new JLabel("No students match your search");
+                empty.setFont(BODY);
+                empty.setForeground(MUTED);
+                empty.setBorder(new EmptyBorder(30, 10, 10, 10));
+                list.add(empty);
+            }
+
+            resultsCount.setText("Showing " + visible.size() + " of " + students.size() + " students");
+            list.revalidate();
+            list.repaint();
+        };
+
+        applyFilters[0].run();
+
+        search.addKeyListener(new KeyAdapter() {
+            public void keyReleased(KeyEvent e) { applyFilters[0].run(); }
+        });
+
+        // ── SCROLL ──────────────────────────────────────────────
+        JPanel tableWrapper = new JPanel(new BorderLayout());
+        tableWrapper.setBackground(CREAM);
+        tableWrapper.add(tableHeader, BorderLayout.NORTH);
         JPanel listWrapper = new JPanel(new BorderLayout());
         listWrapper.setBackground(CREAM);
         listWrapper.add(list, BorderLayout.NORTH);
-        JScrollPane scroll = new JScrollPane(listWrapper);
+        tableWrapper.add(listWrapper, BorderLayout.CENTER);
 
+        JScrollPane scroll = new JScrollPane(tableWrapper);
         scroll.setBorder(null);
-
-        scroll.getVerticalScrollBar()
-                .setUnitIncrement(16);
-
-        page.add(
-                scroll,
-                BorderLayout.CENTER
-        );
+        scroll.setHorizontalScrollBarPolicy(JScrollPane.HORIZONTAL_SCROLLBAR_NEVER);
+        scroll.getVerticalScrollBar().setUnitIncrement(16);
+        page.add(scroll, BorderLayout.CENTER);
 
         return page;
     }
 
+    JPanel studentRow(Student student, int issued, double fine, boolean overdue, Color avatarTint) {
+        // Determine status
+        String statusText; Color statusColor, statusBg;
+        if (overdue) {
+            statusText = "Overdue"; statusColor = new Color(146, 90, 10); statusBg = new Color(255, 235, 180);
+        } else if (fine > 0) {
+            statusText = "Fine pending"; statusColor = new Color(140, 50, 30); statusBg = new Color(255, 218, 210);
+        } else {
+            statusText = "Active"; statusColor = new Color(60, 90, 50); statusBg = new Color(210, 230, 200);
+        }
 
-    JPanel studentCard(
-            Student student) {
+        JPanel row = new JPanel(new BorderLayout()) {
+            boolean hovered = false;
+            { // instance init
+                addMouseListener(new java.awt.event.MouseAdapter() {
+                    public void mouseEntered(java.awt.event.MouseEvent e)  { hovered = true;  repaint(); setCursor(new Cursor(Cursor.HAND_CURSOR)); }
+                    public void mouseExited(java.awt.event.MouseEvent e)   { hovered = false; repaint(); setCursor(new Cursor(Cursor.DEFAULT_CURSOR)); }
+                    public void mouseClicked(java.awt.event.MouseEvent e)  { showStudentProfile(student); }
+                });
+            }
+            @Override protected void paintComponent(Graphics g) {
+                Graphics2D g2 = (Graphics2D) g.create();
+                g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+                if (hovered) {
+                    g2.setColor(new Color(210, 195, 175, 80));
+                    g2.fillRoundRect(0, 0, getWidth(), getHeight(), 10, 10);
+                }
+                g2.dispose();
+                super.paintComponent(g);
+            }
+        };
+        row.setOpaque(false);
+        row.setMaximumSize(new Dimension(Integer.MAX_VALUE, 72));
+        row.setPreferredSize(new Dimension(800, 72));
+        row.setBorder(BorderFactory.createCompoundBorder(
+            BorderFactory.createMatteBorder(0, 0, 1, 0, new Color(220, 210, 195)),
+            new EmptyBorder(0, 0, 0, 0)
+        ));
 
-        GlassPanel card =
-                new GlassPanel(
-                        new Color(
-                                255,
-                                252,
-                                246,
-                                225
-                        ),
-                        new Color(
-                                255,
-                                255,
-                                255,
-                                170
-                        )
-                );
+        java.awt.event.MouseAdapter hoverAndClick = new java.awt.event.MouseAdapter() {
+            public void mouseEntered(java.awt.event.MouseEvent e) { row.dispatchEvent(javax.swing.SwingUtilities.convertMouseEvent(e.getComponent(), e, row)); }
+            public void mouseExited(java.awt.event.MouseEvent e)  { row.dispatchEvent(javax.swing.SwingUtilities.convertMouseEvent(e.getComponent(), e, row)); }
+            public void mouseClicked(java.awt.event.MouseEvent e) { showStudentProfile(student); }
+        };
 
-        card.setLayout(
-                new BorderLayout()
-        );
+        // ── AVATAR ──────────────────────────────────────────────
+        JPanel avatarPanel = new JPanel() {
+            @Override protected void paintComponent(Graphics g) {
+                Graphics2D g2 = (Graphics2D) g.create();
+                g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+                int cx = (getWidth()-44)/2, cy = (getHeight()-44)/2;
+                g2.setColor(avatarTint);
+                g2.fillOval(cx, cy, 44, 44);
+                g2.setFont(customSerif.deriveFont(Font.BOLD, 18f));
+                g2.setColor(WHITE);
+                String init = student.getName().substring(0,1).toUpperCase();
+                FontMetrics fm = g2.getFontMetrics();
+                g2.drawString(init, cx + (44 - fm.stringWidth(init))/2, cy + (44 - fm.getHeight())/2 + fm.getAscent());
+                g2.dispose();
+            }
+        };
+        avatarPanel.setOpaque(false);
+        avatarPanel.setPreferredSize(new Dimension(68, 72));
+        avatarPanel.addMouseListener(hoverAndClick);
+        row.add(avatarPanel, BorderLayout.WEST);
 
-        JPanel avatar =
-                new JPanel(
-                        new GridBagLayout()
-                );
+        // ── COLUMNS (CENTER) ─────────────────────────────────────
+        JPanel cols = new JPanel(new GridLayout(1, 6, 0, 0));
+        cols.setOpaque(false);
 
-        avatar.setPreferredSize(
-                new Dimension(
-                        75,
-                        75
-                )
-        );
+        // Name + ID pill
+        JPanel nameCell = new JPanel();
+        nameCell.setOpaque(false);
+        nameCell.setLayout(new BoxLayout(nameCell, BoxLayout.Y_AXIS));
+        nameCell.setBorder(new EmptyBorder(16, 0, 16, 10));
+        JLabel nameLabel = new JLabel(student.getName());
+        nameLabel.setFont(TITLE);
+        nameLabel.setForeground(INK);
+        JLabel idLabel = new JLabel(student.getId());
+        idLabel.setFont(new Font("SansSerif", Font.PLAIN, 11));
+        idLabel.setForeground(MUTED);
+        nameCell.add(nameLabel);
+        nameCell.add(Box.createVerticalStrut(3));
+        nameCell.add(idLabel);
+        nameCell.addMouseListener(hoverAndClick);
+        cols.add(nameCell);
 
-        avatar.setBackground(SAGE);
+        // Course (from getCourse())
+        JPanel courseCell = new JPanel();
+        courseCell.setOpaque(false);
+        courseCell.setLayout(new BoxLayout(courseCell, BoxLayout.Y_AXIS));
+        courseCell.setBorder(new EmptyBorder(22, 0, 22, 10));
+        JLabel courseLabel = new JLabel("<html><body>" + student.getCourse().replace("·","<br><span style='color:gray;font-size:10px'>") + "</body></html>");
+        courseLabel.setFont(BODY);
+        courseLabel.setForeground(MUTED);
+        courseCell.add(courseLabel);
+        courseCell.addMouseListener(hoverAndClick);
+        cols.add(courseCell);
 
-        String first =
-                student.getName()
-                        .substring(
-                                0,
-                                1
-                        )
-                        .toUpperCase();
+        // Phone
+        JPanel phoneCell = centeredColCell(student.getContact(), MUTED, hoverAndClick);
+        cols.add(phoneCell);
 
-        JLabel initial =
-                new JLabel(first);
+        // Books issued
+        JPanel issuedCell = centeredColCell(issued > 0 ? issued + " book" + (issued > 1 ? "s" : "") : "—", issued > 0 ? INK : MUTED, hoverAndClick);
+        cols.add(issuedCell);
 
-        initial.setFont(
-                customSerif.deriveFont(Font.BOLD, 28f)
-        );
+        // Fine
+        String fineStr = fine > 0 ? "₹" + (int) fine : "No dues";
+        Color fineColor = fine > 0 ? TERRACOTTA : MUTED;
+        JPanel fineCell = centeredColCell(fineStr, fineColor, hoverAndClick);
+        cols.add(fineCell);
 
-        initial.setForeground(WHITE);
+        // Status pill
+        JPanel statusCell = new JPanel(new GridBagLayout());
+        statusCell.setOpaque(false);
+        statusCell.addMouseListener(hoverAndClick);
+        JLabel pill = new JLabel(statusText) {
+            @Override protected void paintComponent(Graphics g) {
+                Graphics2D g2 = (Graphics2D) g.create();
+                g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+                g2.setColor(statusBg);
+                g2.fillRoundRect(0, 0, getWidth(), getHeight(), 12, 12);
+                g2.dispose();
+                super.paintComponent(g);
+            }
+        };
+        pill.setFont(new Font("SansSerif", Font.BOLD, 11));
+        pill.setForeground(statusColor);
+        pill.setOpaque(false);
+        pill.setBorder(new EmptyBorder(4, 10, 4, 10));
+        statusCell.add(pill);
+        cols.add(statusCell);
 
-        avatar.add(initial);
+        row.add(cols, BorderLayout.CENTER);
 
-        card.add(
-                avatar,
-                BorderLayout.WEST
-        );
+        // Chevron
+        JLabel chevron = new JLabel("›");
+        chevron.setFont(customSerif.deriveFont(Font.PLAIN, 22f));
+        chevron.setForeground(MUTED);
+        chevron.setBorder(new EmptyBorder(0, 0, 0, 8));
+        chevron.addMouseListener(hoverAndClick);
+        row.add(chevron, BorderLayout.EAST);
 
-        JPanel info =
-                new JPanel();
-
-        info.setOpaque(false);
-
-        info.setLayout(
-                new BoxLayout(
-                        info,
-                        BoxLayout.Y_AXIS
-                )
-        );
-
-        info.setBorder(
-                new EmptyBorder(
-                        13,
-                        16,
-                        13,
-                        10
-                )
-        );
-
-        JLabel name =
-                new JLabel(
-                        student.getName()
-                );
-
-        name.setFont(TITLE);
-
-        name.setForeground(INK);
-
-        JLabel id =
-                new JLabel(
-                        "ID  •  "
-                                + student.getId()
-                );
-
-        id.setFont(SMALL_BOLD);
-
-        id.setForeground(TERRACOTTA);
-
-        JLabel course =
-                new JLabel(
-                        student.getCourse()
-                                + "  •  "
-                                + student.getContact()
-                );
-
-        course.setFont(BODY);
-
-        course.setForeground(MUTED);
-
-        info.add(name);
-
-        info.add(
-                Box.createVerticalStrut(4)
-        );
-
-        info.add(id);
-
-        info.add(
-                Box.createVerticalStrut(6)
-        );
-
-        info.add(course);
-
-        card.add(
-                info,
-                BorderLayout.CENTER
-        );
-
-        return card;
+        return row;
     }
 
+    private JPanel centeredColCell(String text, Color color, java.awt.event.MouseAdapter hover) {
+        JPanel cell = new JPanel(new GridBagLayout());
+        cell.setOpaque(false);
+        JLabel lbl = new JLabel(text);
+        lbl.setFont(BODY);
+        lbl.setForeground(color);
+        cell.add(lbl);
+        cell.addMouseListener(hover);
+        return cell;
+    }
+
+    void showAddStudentDialog(JPanel parent) {
+        JDialog dlg = new JDialog((java.awt.Frame) javax.swing.SwingUtilities.getWindowAncestor(parent), "Add Student", true);
+        dlg.setSize(420, 420);
+        dlg.setLocationRelativeTo(parent);
+
+        JPanel main = new JPanel(new BorderLayout());
+        main.setBackground(CREAM);
+
+        JPanel form = new JPanel(new GridLayout(0, 2, 10, 14));
+        form.setOpaque(false);
+        form.setBorder(new EmptyBorder(24, 24, 10, 24));
+
+        String[] labels = {"Name", "Student ID", "Course", "Year", "Phone"};
+        JTextField[] fields = new JTextField[labels.length];
+        for (int i = 0; i < labels.length; i++) {
+            JLabel lbl = new JLabel(labels[i]);
+            lbl.setFont(SMALL_BOLD);
+            lbl.setForeground(INK);
+            form.add(lbl);
+            fields[i] = new JTextField();
+            fields[i].setFont(BODY);
+            fields[i].setBorder(BorderFactory.createCompoundBorder(new LineBorder(SAND, 1, true), new EmptyBorder(6, 8, 6, 8)));
+            form.add(fields[i]);
+        }
+        main.add(form, BorderLayout.CENTER);
+
+        JPanel footer = new JPanel(new FlowLayout(FlowLayout.RIGHT, 10, 14));
+        footer.setOpaque(false);
+        JButton cancel = new JButton("Cancel");
+        cancel.addActionListener(e -> dlg.dispose());
+        JButton save = new JButton("Save");
+        save.setBackground(TERRACOTTA);
+        save.setForeground(WHITE);
+        save.setOpaque(true);
+        save.setBorderPainted(false);
+        save.addActionListener(e -> {
+            String name = fields[0].getText().trim();
+            String id   = fields[1].getText().trim();
+            String course = fields[2].getText().trim();
+            String year   = fields[3].getText().trim();
+            String phone  = fields[4].getText().trim();
+            if (name.isEmpty() || id.isEmpty()) {
+                JOptionPane.showMessageDialog(dlg, "Name and ID are required.", "Validation", JOptionPane.WARNING_MESSAGE);
+                return;
+            }
+            String fullCourse = course + (year.isEmpty() ? "" : " · " + year);
+            Student s = new Student(id, name, fullCourse, phone);
+            students.add(s);
+            saveData();
+            dlg.dispose();
+            rebuildPages();
+            showPage("STUDENTS");
+        });
+        footer.add(cancel);
+        footer.add(save);
+        main.add(footer, BorderLayout.SOUTH);
+
+        dlg.add(main);
+        dlg.setVisible(true);
+    }
+
+    void showStudentProfile(Student student) {
+        JDialog dlg = new JDialog((java.awt.Frame) javax.swing.SwingUtilities.getWindowAncestor(this), student.getName(), false);
+        dlg.setSize(580, 580);
+        dlg.setLocationRelativeTo(this);
+
+        JPanel main = new JPanel(new BorderLayout());
+        main.setBackground(CREAM);
+
+        // ── Avatar + header ──────────────────────────────────────
+        Color[] tints = {SAGE, new Color(180,130,100), SAND, new Color(120,150,175), GOLD};
+        int tintIdx = Math.abs(student.getId().hashCode()) % tints.length;
+        Color tint = tints[tintIdx];
+
+        JPanel profileHeader = new JPanel(new BorderLayout(16, 0));
+        profileHeader.setBackground(new Color(235, 228, 213));
+        profileHeader.setBorder(new EmptyBorder(24, 24, 24, 24));
+
+        JPanel av = new JPanel() {
+            @Override protected void paintComponent(Graphics g) {
+                Graphics2D g2 = (Graphics2D) g.create();
+                g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+                g2.setColor(tint);
+                g2.fillOval(0, 0, 64, 64);
+                g2.setFont(customSerif.deriveFont(Font.BOLD, 26f));
+                g2.setColor(WHITE);
+                String init = student.getName().substring(0,1).toUpperCase();
+                FontMetrics fm = g2.getFontMetrics();
+                g2.drawString(init, (64-fm.stringWidth(init))/2, (64-fm.getHeight())/2+fm.getAscent());
+                g2.dispose();
+            }
+        };
+        av.setOpaque(false);
+        av.setPreferredSize(new Dimension(64, 64));
+        profileHeader.add(av, BorderLayout.WEST);
+
+        JPanel infoPanel = new JPanel();
+        infoPanel.setOpaque(false);
+        infoPanel.setLayout(new BoxLayout(infoPanel, BoxLayout.Y_AXIS));
+        JLabel nm = new JLabel(student.getName()); nm.setFont(DISPLAY); nm.setForeground(INK);
+        JLabel idl = new JLabel(student.getId() + "  ·  " + student.getCourse()); idl.setFont(BODY); idl.setForeground(MUTED);
+        JLabel ph = new JLabel("📞 " + student.getContact()); ph.setFont(SMALL); ph.setForeground(MUTED);
+        infoPanel.add(nm);
+        infoPanel.add(Box.createVerticalStrut(4));
+        infoPanel.add(idl);
+        infoPanel.add(Box.createVerticalStrut(2));
+        infoPanel.add(ph);
+        profileHeader.add(infoPanel, BorderLayout.CENTER);
+        main.add(profileHeader, BorderLayout.NORTH);
+
+        // ── Content: loans + fine history ────────────────────────
+        JPanel content = new JPanel();
+        content.setBackground(CREAM);
+        content.setLayout(new BoxLayout(content, BoxLayout.Y_AXIS));
+        content.setBorder(new EmptyBorder(20, 24, 20, 24));
+
+        // Active loans
+        JLabel loansTitle = new JLabel("Current Loans");
+        loansTitle.setFont(TITLE);
+        loansTitle.setForeground(INK);
+        content.add(loansTitle);
+        content.add(Box.createVerticalStrut(10));
+
+        java.time.LocalDate today = java.time.LocalDate.now();
+        java.time.format.DateTimeFormatter fmt = java.time.format.DateTimeFormatter.ofPattern("dd MMM yyyy");
+        boolean anyLoan = false;
+        for (LibRecord r : records) {
+            if (!r.getStudent().getId().equals(student.getId()) || r.isReturned()) continue;
+            anyLoan = true;
+            java.time.LocalDate due = r.getIssueDate().plusDays(r.getAllowedDays());
+            long daysLeft = java.time.temporal.ChronoUnit.DAYS.between(today, due);
+            boolean od = daysLeft < 0;
+            JPanel loanRow = new JPanel(new BorderLayout(8, 0));
+            loanRow.setBackground(od ? new Color(255, 235, 228) : new Color(245, 242, 236));
+            loanRow.setBorder(BorderFactory.createCompoundBorder(new LineBorder(od ? new Color(220,180,160) : SAND, 1, true), new EmptyBorder(8, 12, 8, 12)));
+            loanRow.setMaximumSize(new Dimension(Integer.MAX_VALUE, 44));
+            JLabel bookLbl = new JLabel(r.getBook().getTitle());
+            bookLbl.setFont(SMALL_BOLD);
+            bookLbl.setForeground(INK);
+            loanRow.add(bookLbl, BorderLayout.WEST);
+            JPanel right = new JPanel(new FlowLayout(FlowLayout.RIGHT, 8, 0));
+            right.setOpaque(false);
+            JLabel dueLbl = new JLabel("Due: " + due.format(fmt));
+            dueLbl.setFont(SMALL);
+            dueLbl.setForeground(MUTED);
+            right.add(dueLbl);
+            if (od) {
+                JLabel badge = new JLabel("Overdue " + Math.abs(daysLeft) + "d");
+                badge.setFont(new Font("SansSerif", Font.BOLD, 10));
+                badge.setForeground(new Color(140, 50, 30));
+                badge.setBackground(new Color(255, 200, 185));
+                badge.setOpaque(true);
+                badge.setBorder(new EmptyBorder(2, 7, 2, 7));
+                right.add(badge);
+            }
+            loanRow.add(right, BorderLayout.EAST);
+            content.add(loanRow);
+            content.add(Box.createVerticalStrut(6));
+        }
+        if (!anyLoan) {
+            JLabel none = new JLabel("No active loans."); none.setFont(BODY); none.setForeground(MUTED);
+            content.add(none);
+        }
+
+        content.add(Box.createVerticalStrut(18));
+
+        // Fine history
+        JLabel fineTitle = new JLabel("Fine History");
+        fineTitle.setFont(TITLE);
+        fineTitle.setForeground(INK);
+        content.add(fineTitle);
+        content.add(Box.createVerticalStrut(10));
+
+        boolean anyFine = false;
+        for (LibRecord r : records) {
+            if (!r.getStudent().getId().equals(student.getId()) || !r.isReturned() || r.getFine() <= 0) continue;
+            anyFine = true;
+            JPanel fineRow = new JPanel(new BorderLayout(8, 0));
+            fineRow.setBackground(new Color(245, 242, 236));
+            fineRow.setBorder(BorderFactory.createCompoundBorder(new LineBorder(SAND, 1, true), new EmptyBorder(8, 12, 8, 12)));
+            fineRow.setMaximumSize(new Dimension(Integer.MAX_VALUE, 44));
+            JLabel bookLbl = new JLabel(r.getBook().getTitle()); bookLbl.setFont(SMALL_BOLD); bookLbl.setForeground(INK);
+            fineRow.add(bookLbl, BorderLayout.WEST);
+            JLabel fineAmt = new JLabel("₹" + (int)r.getFine() + "  [" + r.getFineStatus() + "]");
+            fineAmt.setFont(SMALL_BOLD);
+            fineAmt.setForeground(r.getFineStatus().equals("PAID") ? SAGE : TERRACOTTA);
+            fineRow.add(fineAmt, BorderLayout.EAST);
+            content.add(fineRow);
+            content.add(Box.createVerticalStrut(6));
+        }
+        if (!anyFine) {
+            JLabel none = new JLabel("No fines on record."); none.setFont(BODY); none.setForeground(MUTED);
+            content.add(none);
+        }
+
+        JScrollPane scroll = new JScrollPane(content);
+        scroll.setBorder(null);
+        scroll.getVerticalScrollBar().setUnitIncrement(12);
+        main.add(scroll, BorderLayout.CENTER);
+
+        // Back button
+        JPanel footer = new JPanel(new FlowLayout(FlowLayout.RIGHT, 16, 12));
+        footer.setOpaque(false);
+        JButton back = new JButton("Close");
+        back.addActionListener(e -> dlg.dispose());
+        footer.add(back);
+        main.add(footer, BorderLayout.SOUTH);
+
+        dlg.add(main);
+        dlg.setVisible(true);
+    }
+
+    // =========================================================
+    // (legacy studentCard — no longer used but kept to avoid breaking references)
+    @SuppressWarnings("unused")
+    JPanel studentCard(Student student) {
+        return studentRow(student, 0, 0, false, SAGE);
+    }
 
     // =========================================================
     // ISSUE PAGE
