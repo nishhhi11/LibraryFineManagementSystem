@@ -355,13 +355,7 @@ public class GUI extends JFrame {
                 )
         );
 
-        bottom.add(online);
-
-        bottom.add(
-                Box.createVerticalStrut(5)
-        );
-
-        bottom.add(version);
+        // Removed online and version text from sidebar bottom as requested.
 
         sidebar.add(
                 bottom,
@@ -611,9 +605,7 @@ public class GUI extends JFrame {
         pLabel.setFont(SMALL_BOLD);
         profile.add(pLabel);
         
-        right.add(search);
-        right.add(bell);
-        right.add(profile);
+        // Removed search, bell, and profile as requested.
 
         bar.add(
                 left,
@@ -709,6 +701,7 @@ public class GUI extends JFrame {
         // ---------- HEADER ----------
         JPanel header = new JPanel(new BorderLayout());
         header.setOpaque(false);
+        header.setAlignmentX(Component.LEFT_ALIGNMENT);
         header.setMaximumSize(new Dimension(Integer.MAX_VALUE, 80));
         JPanel heading = new JPanel();
         heading.setOpaque(false);
@@ -803,7 +796,7 @@ public class GUI extends JFrame {
         actions.setAlignmentX(Component.LEFT_ALIGNMENT);
         
         actions.add(largeQuickAction("Browse Collection", "Search and view library books", "□", "BOOKS", false));
-        actions.add(largeQuickAction("Issue a Book", "Register a new outgoing book", "↗", "ISSUE", true));
+        actions.add(largeQuickAction("Issue a Book", "Register a new outgoing book", "↗", "ISSUE", false));
         actions.add(largeQuickAction("Return a Book", "Process incoming book & fines", "↙", "RETURN", false));
         
         content.add(actions);
@@ -871,13 +864,14 @@ public class GUI extends JFrame {
                 }
                 
                 g2.setFont(new Font("SansSerif", Font.PLAIN, 10));
-                g2.setColor(TERRACOTTA); g2.fillRoundRect(w - 130, 25, 8, 8, 2, 2);
-                g2.setColor(INK); g2.drawString("Issues", w - 118, 33);
-                g2.setColor(SAGE); g2.fillRoundRect(w - 70, 25, 8, 8, 2, 2);
-                g2.setColor(INK); g2.drawString("Returns", w - 58, 33);
+                g2.setColor(TERRACOTTA); g2.fillRoundRect(w/2 - 60, btmY + 30, 8, 8, 2, 2);
+                g2.setColor(INK); g2.drawString("Issues", w/2 - 48, btmY + 38);
+                g2.setColor(SAGE); g2.fillRoundRect(w/2 + 10, btmY + 30, 8, 8, 2, 2);
+                g2.setColor(INK); g2.drawString("Returns", w/2 + 22, btmY + 38);
                 g2.dispose();
             }
         };
+        barPanel.setPreferredSize(new Dimension(300, 240));
         barPanel.setLayout(new BorderLayout());
         barPanel.setBorder(new EmptyBorder(15, 15, 15, 15));
         barPanel.add(widgetHeader("Activity Flow", "Last 14 days"), BorderLayout.NORTH);
@@ -892,9 +886,9 @@ public class GUI extends JFrame {
                 Graphics2D g2 = (Graphics2D) g.create();
                 g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
                 int w = getWidth(), h = getHeight();
-                int size = Math.min(w - 120, h - 70);
-                if (size < 10) size = 80;
-                int x = 20, y = (h - size) / 2 + 15;
+                int size = Math.min(w - 130, h - 70);
+                if (size < 80) size = 80;
+                int x = 20, y = 55;
                 
                 int cs = 0, sh = 0, fic = 0, cla = 0;
                 for(Book b : books) {
@@ -926,7 +920,7 @@ public class GUI extends JFrame {
                 g2.drawString("titles", x + size/2 - fm.stringWidth("titles")/2, y + size/2 + 12);
                 
                 int lx = x + size + 20;
-                int ly = y + (size - 70) / 2; 
+                int ly = y + 5; 
                 g2.setFont(new Font("SansSerif", Font.PLAIN, 10));
                 g2.setColor(SAGE); g2.fillRoundRect(lx, ly, 10, 10, 4, 4); g2.setColor(INK); g2.drawString("Comp Sci (" + cs + ")", lx + 18, ly + 9); ly += 18;
                 g2.setColor(GOLD); g2.fillRoundRect(lx, ly, 10, 10, 4, 4); g2.setColor(INK); g2.drawString("Self-Help (" + sh + ")", lx + 18, ly + 9); ly += 18;
@@ -935,6 +929,7 @@ public class GUI extends JFrame {
                 g2.dispose();
             }
         };
+        chartPanel.setPreferredSize(new Dimension(300, 240));
         chartPanel.setLayout(new BorderLayout());
         chartPanel.setBorder(new EmptyBorder(15, 15, 15, 15));
         chartPanel.add(widgetHeader("Categories", "By title count"), BorderLayout.NORTH);
