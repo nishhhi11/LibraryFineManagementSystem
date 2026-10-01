@@ -56,8 +56,8 @@ public class LibRecord {
     public static double calculateFineAmount(int delayedDays) {
         if (delayedDays <= 0) return 0.0;
         if (delayedDays <= 7) return delayedDays * 5.0;
-        if (delayedDays <= 14) return (7 * 5.0) + ((delayedDays - 7) * 10.0);
-        return (7 * 5.0) + (7 * 10.0) + ((delayedDays - 14) * 20.0);
+        if (delayedDays <= 14) return delayedDays * 10.0;
+        return delayedDays * 20.0;
     }
     
     public LocalDate getIssueDate() { return issueDate; }

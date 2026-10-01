@@ -641,19 +641,10 @@ public class GUI extends JFrame {
     }
     
     private void updateSidebar(java.awt.Container c, String page) {
+        // Just trigger repaints. The button's paintComponent uses activePage.
         for (java.awt.Component comp : c.getComponents()) {
             if (comp instanceof javax.swing.JButton) {
-                javax.swing.JButton b = (javax.swing.JButton) comp;
-                String actionCmd = b.getActionCommand();
-                if (actionCmd != null && !actionCmd.isEmpty()) {
-                    boolean isActive = actionCmd.equals(page);
-                    b.setBackground(isActive ? new Color(72, 58, 49) : ESPRESSO);
-                    for (java.awt.Component child : b.getComponents()) {
-                        if (child instanceof javax.swing.JLabel) {
-                            child.setForeground(isActive ? WHITE : new Color(230, 222, 212));
-                        }
-                    }
-                }
+                comp.repaint();
             } else if (comp instanceof java.awt.Container) {
                 updateSidebar((java.awt.Container) comp, page);
             }
@@ -2951,9 +2942,9 @@ JButton smallButton(
         main.insets = new Insets(8, 20, 8, 8);
         content.add(infoCard, main);
 
-        JPanel wrapper = new JPanel(new BorderLayout());
+        JPanel wrapper = new JPanel(new FlowLayout(FlowLayout.CENTER, 0, 0));
         wrapper.setBackground(CREAM);
-        wrapper.add(content, BorderLayout.NORTH);
+        wrapper.add(content);
         if (!issueMode) {
             JPanel borrowedListPanel = new JPanel();
             borrowedListPanel.setLayout(new BoxLayout(borrowedListPanel, BoxLayout.Y_AXIS));
@@ -3039,8 +3030,18 @@ JButton smallButton(
         cb.setEditable(true);
         cb.setBackground(WHITE);
         cb.setFont(BODY);
+        cb.setBorder(BorderFactory.createLineBorder(new Color(220, 215, 210), 1));
         
         JTextField tf = (JTextField) cb.getEditor().getEditorComponent();
+        tf.setBorder(BorderFactory.createEmptyBorder(4, 8, 4, 8));
+        tf.addFocusListener(new java.awt.event.FocusAdapter() {
+            public void focusGained(java.awt.event.FocusEvent e) {
+                cb.setBorder(BorderFactory.createLineBorder(TERRACOTTA, 2));
+            }
+            public void focusLost(java.awt.event.FocusEvent e) {
+                cb.setBorder(BorderFactory.createLineBorder(new Color(220, 215, 210), 1));
+            }
+        });
         tf.addKeyListener(new KeyAdapter() {
             public void keyReleased(KeyEvent e) {
                 if (e.getKeyCode() == KeyEvent.VK_DOWN || e.getKeyCode() == KeyEvent.VK_UP || e.getKeyCode() == KeyEvent.VK_ENTER) return;
