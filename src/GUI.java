@@ -6,6 +6,8 @@ import javax.imageio.ImageIO;
 import java.awt.*;
 import java.awt.event.*;
 import java.awt.image.BufferedImage;
+import java.awt.print.*;
+import javax.swing.table.*;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -3990,685 +3992,1038 @@ JButton smallButton(
 
 
     // =========================================================
-    // RETURN PAGE
+    // RETURN PAGE (REFINED)
     // =========================================================
 
-    JPanel createReturnPage() {
+    private static class ActiveLoanComboItem {
+        final LibRecord record;
+        final String displayText;
+        final boolean isPlaceholder;
 
-        return transactionPage(
-                "Return a Book",
-                "Return the book and calculate its fine.",
-                false
-        );
+        ActiveLoanComboItem(LibRecord record, String displayText, boolean isPlaceholder) {
+            this.record = record;
+            this.displayText = displayText;
+            this.isPlaceholder = isPlaceholder;
+        }
+
+        @Override
+        public String toString() {
+            return displayText;
+        }
     }
 
-
-    // =========================================================
-    // TRANSACTION PAGE
-    // =========================================================
-
-    JPanel transactionPage(String titleText, String subtitle, boolean issueMode) {
+    JPanel createReturnPage() {
         JPanel page = new JPanel(new BorderLayout());
         page.setBackground(CREAM);
 
-        // HEADER
+        // HEADER: Left padding 40px flush with heading
         JPanel header = new JPanel();
         header.setOpaque(false);
         header.setLayout(new BoxLayout(header, BoxLayout.Y_AXIS));
         header.setBorder(new EmptyBorder(30, 40, 16, 40));
-        
-        JLabel title = new JLabel(titleText);
+
+        JLabel title = new JLabel("Return a Book");
         title.setFont(DISPLAY);
         title.setForeground(INK);
-        
-        JLabel sub = new JLabel(subtitle);
+
+        JLabel sub = new JLabel("Process returned books and calculate fines.");
         sub.setFont(BODY);
         sub.setForeground(MUTED);
-        
+
         header.add(title);
         header.add(Box.createVerticalStrut(4));
         header.add(sub);
         page.add(header, BorderLayout.NORTH);
 
-        // FORM CARD
-        JPanel content = new JPanel(new GridBagLayout());
-        content.setBackground(CREAM);
-        content.setBorder(new EmptyBorder(0, 40, 25, 40));
-        GridBagConstraints main = new GridBagConstraints();
-        main.insets = new Insets(8, 8, 8, 8);
-        main.fill = GridBagConstraints.HORIZONTAL;
-        main.anchor = GridBagConstraints.NORTH;
-        main.weighty = 0.0;
+        // MAIN CONTENT CONTAINER (left edge 40px flush with header)
+        JPanel contentContainer = new JPanel();
+        contentContainer.setLayout(new BoxLayout(contentContainer, BoxLayout.Y_AXIS));
+        contentContainer.setOpaque(false);
+        contentContainer.setBorder(new EmptyBorder(0, 40, 30, 40));
 
+        // STATS ROW (Transaction stats without large empty gap)
+        JPanel statsPanel = transactionStats(false);
+        statsPanel.setAlignmentX(Component.LEFT_ALIGNMENT);
+        contentContainer.add(statsPanel);
+        contentContainer.add(Box.createVerticalStrut(16)); // compact spacing, no large empty gap
+
+        // TOP ROW: Form Card (Left) and Live Fine Preview Card (Right)
+        JPanel topRow = new JPanel(new GridBagLayout());
+        topRow.setOpaque(false);
+
+        GridBagConstraints gbc = new GridBagConstraints();
+        gbc.gridy = 0;
+        gbc.weighty = 1.0;
+        gbc.fill = GridBagConstraints.BOTH;
+
+        // Form Card (Left)
         GlassPanel formCard = new GlassPanel(new Color(255, 252, 246, 235), new Color(255, 255, 255, 180));
         formCard.setLayout(new BoxLayout(formCard, BoxLayout.Y_AXIS));
         formCard.setBorder(new EmptyBorder(25, 30, 25, 30));
 
-        JLabel formTitle = new JLabel(issueMode ? "Issue details" : "Return details");
+        JLabel formTitle = new JLabel("Return details");
         formTitle.setFont(TITLE);
         formTitle.setForeground(INK);
         formTitle.setAlignmentX(Component.LEFT_ALIGNMENT);
         formCard.add(formTitle);
-        formCard.add(Box.createVerticalStrut(17));
+        formCard.add(Box.createVerticalStrut(18));
 
-        JLabel studentLabel = new JLabel("Select Student");
-        studentLabel.setFont(BODY_BOLD);
-        studentLabel.setForeground(INK);
-        studentLabel.setAlignmentX(Component.LEFT_ALIGNMENT);
-        formCard.add(studentLabel);
-        formCard.add(Box.createVerticalStrut(5));
+        // Active Loan Picker
+        JLabel loanLabel = new JLabel("Select Active Loan");
+        loanLabel.setFont(BODY_BOLD);
+        loanLabel.setForeground(INK);
+        loanLabel.setAlignmentX(Component.LEFT_ALIGNMENT);
+        formCard.add(loanLabel);
+        formCard.add(Box.createVerticalStrut(6));
 
-        ArrayList<String> studItems = new ArrayList<>();
-        for (Student s : students) studItems.add(s.getId() + " · " + s.getName() + " · " + s.getCourse());
-        JComboBox<String> studentCombo = createSearchableCombo(studItems, "Select Student...");
-        studentCombo.setMaximumSize(new Dimension(Integer.MAX_VALUE, 44));
-        studentCombo.setAlignmentX(Component.LEFT_ALIGNMENT);
-        formCard.add(studentCombo);
-        formCard.add(Box.createVerticalStrut(15));
-
-        JLabel bookLabel = new JLabel("Select Book");
-        bookLabel.setFont(BODY_BOLD);
-        bookLabel.setForeground(INK);
-        bookLabel.setAlignmentX(Component.LEFT_ALIGNMENT);
-        formCard.add(bookLabel);
-        formCard.add(Box.createVerticalStrut(5));
-
-        ArrayList<String> bookItems = new ArrayList<>();
-        for (Book b : books) bookItems.add(b.getId() + " · " + b.getTitle() + " · " + b.getAuthor());
-        JComboBox<String> bookCombo = createSearchableCombo(bookItems, "Select Book...");
-        bookCombo.setMaximumSize(new Dimension(Integer.MAX_VALUE, 44));
-        bookCombo.setAlignmentX(Component.LEFT_ALIGNMENT);
-        formCard.add(bookCombo);
-        formCard.add(Box.createVerticalStrut(15));
-
-        JLabel daysLabel = new JLabel(issueMode ? "Issue Duration (Days)" : "Days Overdue (Auto-calculated)");
-        daysLabel.setFont(BODY_BOLD);
-        daysLabel.setForeground(INK);
-        daysLabel.setAlignmentX(Component.LEFT_ALIGNMENT);
-        formCard.add(daysLabel);
-        formCard.add(Box.createVerticalStrut(5));
-
-        // Chips for days
-        JPanel daysPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 8, 0));
-        daysPanel.setOpaque(false);
-        daysPanel.setAlignmentX(Component.LEFT_ALIGNMENT);
-        
-        final int[] selectedDays = {issueMode ? 14 : 0};
-        int[] options = {7, 14, 21, 30};
-        ArrayList<JButton> chipBtns = new ArrayList<>();
-        
-        JSpinner daysSpinner = new JSpinner(new SpinnerNumberModel(0, 0, 365, 1));
-        
-        if (issueMode) {
-            for (int d : options) {
-                JButton chip = new JButton(d + " days");
-                chip.setFont(SMALL_BOLD);
-                chip.setFocusPainted(false);
-                chip.setCursor(new Cursor(Cursor.HAND_CURSOR));
-                chip.setPreferredSize(new Dimension(80, 36));
-                
-                if (d == 14) {
-                    chip.setBackground(TERRACOTTA);
-                    chip.setForeground(WHITE);
-                } else {
-                    chip.setBackground(WHITE);
-                    chip.setForeground(MUTED);
-                }
-                
-                chipBtns.add(chip);
-                daysPanel.add(chip);
-            }
-        } else {
-            daysSpinner.setPreferredSize(new Dimension(100, 36));
-            daysSpinner.setFont(BODY);
-            daysPanel.add(daysSpinner);
-        }
-        
-        formCard.add(daysPanel);
-        formCard.add(Box.createVerticalStrut(25));
-
-        if (!issueMode) {
-            JLabel conditionLabel = new JLabel("Condition on Return");
-            conditionLabel.setFont(BODY_BOLD);
-            conditionLabel.setForeground(INK);
-            conditionLabel.setAlignmentX(Component.LEFT_ALIGNMENT);
-            formCard.add(conditionLabel);
-            formCard.add(Box.createVerticalStrut(5));
-            
-            JComboBox<String> conditionCombo = new JComboBox<>(new String[]{"Good", "Damaged (₹150 charge)", "Lost (Full price charge)"});
-            conditionCombo.setMaximumSize(new Dimension(Integer.MAX_VALUE, 44));
-            conditionCombo.setAlignmentX(Component.LEFT_ALIGNMENT);
-            conditionCombo.setUI(new javax.swing.plaf.basic.BasicComboBoxUI() {
-                @Override
-                protected JButton createArrowButton() {
-                    JButton btn = new JButton("▼");
-                    btn.setBorderPainted(false);
-                    btn.setContentAreaFilled(false);
-                    btn.setFocusPainted(false);
-                    btn.setFont(new Font("SansSerif", Font.BOLD, 10));
-                    btn.setForeground(new Color(120, 110, 100));
-                    btn.setCursor(new Cursor(Cursor.HAND_CURSOR));
-                    return btn;
-                }
-            });
-            formCard.add(conditionCombo);
-            formCard.add(Box.createVerticalStrut(25));
-        }
-        
-        JButton action = actionButton(issueMode ? "Issue Book" : "Return Book");
-        action.setAlignmentX(Component.LEFT_ALIGNMENT);
-        action.setMaximumSize(new Dimension(Integer.MAX_VALUE, 48));
-        action.setEnabled(false);
-        
-        // Add hover lift to primary button
-        action.addMouseListener(new MouseAdapter() {
-            Border normalBorder = new EmptyBorder(12, 0, 12, 0);
-            Border liftBorder = new EmptyBorder(10, 0, 14, 0); // visually pushes up
-            public void mouseEntered(MouseEvent e) { if(action.isEnabled()) action.setBorder(liftBorder); }
-            public void mouseExited(MouseEvent e) { action.setBorder(normalBorder); }
-        });
-        
-        formCard.add(action);
-        
-        formCard.add(Box.createVerticalStrut(30));
-        
-        // RECENT ISSUES
-        JPanel recentPanel = new JPanel();
-        recentPanel.setLayout(new BoxLayout(recentPanel, BoxLayout.Y_AXIS));
-        recentPanel.setOpaque(false);
-        recentPanel.setAlignmentX(Component.LEFT_ALIGNMENT);
-        
-        JLabel recentTitle = new JLabel("Recent Issues");
-        recentTitle.setFont(BODY_BOLD);
-        recentTitle.setForeground(INK);
-        recentPanel.add(recentTitle);
-        recentPanel.add(Box.createVerticalStrut(10));
-        
-        int count = 0;
-        for (int i = records.size() - 1; i >= 0; i--) {
-            LibRecord r = records.get(i);
+        java.time.format.DateTimeFormatter dtfShort = java.time.format.DateTimeFormatter.ofPattern("d MMM");
+        ArrayList<ActiveLoanComboItem> loanItems = new ArrayList<>();
+        ArrayList<LibRecord> activeRecords = new ArrayList<>();
+        for (LibRecord r : records) {
             if (!r.isReturned()) {
-                JLabel row = new JLabel("• " + r.getBook().getTitle() + " to " + r.getStudent().getName());
-                row.setFont(SMALL);
-                row.setForeground(MUTED);
-                recentPanel.add(row);
-                recentPanel.add(Box.createVerticalStrut(6));
-                count++;
-                if (count == 3) break;
+                activeRecords.add(r);
             }
         }
-        formCard.add(recentPanel);
 
-        // LIVE PREVIEW CARD
+        if (activeRecords.isEmpty()) {
+            loanItems.add(new ActiveLoanComboItem(null, "No books are currently on loan.", true));
+        } else {
+            loanItems.add(new ActiveLoanComboItem(null, "Select an active loan...", true));
+            for (LibRecord r : activeRecords) {
+                java.time.LocalDate due = r.getIssueDate().plusDays(r.getAllowedDays());
+                String rowText = r.getStudent().getId() + " · " + r.getStudent().getName() + " — " + r.getBook().getTitle() + " (due " + due.format(dtfShort) + ")";
+                loanItems.add(new ActiveLoanComboItem(r, rowText, false));
+            }
+        }
+
+        DefaultComboBoxModel<ActiveLoanComboItem> loanModel = new DefaultComboBoxModel<>();
+        for (ActiveLoanComboItem item : loanItems) loanModel.addElement(item);
+
+        JComboBox<ActiveLoanComboItem> loanCombo = new JComboBox<>(loanModel);
+        styleIssueCombo(loanCombo);
+        loanCombo.setMaximumSize(new Dimension(Integer.MAX_VALUE, 44));
+        loanCombo.setPreferredSize(new Dimension(380, 44));
+        loanCombo.setAlignmentX(Component.LEFT_ALIGNMENT);
+        setupSearchableLoanCombo(loanCombo, loanItems);
+        formCard.add(loanCombo);
+        formCard.add(Box.createVerticalStrut(18));
+
+        // Return Date Field with -1 / +1 day buttons
+        JLabel returnDateLabel = new JLabel("Return Date");
+        returnDateLabel.setFont(BODY_BOLD);
+        returnDateLabel.setForeground(INK);
+        returnDateLabel.setAlignmentX(Component.LEFT_ALIGNMENT);
+        formCard.add(returnDateLabel);
+        formCard.add(Box.createVerticalStrut(6));
+
+        final java.time.LocalDate[] returnDateHolder = {java.time.LocalDate.now()};
+        java.time.format.DateTimeFormatter dateDisplayFmt = java.time.format.DateTimeFormatter.ofPattern("d MMMM yyyy");
+
+        JPanel dateRow = new JPanel(new BorderLayout(8, 0));
+        dateRow.setOpaque(false);
+        dateRow.setMaximumSize(new Dimension(Integer.MAX_VALUE, 44));
+        dateRow.setPreferredSize(new Dimension(380, 44));
+        dateRow.setAlignmentX(Component.LEFT_ALIGNMENT);
+
+        // Date Display Pill/Field
+        JLabel dateTextLbl = new JLabel(returnDateHolder[0].format(dateDisplayFmt), SwingConstants.CENTER) {
+            @Override
+            protected void paintComponent(Graphics g) {
+                Graphics2D g2 = (Graphics2D) g.create();
+                g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+                g2.setColor(WHITE);
+                g2.fillRoundRect(0, 0, getWidth() - 1, getHeight() - 1, 8, 8);
+                g2.setColor(SAND);
+                g2.drawRoundRect(0, 0, getWidth() - 1, getHeight() - 1, 8, 8);
+                g2.dispose();
+                super.paintComponent(g);
+            }
+        };
+        dateTextLbl.setOpaque(false);
+        dateTextLbl.setFont(BODY_BOLD);
+        dateTextLbl.setForeground(INK);
+        dateRow.add(dateTextLbl, BorderLayout.CENTER);
+
+        // -1 Day and +1 Day Buttons
+        JPanel dateControlBtns = new JPanel(new GridLayout(1, 2, 6, 0));
+        dateControlBtns.setOpaque(false);
+
+        JButton minusDayBtn = new JButton("−1d") {
+            @Override
+            protected void paintComponent(Graphics g) {
+                Graphics2D g2 = (Graphics2D) g.create();
+                g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+                g2.setColor(CREAM);
+                g2.fillRoundRect(0, 0, getWidth() - 1, getHeight() - 1, 6, 6);
+                g2.setColor(SAND);
+                g2.drawRoundRect(0, 0, getWidth() - 1, getHeight() - 1, 6, 6);
+                g2.setColor(INK);
+                g2.setFont(SMALL_BOLD);
+                FontMetrics fm = g2.getFontMetrics();
+                int tx = (getWidth() - fm.stringWidth(getText())) / 2;
+                int ty = (getHeight() - fm.getHeight()) / 2 + fm.getAscent();
+                g2.drawString(getText(), tx, ty);
+                g2.dispose();
+            }
+        };
+        minusDayBtn.setOpaque(false);
+        minusDayBtn.setContentAreaFilled(false);
+        minusDayBtn.setBorderPainted(false);
+        minusDayBtn.setFocusPainted(false);
+        minusDayBtn.setCursor(new Cursor(Cursor.HAND_CURSOR));
+        minusDayBtn.setPreferredSize(new Dimension(50, 44));
+
+        JButton plusDayBtn = new JButton("+1d") {
+            @Override
+            protected void paintComponent(Graphics g) {
+                Graphics2D g2 = (Graphics2D) g.create();
+                g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+                g2.setColor(CREAM);
+                g2.fillRoundRect(0, 0, getWidth() - 1, getHeight() - 1, 6, 6);
+                g2.setColor(SAND);
+                g2.drawRoundRect(0, 0, getWidth() - 1, getHeight() - 1, 6, 6);
+                g2.setColor(INK);
+                g2.setFont(SMALL_BOLD);
+                FontMetrics fm = g2.getFontMetrics();
+                int tx = (getWidth() - fm.stringWidth(getText())) / 2;
+                int ty = (getHeight() - fm.getHeight()) / 2 + fm.getAscent();
+                g2.drawString(getText(), tx, ty);
+                g2.dispose();
+            }
+        };
+        plusDayBtn.setOpaque(false);
+        plusDayBtn.setContentAreaFilled(false);
+        plusDayBtn.setBorderPainted(false);
+        plusDayBtn.setFocusPainted(false);
+        plusDayBtn.setCursor(new Cursor(Cursor.HAND_CURSOR));
+        plusDayBtn.setPreferredSize(new Dimension(50, 44));
+
+        dateControlBtns.add(minusDayBtn);
+        dateControlBtns.add(plusDayBtn);
+        dateRow.add(dateControlBtns, BorderLayout.EAST);
+
+        formCard.add(dateRow);
+        formCard.add(Box.createVerticalStrut(18));
+
+        // Read-only Days Kept and Days Late cards
+        JPanel statsRow = new JPanel(new GridLayout(1, 2, 10, 0));
+        statsRow.setOpaque(false);
+        statsRow.setMaximumSize(new Dimension(Integer.MAX_VALUE, 65));
+        statsRow.setAlignmentX(Component.LEFT_ALIGNMENT);
+
+        JPanel keptCard = new JPanel();
+        keptCard.setLayout(new BoxLayout(keptCard, BoxLayout.Y_AXIS));
+        keptCard.setBackground(WHITE);
+        keptCard.setBorder(BorderFactory.createCompoundBorder(
+            new LineBorder(SAND, 1, true),
+            new EmptyBorder(8, 12, 8, 12)
+        ));
+        JLabel keptTitle = new JLabel("DAYS KEPT");
+        keptTitle.setFont(SMALL_BOLD);
+        keptTitle.setForeground(MUTED);
+        JLabel keptVal = new JLabel("—");
+        keptVal.setFont(TITLE);
+        keptVal.setForeground(INK);
+        keptCard.add(keptTitle);
+        keptCard.add(keptVal);
+
+        JPanel lateCard = new JPanel();
+        lateCard.setLayout(new BoxLayout(lateCard, BoxLayout.Y_AXIS));
+        lateCard.setBackground(WHITE);
+        lateCard.setBorder(BorderFactory.createCompoundBorder(
+            new LineBorder(SAND, 1, true),
+            new EmptyBorder(8, 12, 8, 12)
+        ));
+        JLabel lateTitle = new JLabel("DAYS LATE");
+        lateTitle.setFont(SMALL_BOLD);
+        lateTitle.setForeground(MUTED);
+        JLabel lateVal = new JLabel("—");
+        lateVal.setFont(TITLE);
+        lateVal.setForeground(INK);
+        lateCard.add(lateTitle);
+        lateCard.add(lateVal);
+
+        statsRow.add(keptCard);
+        statsRow.add(lateCard);
+        formCard.add(statsRow);
+        formCard.add(Box.createVerticalStrut(24));
+
+        // Return Button with custom painting and antialiasing
+        JButton returnBtn = new JButton("Return Book") {
+            private boolean hovered = false;
+            {
+                setOpaque(false);
+                setContentAreaFilled(false);
+                setFocusPainted(false);
+                setBorderPainted(false);
+                setFont(BODY_BOLD);
+                setCursor(new Cursor(Cursor.HAND_CURSOR));
+                addMouseListener(new MouseAdapter() {
+                    @Override
+                    public void mouseEntered(MouseEvent e) {
+                        if (isEnabled()) {
+                            hovered = true;
+                            repaint();
+                        }
+                    }
+                    @Override
+                    public void mouseExited(MouseEvent e) {
+                        hovered = false;
+                        repaint();
+                    }
+                });
+            }
+
+            @Override
+            protected void paintComponent(Graphics g) {
+                Graphics2D g2 = (Graphics2D) g.create();
+                g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+
+                int w = getWidth();
+                int h = getHeight();
+
+                if (!isEnabled()) {
+                    g2.setColor(new Color(220, 212, 202)); // muted sand fill
+                    g2.fillRoundRect(0, 0, w, h, 8, 8);
+                    g2.setColor(new Color(145, 138, 130)); // grey text
+                } else if (hovered) {
+                    g2.setColor(new Color(156, 78, 58)); // darkened terracotta
+                    g2.fillRoundRect(0, 0, w, h, 8, 8);
+                    g2.setColor(WHITE);
+                } else {
+                    g2.setColor(TERRACOTTA); // solid terracotta
+                    g2.fillRoundRect(0, 0, w, h, 8, 8);
+                    g2.setColor(WHITE);
+                }
+
+                g2.setFont(BODY_BOLD);
+                FontMetrics fm = g2.getFontMetrics();
+                String text = getText();
+                int tx = (w - fm.stringWidth(text)) / 2;
+                int ty = (h - fm.getHeight()) / 2 + fm.getAscent();
+                g2.drawString(text, tx, ty);
+                g2.dispose();
+            }
+        };
+        returnBtn.setAlignmentX(Component.LEFT_ALIGNMENT);
+        returnBtn.setMaximumSize(new Dimension(Integer.MAX_VALUE, 46));
+        returnBtn.setPreferredSize(new Dimension(380, 46));
+        returnBtn.setEnabled(false);
+        formCard.add(returnBtn);
+
+        // Live Fine Preview Card (Right)
         GlassPanel infoCard = new GlassPanel(INK, new Color(255, 255, 255, 45));
         infoCard.setLayout(new BorderLayout());
         infoCard.setBorder(new EmptyBorder(25, 28, 25, 28));
-        
-        Runnable updatePreview = () -> {
+
+        // Pack Top Row
+        gbc.gridx = 0;
+        gbc.weightx = 0.52;
+        gbc.insets = new Insets(0, 0, 0, 16);
+        topRow.add(formCard, gbc);
+
+        gbc.gridx = 1;
+        gbc.weightx = 0.48;
+        gbc.insets = new Insets(0, 0, 0, 0);
+        topRow.add(infoCard, gbc);
+
+        contentContainer.add(topRow);
+        contentContainer.add(Box.createVerticalStrut(20));
+
+        // Recent Returns Card (Below form)
+        JPanel recentReturnsCard = new GlassPanel(new Color(255, 252, 246, 235), new Color(255, 255, 255, 180));
+        recentReturnsCard.setLayout(new BoxLayout(recentReturnsCard, BoxLayout.Y_AXIS));
+        recentReturnsCard.setBorder(new EmptyBorder(22, 28, 22, 28));
+
+        Runnable refreshRecentReturns = () -> {
+            recentReturnsCard.removeAll();
+
+            JPanel recentHead = new JPanel(new BorderLayout());
+            recentHead.setOpaque(false);
+            JLabel recentTitle = new JLabel("Recent Returns");
+            recentTitle.setFont(TITLE);
+            recentTitle.setForeground(INK);
+            recentHead.add(recentTitle, BorderLayout.WEST);
+            recentReturnsCard.add(recentHead);
+            recentReturnsCard.add(Box.createVerticalStrut(14));
+
+            ArrayList<LibRecord> returnedList = new ArrayList<>();
+            for (int i = records.size() - 1; i >= 0; i--) {
+                LibRecord r = records.get(i);
+                if (r.isReturned()) {
+                    returnedList.add(r);
+                    if (returnedList.size() >= 5) break;
+                }
+            }
+
+            if (returnedList.isEmpty()) {
+                JPanel emptyRecent = new JPanel();
+                emptyRecent.setLayout(new BoxLayout(emptyRecent, BoxLayout.Y_AXIS));
+                emptyRecent.setOpaque(false);
+                emptyRecent.setBorder(new EmptyBorder(16, 0, 16, 0));
+
+                JLabel lblEmpty = new JLabel("No recent book returns found");
+                lblEmpty.setFont(BODY);
+                lblEmpty.setForeground(MUTED);
+                lblEmpty.setAlignmentX(Component.CENTER_ALIGNMENT);
+                emptyRecent.add(lblEmpty);
+                recentReturnsCard.add(emptyRecent);
+            } else {
+                java.time.format.DateTimeFormatter dtf = java.time.format.DateTimeFormatter.ofPattern("d MMM yyyy");
+                for (int i = 0; i < returnedList.size(); i++) {
+                    LibRecord r = returnedList.get(i);
+                    JPanel row = new JPanel(new BorderLayout(14, 0));
+                    row.setOpaque(false);
+                    row.setBorder(new EmptyBorder(6, 4, 6, 4));
+
+                    // Small cover thumbnail (preserves aspect ratio)
+                    JPanel thumb = createScaledCoverThumb(r.getBook(), 34, 46);
+                    row.add(thumb, BorderLayout.WEST);
+
+                    // Book <- Student
+                    JPanel centerPane = new JPanel();
+                    centerPane.setLayout(new BoxLayout(centerPane, BoxLayout.Y_AXIS));
+                    centerPane.setOpaque(false);
+
+                    JLabel titleStud = new JLabel(r.getBook().getTitle() + "  ←  " + r.getStudent().getName());
+                    titleStud.setFont(BODY_BOLD);
+                    titleStud.setForeground(INK);
+
+                    java.time.LocalDate returnDate = r.getIssueDate().plusDays(r.getActualDays());
+                    JLabel dateInfo = new JLabel("Returned on " + returnDate.format(dtf) + "  ·  Student ID: " + r.getStudent().getId());
+                    dateInfo.setFont(SMALL);
+                    dateInfo.setForeground(MUTED);
+
+                    centerPane.add(titleStud);
+                    centerPane.add(Box.createVerticalStrut(2));
+                    centerPane.add(dateInfo);
+                    row.add(centerPane, BorderLayout.CENTER);
+
+                    // Fine pill (sage Rs 0 or terracotta Rs X, fully rounded)
+                    int fineAmount = (int) r.getFine();
+                    JLabel finePill = new JLabel(fineAmount == 0 ? "Rs 0" : "Rs " + fineAmount, SwingConstants.CENTER) {
+                        @Override
+                        protected void paintComponent(Graphics g) {
+                            Graphics2D g2 = (Graphics2D) g.create();
+                            g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+                            g2.setColor(fineAmount == 0 ? SAGE : TERRACOTTA);
+                            g2.fillRoundRect(0, 0, getWidth(), getHeight(), getHeight(), getHeight());
+                            g2.setColor(WHITE);
+                            g2.setFont(SMALL_BOLD);
+                            FontMetrics fm = g2.getFontMetrics();
+                            int tx = (getWidth() - fm.stringWidth(getText())) / 2;
+                            int ty = (getHeight() - fm.getHeight()) / 2 + fm.getAscent();
+                            g2.drawString(getText(), tx, ty);
+                            g2.dispose();
+                        }
+                    };
+                    finePill.setOpaque(false);
+                    finePill.setFont(SMALL_BOLD);
+                    finePill.setPreferredSize(new Dimension(65, 26));
+
+                    JPanel rightPane = new JPanel(new FlowLayout(FlowLayout.RIGHT, 0, 10));
+                    rightPane.setOpaque(false);
+                    rightPane.add(finePill);
+                    row.add(rightPane, BorderLayout.EAST);
+
+                    recentReturnsCard.add(row);
+                    if (i < returnedList.size() - 1) {
+                        JSeparator sep = new JSeparator();
+                        sep.setForeground(new Color(230, 222, 212));
+                        recentReturnsCard.add(sep);
+                    }
+                }
+            }
+            recentReturnsCard.revalidate();
+            recentReturnsCard.repaint();
+        };
+
+        refreshRecentReturns.run();
+        contentContainer.add(recentReturnsCard);
+
+        JScrollPane scrollPane = new JScrollPane(contentContainer);
+        scrollPane.setBorder(null);
+        scrollPane.setOpaque(false);
+        scrollPane.getViewport().setOpaque(false);
+        scrollPane.getVerticalScrollBar().setUnitIncrement(16);
+        scrollPane.setHorizontalScrollBarPolicy(JScrollPane.HORIZONTAL_SCROLLBAR_NEVER);
+        page.add(scrollPane, BorderLayout.CENTER);
+
+        // Preview Updater Runnable
+        Runnable[] updatePreviewRef = new Runnable[1];
+        updatePreviewRef[0] = () -> {
             infoCard.removeAll();
-            
-            String selS = (String) studentCombo.getSelectedItem();
-            String selB = (String) bookCombo.getSelectedItem();
-            
-            boolean validS = selS != null && !selS.startsWith("Select") && selS.contains(" · ");
-            boolean validB = selB != null && !selB.startsWith("Select") && selB.contains(" · ");
-            
-            if (!validS || !validB) {
-                action.setEnabled(false);
-                action.setText(issueMode ? "Issue Book" : "Return Book");
-                
-                JPanel emptyState = new JPanel();
+
+            ActiveLoanComboItem selectedLoanItem = (ActiveLoanComboItem) loanCombo.getSelectedItem();
+            boolean hasSelection = selectedLoanItem != null && !selectedLoanItem.isPlaceholder && selectedLoanItem.record != null;
+
+            if (!hasSelection) {
+                returnBtn.setEnabled(false);
+                keptVal.setText("—");
+                lateVal.setText("—");
+
+                JPanel emptyState = new JPanel() {
+                    @Override
+                    protected void paintComponent(Graphics g) {
+                        super.paintComponent(g);
+                        Graphics2D g2 = (Graphics2D) g.create();
+                        g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+
+                        int w = getWidth();
+                        int iconY = 110;
+                        int cx = w / 2;
+
+                        // Line-drawn receipt icon with Graphics2D
+                        g2.setColor(new Color(255, 255, 255, 80));
+                        g2.setStroke(new BasicStroke(2.2f, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
+
+                        int rx = cx - 24;
+                        int ry = iconY;
+                        int rw = 48;
+                        int rh = 56;
+
+                        // Receipt outline with zigzag bottom
+                        int[] xPts = {rx, rx + rw, rx + rw, rx + 40, rx + 32, rx + 24, rx + 16, rx + 8, rx};
+                        int[] yPts = {ry, ry, ry + rh, ry + rh - 5, ry + rh, ry + rh - 5, ry + rh, ry + rh - 5, ry + rh};
+                        g2.drawPolygon(xPts, yPts, 9);
+
+                        // Receipt lines
+                        g2.setColor(new Color(255, 255, 255, 45));
+                        g2.setStroke(new BasicStroke(1.6f, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
+                        g2.drawLine(rx + 8, ry + 12, rx + 40, ry + 12);
+                        g2.drawLine(rx + 8, ry + 22, rx + 34, ry + 22);
+                        g2.drawLine(rx + 8, ry + 32, rx + 40, ry + 32);
+                        g2.drawLine(rx + 8, ry + 42, rx + 26, ry + 42);
+
+                        g2.dispose();
+                    }
+                };
                 emptyState.setLayout(new BoxLayout(emptyState, BoxLayout.Y_AXIS));
                 emptyState.setOpaque(false);
-                
-                JLabel emptyIcon = new JLabel("📚");
-                emptyIcon.setFont(DISPLAY.deriveFont(48f));
-                emptyIcon.setForeground(new Color(255, 255, 255, 50));
-                emptyIcon.setAlignmentX(Component.CENTER_ALIGNMENT);
-                
-                JLabel emptyText = new JLabel("Select a student and a book to preview");
+
+                emptyState.add(Box.createVerticalStrut(180));
+                JLabel emptyText = new JLabel("Select a loan to calculate the fine");
                 emptyText.setFont(BODY);
-                emptyText.setForeground(new Color(255, 255, 255, 120));
+                emptyText.setForeground(new Color(255, 255, 255, 130));
                 emptyText.setAlignmentX(Component.CENTER_ALIGNMENT);
-                
-                emptyState.add(Box.createVerticalStrut(80));
-                emptyState.add(emptyIcon);
-                emptyState.add(Box.createVerticalStrut(16));
                 emptyState.add(emptyText);
-                
+
                 infoCard.add(emptyState, BorderLayout.CENTER);
             } else {
-                String sid = selS.split(" · ")[0];
-                String bid = selB.split(" · ")[0];
-                
-                Student student = null;
-                for (Student s : students) if (s.getId().equals(sid)) student = s;
-                Book book = null;
-                for (Book b : books) if (b.getId().equals(bid)) book = b;
-                
-                if (student == null || book == null) return;
-                
+                LibRecord record = selectedLoanItem.record;
+                Student student = record.getStudent();
+                Book book = record.getBook();
+                java.time.LocalDate issueDate = record.getIssueDate();
+                java.time.LocalDate returnDate = returnDateHolder[0];
+
+                // Days kept & late calculation
+                int daysKept = (int) java.time.temporal.ChronoUnit.DAYS.between(issueDate, returnDate);
+                if (daysKept < 0) daysKept = 0;
+                int allowedDays = record.getAllowedDays();
+                int daysLate = daysKept - allowedDays;
+                if (daysLate < 0) daysLate = 0;
+
+                keptVal.setText(String.valueOf(daysKept));
+                lateVal.setText(String.valueOf(daysLate));
+
+                final int daysLateFinal = daysLate;
+                final int daysKeptFinal = daysKept;
+
+                // Fine calculation logic (strictly preserved slabs)
+                double fineAmount = LibRecord.calculateFineAmount(daysLate);
+                String slabName;
+                String rateDesc;
+                if (daysLate == 0) {
+                    slabName = "On Time (No slab)";
+                    rateDesc = "₹0 / day";
+                } else if (daysLate <= 7) {
+                    slabName = "Slab 1: 1–7 days";
+                    rateDesc = "₹5 / day";
+                } else if (daysLate <= 14) {
+                    slabName = "Slab 2: 8–14 days";
+                    rateDesc = "₹10 / day";
+                } else {
+                    slabName = "Slab 3: 15+ days";
+                    rateDesc = "₹20 / day";
+                }
+
+                returnBtn.setEnabled(true);
+
                 JPanel livePanel = new JPanel();
                 livePanel.setLayout(new BoxLayout(livePanel, BoxLayout.Y_AXIS));
                 livePanel.setOpaque(false);
-                
-                JLabel infoTitle = new JLabel(issueMode ? "Live Issue Preview" : "Live Fine Preview");
+
+                JLabel infoTitle = new JLabel("Live Fine Preview");
                 infoTitle.setFont(TITLE);
                 infoTitle.setForeground(WHITE);
                 infoTitle.setAlignmentX(Component.LEFT_ALIGNMENT);
                 livePanel.add(infoTitle);
-                livePanel.add(Box.createVerticalStrut(20));
-                
-                int activeBooks = 0;
-                double finesDue = 0.0;
-                for (LibRecord r : records) {
-                    if (r.getStudent().getId().equals(student.getId())) {
-                        if (!r.isReturned()) activeBooks++;
-                        else finesDue += r.getFine();
-                    }
-                }
-                
-                boolean canIssue = true;
-                String warningMsg = "";
-                
-                if (issueMode) {
-                    if (activeBooks >= 3) {
-                        warningMsg = "⚠ Borrowing limit reached (3 books)";
-                        canIssue = false;
-                    } else if (finesDue > 0) {
-                        warningMsg = "⚠ Cannot issue: Student has unpaid fines";
-                        canIssue = false;
-                    } else if (book.getAvailableCopies() <= 0) {
-                        warningMsg = "⚠ Book is out of stock";
-                        canIssue = false;
-                    }
-                } else {
-                    LibRecord active = null;
-                    for (LibRecord r : records) {
-                        if (!r.isReturned() && r.getStudent().getId().equals(student.getId()) && r.getBook().getId().equals(book.getId())) {
-                            active = r;
-                            break;
-                        }
-                    }
-                    if (active == null) {
-                        warningMsg = "⚠ This book is not issued to this student";
-                        canIssue = false;
-                    }
-                }
-                
-                action.setEnabled(canIssue);
-                action.setText(canIssue ? (issueMode ? "Issue Book" : "Return Book") : "Unavailable");
-                
-                if (!warningMsg.isEmpty()) {
-                    JPanel warnBox = new JPanel(new BorderLayout());
-                    warnBox.setOpaque(false);
-                    warnBox.setAlignmentX(Component.LEFT_ALIGNMENT);
-                    JLabel warn = new JLabel(warningMsg);
-                    warn.setFont(BODY_BOLD);
-                    warn.setForeground(TERRACOTTA);
-                    warnBox.add(warn, BorderLayout.WEST);
-                    livePanel.add(warnBox);
-                    livePanel.add(Box.createVerticalStrut(15));
-                }
-                
-                JPanel bookRow = new JPanel(new FlowLayout(FlowLayout.LEFT, 15, 0));
-                bookRow.setOpaque(false);
-                bookRow.setAlignmentX(Component.LEFT_ALIGNMENT);
-                
-                JPanel cover = createCover(book);
-                cover.setPreferredSize(new Dimension(60, 90));
-                bookRow.add(cover);
-                
-                JPanel bookText = new JPanel();
-                bookText.setLayout(new BoxLayout(bookText, BoxLayout.Y_AXIS));
-                bookText.setOpaque(false);
-                JLabel bTitle = new JLabel(book.getTitle());
-                bTitle.setFont(BODY_BOLD);
-                bTitle.setForeground(WHITE);
-                
-                int avail = book.getAvailableCopies();
-                int total = book.getTotalCopies();
-                String copiesStr = avail + " of " + total + (issueMode && canIssue ? " → " + (avail - 1) + " of " + total + " after issue" : " available");
-                JLabel bAvail = new JLabel(copiesStr);
-                bAvail.setFont(SMALL);
-                bAvail.setForeground(new Color(255, 255, 255, 180));
-                
-                bookText.add(bTitle);
-                bookText.add(Box.createVerticalStrut(5));
-                bookText.add(bAvail);
-                bookRow.add(bookText);
-                livePanel.add(bookRow);
-                
-                livePanel.add(Box.createVerticalStrut(25));
-                
-                JPanel studentRow = new JPanel(new FlowLayout(FlowLayout.LEFT, 15, 0));
-                studentRow.setOpaque(false);
-                studentRow.setAlignmentX(Component.LEFT_ALIGNMENT);
-                
-                Color[] tints = {new Color(153, 168, 150), new Color(201, 142, 116), new Color(214, 195, 165), new Color(135, 160, 178)};
-                Color avatarColor = tints[Math.abs(student.getName().hashCode()) % tints.length];
-                
-                JPanel avatar = new JPanel(new GridBagLayout()) {
+                livePanel.add(Box.createVerticalStrut(14));
+
+                // Status Banner: Sage if 0 late, Terracotta if late
+                JPanel banner = new JPanel() {
                     @Override
                     protected void paintComponent(Graphics g) {
                         Graphics2D g2 = (Graphics2D) g.create();
                         g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-                        g2.setColor(avatarColor);
-                        g2.fillRoundRect(0, 0, getWidth(), getHeight(), 12, 12);
+                        if (daysLateFinal == 0) {
+                            g2.setColor(new Color(105, 126, 98, 70));
+                            g2.fillRoundRect(0, 0, getWidth(), getHeight(), 8, 8);
+                            g2.setColor(SAGE);
+                        } else {
+                            g2.setColor(new Color(184, 98, 77, 70));
+                            g2.fillRoundRect(0, 0, getWidth(), getHeight(), 8, 8);
+                            g2.setColor(TERRACOTTA);
+                        }
+                        g2.setStroke(new BasicStroke(1.2f));
+                        g2.drawRoundRect(0, 0, getWidth() - 1, getHeight() - 1, 8, 8);
                         g2.dispose();
                     }
                 };
-                avatar.setOpaque(false);
-                avatar.setPreferredSize(new Dimension(42, 42));
-                JLabel initial = new JLabel(student.getName().substring(0, 1).toUpperCase());
-                initial.setFont(customSerif.deriveFont(Font.BOLD, 18f));
-                initial.setForeground(WHITE);
-                avatar.add(initial);
-                
-                studentRow.add(avatar);
-                
-                JPanel studentText = new JPanel();
-                studentText.setLayout(new BoxLayout(studentText, BoxLayout.Y_AXIS));
-                studentText.setOpaque(false);
-                JLabel sName = new JLabel(student.getName() + " (" + student.getId() + ")");
-                sName.setFont(BODY_BOLD);
-                sName.setForeground(WHITE);
-                
-                String statMsg = activeBooks > 0 ? activeBooks + " books currently issued" : "0 books currently issued";
-                if (finesDue > 0) statMsg += " · ₹" + (int)finesDue + " unpaid fine";
-                
-                JLabel sStat = new JLabel(statMsg);
-                sStat.setFont(SMALL);
-                sStat.setForeground(new Color(255, 255, 255, 180));
-                
-                studentText.add(sName);
-                studentText.add(Box.createVerticalStrut(4));
-                studentText.add(sStat);
-                studentRow.add(studentText);
-                livePanel.add(studentRow);
-                
-                livePanel.add(Box.createVerticalStrut(25));
-                
-                JPanel rulesPanel = new JPanel(new GridLayout(3, 1, 0, 8));
-                rulesPanel.setOpaque(false);
-                rulesPanel.setAlignmentX(Component.LEFT_ALIGNMENT);
-                
-                java.time.LocalDate today = java.time.LocalDate.now();
-                java.time.format.DateTimeFormatter formatter = java.time.format.DateTimeFormatter.ofPattern("d MMM");
-                
-                if (!validS || !validB) {
-                    JLabel empty = new JLabel(issueMode ? "Select a student and a book to preview" : "Select a student to see their borrowed books");
-                    empty.setForeground(new Color(255, 255, 255, 120));
-                    empty.setFont(BODY);
-                    rulesPanel.add(empty);
-                } else {
-                    if (issueMode) {
-                        java.time.LocalDate due = today.plusDays(selectedDays[0]);
-                        JLabel d1 = new JLabel("Issue Date: " + today.format(formatter));
-                        d1.setForeground(new Color(255, 255, 255, 200));
-                        JLabel d2 = new JLabel("Due Date: " + due.format(formatter));
-                        d2.setForeground(new Color(255, 255, 255, 200));
-                        JLabel d3 = new JLabel("Fine rule: 1-7 days: ₹5/day, 8-14: ₹10/day, 15+: ₹20/day");
-                        d3.setForeground(GOLD);
-                        rulesPanel.add(d1); rulesPanel.add(d2); rulesPanel.add(d3);
-                    } else {
-                        int delayed = 0;
-                        LibRecord active = null;
-                        for (LibRecord r : records) {
-                            if (!r.isReturned() && r.getStudent().getId().equals(sid) && r.getBook().getId().equals(bid)) {
-                                active = r;
-                                break;
-                            }
-                        }
-                        
-                        if (active != null) {
-                            long diff = java.time.temporal.ChronoUnit.DAYS.between(active.getIssueDate(), today);
-                            if (diff < 0) diff = 0;
-                            delayed = (int) diff - active.getAllowedDays();
-                            if (delayed < 0) delayed = 0;
-                            
-                            JLabel info = new JLabel("<html><b>" + active.getBook().getTitle() + "</b><br>Borrowed by: " + active.getStudent().getName() + " (" + active.getStudent().getId() + ")</html>");
-                            info.setForeground(WHITE);
-                            info.setFont(BODY);
-                            rulesPanel.add(info);
-                            rulesPanel.add(Box.createVerticalStrut(10));
-                            
-                            // Timeline
-                            java.time.LocalDate due = active.getIssueDate().plusDays(active.getAllowedDays());
-                            JLabel timeline = new JLabel("Issued " + active.getIssueDate().format(formatter) + "  →  Due " + due.format(formatter) + "  →  Returned Today");
-                            timeline.setForeground(new Color(255, 255, 255, 200));
-                            rulesPanel.add(timeline);
-                            
-                            if (delayed > 0) {
-                                JLabel badge = new JLabel("  " + delayed + " Days Overdue  ");
-                                badge.setOpaque(true);
-                                badge.setBackground(new Color(200, 50, 50));
-                                badge.setForeground(WHITE);
-                                badge.setFont(SMALL_BOLD);
-                                rulesPanel.add(Box.createVerticalStrut(5));
-                                rulesPanel.add(badge);
-                            } else {
-                                JLabel badge = new JLabel("  Returned On Time  ");
-                                badge.setOpaque(true);
-                                badge.setBackground(new Color(50, 160, 80));
-                                badge.setForeground(WHITE);
-                                badge.setFont(SMALL_BOLD);
-                                rulesPanel.add(Box.createVerticalStrut(5));
-                                rulesPanel.add(badge);
-                            }
-                            
-                            rulesPanel.add(Box.createVerticalStrut(15));
-                            
-                            double finalFine = LibRecord.calculateFineAmount(delayed);
-                            
-                            if (delayed > 0) {
-                                String arithmetic = "";
-                                if (delayed <= 7) arithmetic = delayed + " days × ₹5 = ₹" + (delayed * 5);
-                                else if (delayed <= 14) arithmetic = "7 days × ₹5 + " + (delayed - 7) + " days × ₹10 = ₹" + (35 + (delayed - 7) * 10);
-                                else arithmetic = "7 days × ₹5 + 7 days × ₹10 + " + (delayed - 14) + " days × ₹20 = ₹" + (105 + (delayed - 14) * 20);
-                                
-                                JLabel breakdown = new JLabel("Breakdown: " + arithmetic);
-                                breakdown.setForeground(new Color(255, 255, 255, 150));
-                                rulesPanel.add(breakdown);
-                            }
-                            
-                            JLabel fTotal = new JLabel(finalFine == 0 ? "No fine, returned on time" : "Total Fine: ₹" + (int)finalFine);
-                            fTotal.setFont(new Font("Georgia", Font.BOLD, 22));
-                            if (finalFine == 0) fTotal.setForeground(new Color(80, 200, 120));
-                            else if (finalFine <= 50) fTotal.setForeground(GOLD);
-                            else fTotal.setForeground(TERRACOTTA);
-                            
-                            livePanel.add(fTotal);
-                            livePanel.add(Box.createVerticalStrut(10));
-                            
-                            if (finalFine > 0) {
-                                JComboBox<String> fineAction = new JComboBox<>(new String[]{"Collect fine now", "Add to student record"});
-                                fineAction.setMaximumSize(new Dimension(200, 30));
-                                livePanel.add(fineAction);
-                            }
-                        }
+                banner.setLayout(new FlowLayout(FlowLayout.LEFT, 10, 8));
+                banner.setOpaque(false);
+                banner.setAlignmentX(Component.LEFT_ALIGNMENT);
+
+                JLabel bannerText = new JLabel(daysLate == 0 ? "✓  Returned on time, no fine" : "⚠  Overdue by " + daysLate + " days — Fine: ₹" + (int)fineAmount);
+                bannerText.setFont(BODY_BOLD);
+                bannerText.setForeground(WHITE);
+                banner.add(bannerText);
+
+                livePanel.add(banner);
+                livePanel.add(Box.createVerticalStrut(16));
+
+                // Book Row (with thumbnail preserving aspect ratio, Title, Student ID, Category Chip)
+                JPanel bookRow = new JPanel(new FlowLayout(FlowLayout.LEFT, 14, 0));
+                bookRow.setOpaque(false);
+                bookRow.setAlignmentX(Component.LEFT_ALIGNMENT);
+
+                JPanel thumb = createScaledCoverThumb(book, 60, 88);
+                bookRow.add(thumb);
+
+                JPanel bookDetails = new JPanel();
+                bookDetails.setLayout(new BoxLayout(bookDetails, BoxLayout.Y_AXIS));
+                bookDetails.setOpaque(false);
+
+                JLabel bTitle = new JLabel("<html><body style='width: 220px;'>" + book.getTitle() + "</body></html>");
+                bTitle.setFont(BODY_BOLD);
+                bTitle.setForeground(WHITE);
+
+                JLabel sNameId = new JLabel(student.getName() + " (" + student.getId() + ")");
+                sNameId.setFont(SMALL);
+                sNameId.setForeground(new Color(255, 255, 255, 190));
+
+                // Category chip (categoryColor)
+                JLabel catChip = new JLabel("  " + book.getCategory() + "  ") {
+                    @Override
+                    protected void paintComponent(Graphics g) {
+                        Graphics2D g2 = (Graphics2D) g.create();
+                        g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+                        g2.setColor(categoryColor(book.getCategory()));
+                        g2.fillRoundRect(0, 0, getWidth(), getHeight(), 6, 6);
+                        g2.setColor(WHITE);
+                        g2.setFont(SMALL_BOLD);
+                        FontMetrics fm = g2.getFontMetrics();
+                        int tx = (getWidth() - fm.stringWidth(getText().trim())) / 2;
+                        int ty = (getHeight() - fm.getHeight()) / 2 + fm.getAscent();
+                        g2.drawString(getText().trim(), tx, ty);
+                        g2.dispose();
                     }
-                }
-                
-                livePanel.add(rulesPanel);
+                };
+                catChip.setOpaque(false);
+                catChip.setFont(SMALL_BOLD);
+                catChip.setPreferredSize(new Dimension(80, 22));
+
+                bookDetails.add(bTitle);
+                bookDetails.add(Box.createVerticalStrut(3));
+                bookDetails.add(sNameId);
+                bookDetails.add(Box.createVerticalStrut(6));
+                bookDetails.add(catChip);
+                bookRow.add(bookDetails);
+                livePanel.add(bookRow);
+
+                livePanel.add(Box.createVerticalStrut(18));
+
+                // Dates Breakdown Grid
+                JPanel dateGrid = new JPanel(new GridLayout(3, 2, 8, 6));
+                dateGrid.setOpaque(false);
+                dateGrid.setAlignmentX(Component.LEFT_ALIGNMENT);
+
+                java.time.LocalDate dueDate = issueDate.plusDays(allowedDays);
+                java.time.format.DateTimeFormatter dtfLong = java.time.format.DateTimeFormatter.ofPattern("d MMM yyyy");
+
+                dateGrid.add(createMetaLabel("Issue Date:", issueDate.format(dtfLong)));
+                dateGrid.add(createMetaLabel("Due Date:", dueDate.format(dtfLong)));
+                dateGrid.add(createMetaLabel("Return Date:", returnDate.format(dtfLong)));
+                dateGrid.add(createMetaLabel("Days Late:", daysLate + " days"));
+                dateGrid.add(createMetaLabel("Slab Applied:", slabName));
+                dateGrid.add(createMetaLabel("Rate per Day:", rateDesc));
+
+                livePanel.add(dateGrid);
+                livePanel.add(Box.createVerticalStrut(16));
+
+                // Large Total Fine Display
+                JPanel fineBox = new JPanel();
+                fineBox.setLayout(new BoxLayout(fineBox, BoxLayout.Y_AXIS));
+                fineBox.setOpaque(false);
+                fineBox.setAlignmentX(Component.LEFT_ALIGNMENT);
+
+                JLabel totalFineHeading = new JLabel("TOTAL FINE");
+                totalFineHeading.setFont(SMALL_BOLD);
+                totalFineHeading.setForeground(GOLD);
+
+                JLabel totalFineVal = new JLabel("₹" + (int) fineAmount);
+                totalFineVal.setFont(DISPLAY.deriveFont(Font.BOLD, 36f));
+                totalFineVal.setForeground(fineAmount == 0 ? new Color(130, 205, 125) : (fineAmount <= 50 ? GOLD : TERRACOTTA));
+
+                fineBox.add(totalFineHeading);
+                fineBox.add(totalFineVal);
+                livePanel.add(fineBox);
+
                 infoCard.add(livePanel, BorderLayout.NORTH);
             }
-            
+
             infoCard.revalidate();
             infoCard.repaint();
         };
 
-        studentCombo.addActionListener(e -> {
-            if (!issueMode) {
-                String selS = (String) studentCombo.getSelectedItem();
-                boolean validS = selS != null && !selS.startsWith("Select") && selS.contains(" · ");
-                ArrayList<String> newBookItems = new ArrayList<>();
-                if (validS) {
-                    String sid = selS.split(" · ")[0];
-                    for (LibRecord r : records) {
-                        if (!r.isReturned() && r.getStudent().getId().equals(sid)) {
-                            Book b = r.getBook();
-                            newBookItems.add(b.getId() + " · " + b.getTitle() + " · " + b.getAuthor());
+        loanCombo.addActionListener(e -> updatePreviewRef[0].run());
+
+        // -1 Day and +1 Day action listeners
+        minusDayBtn.addActionListener(e -> {
+            ActiveLoanComboItem selectedLoanItem = (ActiveLoanComboItem) loanCombo.getSelectedItem();
+            java.time.LocalDate candidate = returnDateHolder[0].minusDays(1);
+            if (selectedLoanItem != null && selectedLoanItem.record != null) {
+                java.time.LocalDate issueDate = selectedLoanItem.record.getIssueDate();
+                if (candidate.isBefore(issueDate)) {
+                    showToast("Return date cannot be before issue date (" + issueDate.format(dtfShort) + ")", TERRACOTTA);
+                    return;
+                }
+            }
+            returnDateHolder[0] = candidate;
+            dateTextLbl.setText(returnDateHolder[0].format(dateDisplayFmt));
+            updatePreviewRef[0].run();
+        });
+
+        plusDayBtn.addActionListener(e -> {
+            returnDateHolder[0] = returnDateHolder[0].plusDays(1);
+            dateTextLbl.setText(returnDateHolder[0].format(dateDisplayFmt));
+            updatePreviewRef[0].run();
+        });
+
+        updatePreviewRef[0].run();
+
+        // Return Button Action: open modal fine receipt dialog, trigger toast, and persist
+        returnBtn.addActionListener(e -> {
+            ActiveLoanComboItem selectedLoanItem = (ActiveLoanComboItem) loanCombo.getSelectedItem();
+            if (selectedLoanItem == null || selectedLoanItem.record == null) return;
+
+            LibRecord record = selectedLoanItem.record;
+            java.time.LocalDate returnDate = returnDateHolder[0];
+
+            int daysKept = (int) java.time.temporal.ChronoUnit.DAYS.between(record.getIssueDate(), returnDate);
+            if (daysKept < 0) daysKept = 0;
+            int allowedDays = record.getAllowedDays();
+            int daysLate = daysKept - allowedDays;
+            if (daysLate < 0) daysLate = 0;
+            double fineAmount = LibRecord.calculateFineAmount(daysLate);
+
+            // Execute return record update
+            record.setReturnData(daysKept, daysLate, fineAmount, fineAmount > 0 ? "UNPAID" : "NONE");
+            record.getBook().returnCopy();
+            saveData();
+
+            // Open Fine Receipt Dialog modal
+            showFineReceiptModal(record, returnDate, daysLate, fineAmount);
+
+            // Success feedback toast (fades after 3 seconds)
+            String toastMsg = record.getBook().getTitle() + " returned by " + record.getStudent().getName() + ", fine Rs " + (int) fineAmount;
+            showToast(toastMsg, SAGE);
+
+            // Refresh recent returns
+            refreshRecentReturns.run();
+
+            // Refresh active loans combo
+            ArrayList<ActiveLoanComboItem> updatedLoanItems = new ArrayList<>();
+            ArrayList<LibRecord> updatedActive = new ArrayList<>();
+            for (LibRecord r : records) {
+                if (!r.isReturned()) updatedActive.add(r);
+            }
+            if (updatedActive.isEmpty()) {
+                updatedLoanItems.add(new ActiveLoanComboItem(null, "No books are currently on loan.", true));
+            } else {
+                updatedLoanItems.add(new ActiveLoanComboItem(null, "Select an active loan...", true));
+                for (LibRecord r : updatedActive) {
+                    java.time.LocalDate due = r.getIssueDate().plusDays(r.getAllowedDays());
+                    String rowText = r.getStudent().getId() + " · " + r.getStudent().getName() + " — " + r.getBook().getTitle() + " (due " + due.format(dtfShort) + ")";
+                    updatedLoanItems.add(new ActiveLoanComboItem(r, rowText, false));
+                }
+            }
+            DefaultComboBoxModel<ActiveLoanComboItem> newLoanModel = new DefaultComboBoxModel<>();
+            for (ActiveLoanComboItem it : updatedLoanItems) newLoanModel.addElement(it);
+            loanCombo.setModel(newLoanModel);
+            setupSearchableLoanCombo(loanCombo, updatedLoanItems);
+
+            // Reset form
+            loanCombo.setSelectedIndex(0);
+            returnDateHolder[0] = java.time.LocalDate.now();
+            dateTextLbl.setText(returnDateHolder[0].format(dateDisplayFmt));
+
+            updatePreviewRef[0].run();
+        });
+
+        return page;
+    }
+
+    // Helper: Meta key/value label for Live Fine Preview
+    private JPanel createMetaLabel(String key, String value) {
+        JPanel p = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 0));
+        p.setOpaque(false);
+        JLabel kLbl = new JLabel(key + " ");
+        kLbl.setFont(SMALL_BOLD);
+        kLbl.setForeground(new Color(255, 255, 255, 140));
+        JLabel vLbl = new JLabel(value);
+        vLbl.setFont(SMALL_BOLD);
+        vLbl.setForeground(WHITE);
+        p.add(kLbl);
+        p.add(vLbl);
+        return p;
+    }
+
+    // Helper: Searchable Active Loan Combo Filter
+    private void setupSearchableLoanCombo(JComboBox<ActiveLoanComboItem> combo, ArrayList<ActiveLoanComboItem> allItems) {
+        Component editor = combo.getEditor().getEditorComponent();
+        if (!(editor instanceof JTextField)) return;
+        JTextField tf = (JTextField) editor;
+
+        combo.setRenderer(new DefaultListCellRenderer() {
+            @Override
+            public Component getListCellRendererComponent(JList<?> list, Object value, int index, boolean isSelected, boolean cellHasFocus) {
+                JLabel l = (JLabel) super.getListCellRendererComponent(list, value, index, isSelected, cellHasFocus);
+                l.setFont(BODY);
+                l.setBorder(BorderFactory.createEmptyBorder(8, 10, 8, 10));
+                if (isSelected) {
+                    l.setBackground(new Color(248, 241, 233));
+                    l.setForeground(TERRACOTTA);
+                } else {
+                    l.setBackground(WHITE);
+                    l.setForeground(INK);
+                }
+                return l;
+            }
+        });
+
+        tf.addKeyListener(new KeyAdapter() {
+            @Override
+            public void keyReleased(KeyEvent e) {
+                if (e.getKeyCode() == KeyEvent.VK_DOWN || e.getKeyCode() == KeyEvent.VK_UP || e.getKeyCode() == KeyEvent.VK_ENTER) {
+                    return;
+                }
+                SwingUtilities.invokeLater(() -> {
+                    String query = tf.getText();
+                    combo.hidePopup();
+                    DefaultComboBoxModel<ActiveLoanComboItem> model = new DefaultComboBoxModel<>();
+                    model.addElement(allItems.get(0)); // Placeholder
+
+                    String lower = query.toLowerCase().trim();
+                    for (int i = 1; i < allItems.size(); i++) {
+                        ActiveLoanComboItem item = allItems.get(i);
+                        if (query.isEmpty() || item.displayText.toLowerCase().contains(lower)) {
+                            model.addElement(item);
                         }
                     }
-                } else {
-                    for (Book b : books) newBookItems.add(b.getId() + " · " + b.getTitle() + " · " + b.getAuthor());
-                }
-                bookCombo.removeAllItems();
-                bookCombo.addItem("Select Book...");
-                for(String b : newBookItems) bookCombo.addItem(b);
-                bookCombo.setSelectedIndex(0);
-            }
-            updatePreview.run();
-        });
-        bookCombo.addActionListener(e -> updatePreview.run());
-        
-        if (issueMode) {
-            for (JButton chip : chipBtns) {
-                chip.addActionListener(e -> {
-                    int d = Integer.parseInt(chip.getText().split(" ")[0]);
-                    selectedDays[0] = d;
-                    for (JButton b : chipBtns) {
-                        b.setBackground(WHITE);
-                        b.setForeground(MUTED);
+                    combo.setModel(model);
+                    tf.setText(query);
+                    if (model.getSize() > 1) {
+                        combo.showPopup();
                     }
-                    chip.setBackground(TERRACOTTA);
-                    chip.setForeground(WHITE);
-                    updatePreview.run();
                 });
             }
-        }
-        
-        updatePreview.run();
+        });
+    }
 
-        action.addActionListener(e -> {
-            action.setText("Processing...");
-            action.setEnabled(false);
-            
-            Timer timer = new Timer(600, ev -> {
-                String selS = (String) studentCombo.getSelectedItem();
-                String selB = (String) bookCombo.getSelectedItem();
-                String sid = selS.split(" · ")[0];
-                String bid = selB.split(" · ")[0];
-                JTextField sf = new JTextField(sid);
-                JTextField bf = new JTextField(bid);
-                JTextField df = new JTextField(String.valueOf(selectedDays[0]));
-                
-                if (issueMode) {
-                    // Suppress dialog inside issueBook
-                    boolean prev = suppressDialogs;
-                    suppressDialogs = true;
-                    issueBook(sf, bf, df);
-                    suppressDialogs = prev;
-                    
-                    java.time.LocalDate due = java.time.LocalDate.now().plusDays(selectedDays[0]);
-                    java.time.format.DateTimeFormatter formatter = java.time.format.DateTimeFormatter.ofPattern("d MMM");
-                    JOptionPane.showMessageDialog(this, selB.split(" · ")[1] + " issued to " + selS.split(" · ")[1] + ", due " + due.format(formatter), "Success", JOptionPane.INFORMATION_MESSAGE);
+    // Helper: Modal Fine Receipt Dialog drawn with Graphics2D, dashed divider, and PrinterJob print
+    private void showFineReceiptModal(LibRecord record, java.time.LocalDate returnDate, int daysLate, double fineAmount) {
+        JDialog dlg = new JDialog(this, "Fine Receipt", true);
+        dlg.setUndecorated(true);
+        dlg.setBackground(new Color(0, 0, 0, 0)); // Transparent dialog frame
+
+        // Dimmed backdrop panel
+        JPanel backdrop = new JPanel(new GridBagLayout()) {
+            @Override
+            protected void paintComponent(Graphics g) {
+                Graphics2D g2 = (Graphics2D) g.create();
+                g2.setColor(new Color(0, 0, 0, 140)); // dimmed background
+                g2.fillRect(0, 0, getWidth(), getHeight());
+                g2.dispose();
+            }
+        };
+        backdrop.setOpaque(false);
+
+        // Receipt Card Data
+        long receiptNo = System.currentTimeMillis() % 1000000L;
+        String slabApplied = daysLate == 0 ? "None (On time)" : (daysLate <= 7 ? "Slab 1 (1-7d)" : (daysLate <= 14 ? "Slab 2 (8-14d)" : "Slab 3 (15+d)"));
+        String rateText = daysLate == 0 ? "₹0/day" : (daysLate <= 7 ? "₹5/day" : (daysLate <= 14 ? "₹10/day" : "₹20/day"));
+        java.time.format.DateTimeFormatter dtf = java.time.format.DateTimeFormatter.ofPattern("d MMM yyyy");
+        java.time.LocalDate dueDate = record.getIssueDate().plusDays(record.getAllowedDays());
+
+        // Printable Receipt Card Panel
+        JPanel receiptCard = new JPanel() {
+            @Override
+            protected void paintComponent(Graphics g) {
+                Graphics2D g2 = (Graphics2D) g.create();
+                g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+                g2.setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING, RenderingHints.VALUE_TEXT_ANTIALIAS_ON);
+
+                int w = getWidth();
+                int h = getHeight();
+
+                // Drop shadow
+                g2.setColor(new Color(0, 0, 0, 45));
+                g2.fillRoundRect(4, 4, w - 8, h - 8, 16, 16);
+
+                // Card background
+                g2.setColor(PAPER);
+                g2.fillRoundRect(0, 0, w - 8, h - 8, 16, 16);
+                g2.setColor(SAND);
+                g2.setStroke(new BasicStroke(1.2f));
+                g2.drawRoundRect(0, 0, w - 8, h - 8, 16, 16);
+
+                // Header
+                g2.setColor(TERRACOTTA);
+                g2.fillRect(0, 0, w - 8, 6); // terracotta top accent
+
+                g2.setColor(INK);
+                g2.setFont(customSerif.deriveFont(Font.BOLD, 20f));
+                g2.drawString("MINDSPACE LIBRARY", 30, 42);
+
+                g2.setFont(SMALL_BOLD);
+                g2.setColor(MUTED);
+                g2.drawString("OFFICIAL RETURN & FINE RECEIPT", 30, 60);
+                g2.drawString("Receipt #: REC-" + receiptNo, 30, 78);
+
+                // Top dashed divider
+                drawDashedLine(g2, 30, w - 38, 92);
+
+                // Receipt Fields
+                int y = 118;
+                int valX = w - 40;
+                y = drawReceiptRow(g2, "Student Name:", record.getStudent().getName(), y, 30, valX, false);
+                y = drawReceiptRow(g2, "Student ID:", record.getStudent().getId() + " (" + record.getStudent().getCourse() + ")", y, 30, valX, false);
+                y = drawReceiptRow(g2, "Book Title:", record.getBook().getTitle(), y, 30, valX, false);
+                y = drawReceiptRow(g2, "Book Category:", record.getBook().getCategory(), y, 30, valX, false);
+                y = drawReceiptRow(g2, "Issue Date:", record.getIssueDate().format(dtf), y, 30, valX, false);
+                y = drawReceiptRow(g2, "Due Date:", dueDate.format(dtf), y, 30, valX, false);
+                y = drawReceiptRow(g2, "Return Date:", returnDate.format(dtf), y, 30, valX, false);
+                y = drawReceiptRow(g2, "Days Late:", daysLate + " days", y, 30, valX, true);
+                y = drawReceiptRow(g2, "Slab Applied:", slabApplied, y, 30, valX, false);
+                y = drawReceiptRow(g2, "Fine Rate:", rateText, y, 30, valX, true);
+
+                // Bottom dashed divider
+                drawDashedLine(g2, 30, w - 38, y + 6);
+                y += 32;
+
+                // Total Row (monospaced amount)
+                g2.setColor(INK);
+                g2.setFont(TITLE);
+                g2.drawString("TOTAL FINE", 30, y);
+
+                g2.setFont(new Font("Monospaced", Font.BOLD, 22));
+                g2.setColor(fineAmount == 0 ? SAGE : TERRACOTTA);
+                String fineStr = "₹ " + String.format("%.2f", fineAmount);
+                FontMetrics fm = g2.getFontMetrics();
+                g2.drawString(fineStr, valX - fm.stringWidth(fineStr), y);
+
+                g2.dispose();
+            }
+
+            private void drawDashedLine(Graphics2D g2, int x1, int x2, int y) {
+                Stroke prev = g2.getStroke();
+                float[] dash = {6f, 4f};
+                g2.setStroke(new BasicStroke(1f, BasicStroke.CAP_BUTT, BasicStroke.JOIN_MITER, 10f, dash, 0f));
+                g2.setColor(new Color(180, 170, 160));
+                g2.drawLine(x1, y, x2, y);
+                g2.setStroke(prev);
+            }
+
+            private int drawReceiptRow(Graphics2D g2, String label, String val, int y, int x, int valX, boolean mono) {
+                g2.setColor(MUTED);
+                g2.setFont(SMALL_BOLD);
+                g2.drawString(label, x, y);
+
+                if (mono) {
+                    g2.setFont(new Font("Monospaced", Font.BOLD, 12));
                 } else {
-                    boolean prev = suppressDialogs;
-                    suppressDialogs = true;
-                    returnBook(sf, bf, df);
-                    suppressDialogs = prev;
-                    JOptionPane.showMessageDialog(this, selB.split(" · ")[1] + " returned successfully.", "Success", JOptionPane.INFORMATION_MESSAGE);
+                    g2.setFont(BODY_BOLD);
                 }
-                
-                studentCombo.setSelectedIndex(0);
-                bookCombo.setSelectedIndex(0);
-                updatePreview.run();
+                g2.setColor(INK);
+                FontMetrics fm = g2.getFontMetrics();
+                int textW = fm.stringWidth(val);
+                g2.drawString(val, valX - textW, y);
+                return y + 24;
+            }
+        };
+
+        receiptCard.setOpaque(false);
+        receiptCard.setPreferredSize(new Dimension(440, 520));
+
+        // Receipt Card Wrapper with Buttons
+        JPanel cardWrapper = new JPanel(new BorderLayout());
+        cardWrapper.setOpaque(false);
+        cardWrapper.add(receiptCard, BorderLayout.CENTER);
+
+        JPanel btnRow = new JPanel(new FlowLayout(FlowLayout.RIGHT, 12, 12));
+        btnRow.setOpaque(false);
+
+        JButton printBtn = new JButton("Print Receipt");
+        printBtn.setFont(BODY_BOLD);
+        printBtn.setBackground(INK);
+        printBtn.setForeground(WHITE);
+        printBtn.setFocusPainted(false);
+        printBtn.setCursor(new Cursor(Cursor.HAND_CURSOR));
+        printBtn.setPreferredSize(new Dimension(130, 38));
+
+        printBtn.addActionListener(ev -> {
+            PrinterJob job = PrinterJob.getPrinterJob();
+            job.setJobName("Fine_Receipt_" + receiptNo);
+            job.setPrintable((graphics, pageFormat, pageIndex) -> {
+                if (pageIndex > 0) return Printable.NO_SUCH_PAGE;
+                Graphics2D g2d = (Graphics2D) graphics;
+                g2d.translate(pageFormat.getImageableX(), pageFormat.getImageableY());
+                double scale = Math.min(pageFormat.getImageableWidth() / receiptCard.getWidth(),
+                                        pageFormat.getImageableHeight() / receiptCard.getHeight());
+                g2d.scale(scale, scale);
+                receiptCard.paint(g2d);
+                return Printable.PAGE_EXISTS;
             });
-            timer.setRepeats(false);
-            timer.start();
+            boolean doPrint = job.printDialog();
+            if (doPrint) {
+                try {
+                    job.print();
+                    showToast("Receipt sent to printer", SAGE);
+                } catch (PrinterException ex) {
+                    showToast("Print error: " + ex.getMessage(), TERRACOTTA);
+                }
+            }
         });
 
-        main.gridx = 0;
-        main.gridy = 0;
-        main.weightx = 0.55;
-        content.add(formCard, main);
+        JButton closeBtn = new JButton("Close");
+        closeBtn.setFont(BODY_BOLD);
+        closeBtn.setBackground(CREAM);
+        closeBtn.setForeground(INK);
+        closeBtn.setFocusPainted(false);
+        closeBtn.setCursor(new Cursor(Cursor.HAND_CURSOR));
+        closeBtn.setPreferredSize(new Dimension(90, 38));
+        closeBtn.addActionListener(ev -> dlg.dispose());
 
-        main.gridx = 1;
-        main.weightx = 0.45;
-        main.insets = new Insets(8, 20, 8, 8);
-        content.add(infoCard, main);
+        btnRow.add(printBtn);
+        btnRow.add(closeBtn);
+        cardWrapper.add(btnRow, BorderLayout.SOUTH);
 
-        JPanel wrapper = new JPanel(new FlowLayout(FlowLayout.CENTER, 0, 0));
-        wrapper.setBackground(CREAM);
-        wrapper.add(content);
-        if (!issueMode) {
-            JPanel borrowedListPanel = new JPanel();
-            borrowedListPanel.setLayout(new BoxLayout(borrowedListPanel, BoxLayout.Y_AXIS));
-            borrowedListPanel.setOpaque(false);
-            borrowedListPanel.setBorder(new EmptyBorder(20, 40, 20, 40));
-            
-            JLabel listTitle = new JLabel("Currently Borrowed by Selected Student");
-            listTitle.setFont(TITLE);
-            listTitle.setForeground(INK);
-            borrowedListPanel.add(listTitle);
-            borrowedListPanel.add(Box.createVerticalStrut(15));
-            
-            JPanel listContainer = new JPanel();
-            listContainer.setLayout(new BoxLayout(listContainer, BoxLayout.Y_AXIS));
-            listContainer.setOpaque(false);
-            
-            // To be populated dynamically by studentCombo action listener
-            Runnable updateBorrowedList = () -> {
-                listContainer.removeAll();
-                String selS = (String) studentCombo.getSelectedItem();
-                if (selS != null && !selS.startsWith("Select")) {
-                    String sid = selS.split(" · ")[0];
-                    for (LibRecord r : records) {
-                        if (!r.isReturned() && r.getStudent().getId().equals(sid)) {
-                            JPanel row = new JPanel(new BorderLayout());
-                            row.setBackground(WHITE);
-                            row.setBorder(new EmptyBorder(10, 15, 10, 15));
-                            row.setMaximumSize(new Dimension(Integer.MAX_VALUE, 50));
-                            
-                            JLabel bName = new JLabel(r.getBook().getTitle());
-                            bName.setFont(BODY_BOLD);
-                            row.add(bName, BorderLayout.WEST);
-                            
-                            java.time.LocalDate today = java.time.LocalDate.now();
-                            long diff = java.time.temporal.ChronoUnit.DAYS.between(r.getIssueDate(), today);
-                            int delayed = (int) diff - r.getAllowedDays();
-                            if (delayed < 0) delayed = 0;
-                            
-                            JPanel rightPane = new JPanel(new FlowLayout(FlowLayout.RIGHT, 15, 0));
-                            rightPane.setOpaque(false);
-                            
-                            if (delayed > 0) {
-                                JLabel badge = new JLabel(" " + delayed + " Days Overdue ");
-                                badge.setOpaque(true);
-                                badge.setBackground(new Color(200, 50, 50));
-                                badge.setForeground(WHITE);
-                                badge.setFont(SMALL_BOLD);
-                                rightPane.add(badge);
-                            }
-                            
-                            JButton retBtn = actionButton("Return");
-                            retBtn.setPreferredSize(new Dimension(80, 30));
-                            retBtn.addActionListener(ev -> {
-                                bookCombo.setSelectedItem(r.getBook().getId() + " · " + r.getBook().getTitle() + " · " + r.getBook().getAuthor());
-                                action.doClick();
-                            });
-                            rightPane.add(retBtn);
-                            row.add(rightPane, BorderLayout.EAST);
-                            
-                            listContainer.add(row);
-                            listContainer.add(Box.createVerticalStrut(8));
-                        }
-                    }
-                }
-                listContainer.revalidate();
-                listContainer.repaint();
-            };
-            
-            // Attach to studentCombo
-            studentCombo.addActionListener(e -> updateBorrowedList.run());
-            
-            borrowedListPanel.add(listContainer);
-            wrapper.add(borrowedListPanel, BorderLayout.CENTER);
-        }
-        page.add(wrapper, BorderLayout.CENTER);
-        return page;
+        backdrop.add(cardWrapper);
+        dlg.setContentPane(backdrop);
+        dlg.setSize(520, 620);
+        dlg.setLocationRelativeTo(this);
+        dlg.setVisible(true);
     }
 
     private JComboBox<String> createSearchableCombo(ArrayList<String> items, String placeholder) {
@@ -5265,290 +5620,857 @@ JButton smallButton(
     // FINE RECORDS
     // =========================================================
 
-    
     JPanel createFinesPage() {
         JPanel page = new JPanel(new BorderLayout());
         page.setBackground(CREAM);
 
-        // Header
+        // Header: 40px left & right padding to match other pages
         JPanel header = new JPanel();
         header.setOpaque(false);
         header.setLayout(new BoxLayout(header, BoxLayout.Y_AXIS));
-        header.setBorder(new EmptyBorder(30, 35, 18, 35));
+        header.setBorder(new EmptyBorder(30, 40, 16, 40));
 
-        JLabel title = new JLabel("Fine Ledger");
+        JLabel title = new JLabel("Fine Records");
         title.setFont(DISPLAY);
         title.setForeground(INK);
 
-        JLabel sub = new JLabel("Track and settle library fines.");
+        JLabel sub = new JLabel("Track returned loans, late fees, and receipt records.");
         sub.setFont(BODY);
         sub.setForeground(MUTED);
 
         header.add(title);
         header.add(Box.createVerticalStrut(4));
         header.add(sub);
-        
-        // Stats Calculation
-        double totalFines = 0;
-        double unpaidAmount = 0;
-        int unpaidStudents = 0;
-        java.util.HashSet<String> unpaidStudentSet = new java.util.HashSet<>();
-        int overdueBooks = 0;
-        double collectedThisMonth = 0;
+        page.add(header, BorderLayout.NORTH);
+
+        // Main content wrapper with matching 40px horizontal padding
+        JPanel contentPanel = new JPanel();
+        contentPanel.setOpaque(false);
+        contentPanel.setLayout(new BoxLayout(contentPanel, BoxLayout.Y_AXIS));
+        contentPanel.setBorder(new EmptyBorder(0, 40, 24, 40));
+
+        // ── 1. COMPACT STAT CARDS (~110px high) ───────────────────
+        double totalFineSum = 0;
+        int lateReturnsCount = 0;
+        int returnedCount = 0;
 
         for (LibRecord r : records) {
             if (r.isReturned()) {
-                totalFines += r.getFine();
-                if ("UNPAID".equals(r.getFineStatus())) {
-                    unpaidAmount += r.getFine();
-                    unpaidStudentSet.add(r.getStudent().getId());
-                } else if ("PAID".equals(r.getFineStatus())) {
-                    collectedThisMonth += r.getFine();
+                returnedCount++;
+                totalFineSum += r.getFine();
+                if (r.getDelayedDays() > 0) {
+                    lateReturnsCount++;
                 }
+            }
+        }
+
+        JPanel statsRow = new JPanel(new GridLayout(1, 3, 16, 0));
+        statsRow.setOpaque(false);
+        statsRow.setMaximumSize(new Dimension(Integer.MAX_VALUE, 110));
+        statsRow.setPreferredSize(new Dimension(800, 110));
+        statsRow.setAlignmentX(Component.LEFT_ALIGNMENT);
+
+        statsRow.add(createCompactFineStatCard(
+            "TOTAL FINE",
+            "₹" + (int) totalFineSum,
+            "accumulated library fines",
+            TERRACOTTA,
+            "fine"
+        ));
+        statsRow.add(createCompactFineStatCard(
+            "LATE RETURNS",
+            String.valueOf(lateReturnsCount),
+            "books returned overdue",
+            GOLD,
+            "clock"
+        ));
+        statsRow.add(createCompactFineStatCard(
+            "RETURNED",
+            String.valueOf(returnedCount),
+            "books safely returned",
+            SAGE,
+            "check"
+        ));
+
+        contentPanel.add(statsRow);
+        contentPanel.add(Box.createVerticalStrut(16));
+
+        // ── 2 & 4. TABLE CARD WITH TOOLBAR, JTABLE & SUMMARY STRIP ─
+        GlassPanel tableCard = new GlassPanel(new Color(255, 252, 246, 235), new Color(255, 255, 255, 180));
+        tableCard.setLayout(new BorderLayout());
+        tableCard.setBorder(new EmptyBorder(16, 20, 16, 20));
+        tableCard.setAlignmentX(Component.LEFT_ALIGNMENT);
+
+        // --- Toolbar ---
+        JPanel toolbar = new JPanel(new BorderLayout(12, 0));
+        toolbar.setOpaque(false);
+        toolbar.setBorder(new EmptyBorder(4, 4, 14, 4));
+
+        JPanel leftFilters = new JPanel(new FlowLayout(FlowLayout.LEFT, 10, 0));
+        leftFilters.setOpaque(false);
+
+        // Search Field
+        JTextField searchField = new JTextField(16);
+        searchField.setPreferredSize(new Dimension(220, 36));
+        searchField.setFont(BODY);
+        searchField.setForeground(INK);
+        searchField.setBackground(WHITE);
+        searchField.setBorder(BorderFactory.createCompoundBorder(
+            BorderFactory.createLineBorder(new Color(220, 215, 205), 1, true),
+            new EmptyBorder(4, 10, 4, 10)
+        ));
+
+        // Search placeholder text behavior
+        final String searchPlaceholder = "Search student or book...";
+        searchField.setText(searchPlaceholder);
+        searchField.setForeground(MUTED);
+        searchField.addFocusListener(new FocusAdapter() {
+            @Override
+            public void focusGained(FocusEvent e) {
+                if (searchField.getText().equals(searchPlaceholder)) {
+                    searchField.setText("");
+                    searchField.setForeground(INK);
+                }
+                searchField.setBorder(BorderFactory.createCompoundBorder(
+                    BorderFactory.createLineBorder(TERRACOTTA, 1, true),
+                    new EmptyBorder(4, 10, 4, 10)
+                ));
+            }
+            @Override
+            public void focusLost(FocusEvent e) {
+                if (searchField.getText().trim().isEmpty()) {
+                    searchField.setText(searchPlaceholder);
+                    searchField.setForeground(MUTED);
+                }
+                searchField.setBorder(BorderFactory.createCompoundBorder(
+                    BorderFactory.createLineBorder(new Color(220, 215, 205), 1, true),
+                    new EmptyBorder(4, 10, 4, 10)
+                ));
+            }
+        });
+
+        // Status Filter: All / On time / Late
+        String[] statusOptions = {"All Status", "On time", "Late"};
+        JComboBox<String> statusCombo = new JComboBox<>(statusOptions);
+        statusCombo.setFont(BODY);
+        statusCombo.setPreferredSize(new Dimension(120, 36));
+        statusCombo.setBackground(WHITE);
+        statusCombo.setForeground(INK);
+        statusCombo.setBorder(BorderFactory.createLineBorder(new Color(220, 215, 205), 1));
+
+        // Sort Control: Newest, Highest fine
+        String[] sortOptions = {"Newest", "Highest fine"};
+        JComboBox<String> sortCombo = new JComboBox<>(sortOptions);
+        sortCombo.setFont(BODY);
+        sortCombo.setPreferredSize(new Dimension(135, 36));
+        sortCombo.setBackground(WHITE);
+        sortCombo.setForeground(INK);
+        sortCombo.setBorder(BorderFactory.createLineBorder(new Color(220, 215, 205), 1));
+
+        leftFilters.add(searchField);
+        leftFilters.add(statusCombo);
+        leftFilters.add(sortCombo);
+
+        JLabel recordCounter = new JLabel("Showing 0 of 0 records");
+        recordCounter.setFont(SMALL);
+        recordCounter.setForeground(MUTED);
+
+        JPanel rightCountPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 0, 8));
+        rightCountPanel.setOpaque(false);
+        rightCountPanel.add(recordCounter);
+
+        toolbar.add(leftFilters, BorderLayout.WEST);
+        toolbar.add(rightCountPanel, BorderLayout.EAST);
+        tableCard.add(toolbar, BorderLayout.NORTH);
+
+        // --- Table & Empty State Stack ---
+        JPanel tableCenterPanel = new JPanel(new CardLayout());
+        tableCenterPanel.setOpaque(false);
+
+        // Table Model definition
+        String[] columns = {"Student", "Book", "Category", "Days Late", "Fine", "Status", "Receipt"};
+        DefaultTableModel tableModel = new DefaultTableModel(columns, 0) {
+            @Override
+            public boolean isCellEditable(int row, int col) {
+                return col == 6; // only Receipt column has interactive button
+            }
+            @Override
+            public Class<?> getColumnClass(int col) {
+                if (col == 3) return Integer.class;
+                if (col == 4) return Double.class;
+                return Object.class;
+            }
+        };
+
+        final JTable table = new JTable(tableModel);
+        table.setRowHeight(52);
+        table.setShowGrid(false);
+        table.setShowHorizontalLines(false);
+        table.setShowVerticalLines(false);
+        table.setIntercellSpacing(new Dimension(0, 0));
+        table.setOpaque(false);
+        table.setFillsViewportHeight(true);
+        table.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
+        table.setBackground(new Color(0, 0, 0, 0));
+
+        // Hover row tracking
+        final int[] hoveredRow = {-1};
+        table.addMouseMotionListener(new MouseMotionAdapter() {
+            @Override
+            public void mouseMoved(MouseEvent e) {
+                int r = table.rowAtPoint(e.getPoint());
+                if (r != hoveredRow[0]) {
+                    hoveredRow[0] = r;
+                    table.repaint();
+                }
+            }
+        });
+        table.addMouseListener(new MouseAdapter() {
+            @Override
+            public void mouseExited(MouseEvent e) {
+                hoveredRow[0] = -1;
+                table.repaint();
+            }
+        });
+
+        // Custom JTableHeader: Cream tint, small caps font, subtle 1px bottom border
+        JTableHeader th = table.getTableHeader();
+        th.setReorderingAllowed(false);
+        th.setResizingAllowed(true);
+        th.setPreferredSize(new Dimension(0, 36));
+        th.setDefaultRenderer(new DefaultTableCellRenderer() {
+            @Override
+            public Component getTableCellRendererComponent(JTable t, Object val, boolean isSel, boolean hasFocus, int r, int c) {
+                JLabel lbl = (JLabel) super.getTableCellRendererComponent(t, val, isSel, hasFocus, r, c);
+                lbl.setFont(new Font("SansSerif", Font.BOLD, 11));
+                lbl.setForeground(new Color(115, 105, 95));
+                lbl.setBackground(new Color(245, 240, 232));
+                lbl.setOpaque(true);
+                lbl.setBorder(BorderFactory.createCompoundBorder(
+                    BorderFactory.createMatteBorder(0, 0, 1, 0, new Color(222, 214, 202)),
+                    new EmptyBorder(0, 12, 0, 12)
+                ));
+                if (c == 3 || c == 4) {
+                    lbl.setHorizontalAlignment(SwingConstants.RIGHT);
+                } else if (c == 5 || c == 6) {
+                    lbl.setHorizontalAlignment(SwingConstants.CENTER);
+                } else {
+                    lbl.setHorizontalAlignment(SwingConstants.LEFT);
+                }
+                String s = val == null ? "" : val.toString().toUpperCase();
+                lbl.setText(s);
+                return lbl;
+            }
+        });
+
+        // Row renderer with 1px subtle divider and hover highlight
+        table.setDefaultRenderer(Object.class, new DefaultTableCellRenderer() {
+            @Override
+            public Component getTableCellRendererComponent(JTable t, Object val, boolean isSel, boolean hasFocus, int row, int col) {
+                JLabel lbl = (JLabel) super.getTableCellRendererComponent(t, val, isSel, hasFocus, row, col);
+                lbl.setFont(BODY);
+                lbl.setForeground(INK);
+                lbl.setBorder(BorderFactory.createCompoundBorder(
+                    BorderFactory.createMatteBorder(0, 0, 1, 0, new Color(238, 232, 222)),
+                    new EmptyBorder(0, 12, 0, 12)
+                ));
+
+                if (row == hoveredRow[0]) {
+                    lbl.setBackground(new Color(248, 243, 235));
+                    lbl.setOpaque(true);
+                } else {
+                    lbl.setOpaque(false);
+                }
+                return lbl;
+            }
+        });
+
+        // Numeric renderer for Days Late (Col 3, Right aligned)
+        table.getColumnModel().getColumn(3).setCellRenderer(new DefaultTableCellRenderer() {
+            @Override
+            public Component getTableCellRendererComponent(JTable t, Object val, boolean isSel, boolean hasFocus, int row, int col) {
+                JLabel lbl = (JLabel) super.getTableCellRendererComponent(t, val, isSel, hasFocus, row, col);
+                lbl.setHorizontalAlignment(SwingConstants.RIGHT);
+                lbl.setBorder(BorderFactory.createCompoundBorder(
+                    BorderFactory.createMatteBorder(0, 0, 1, 0, new Color(238, 232, 222)),
+                    new EmptyBorder(0, 12, 0, 12)
+                ));
+                int days = (val instanceof Integer) ? (Integer) val : 0;
+                lbl.setText(days == 0 ? "0d" : days + "d");
+                lbl.setFont(BODY_BOLD);
+                lbl.setForeground(days > 0 ? TERRACOTTA : SAGE);
+
+                if (row == hoveredRow[0]) {
+                    lbl.setBackground(new Color(248, 243, 235));
+                    lbl.setOpaque(true);
+                } else {
+                    lbl.setOpaque(false);
+                }
+                return lbl;
+            }
+        });
+
+        // Fine Amount renderer (Col 4, Right aligned, terracotta if > 0, grey "—" if 0)
+        table.getColumnModel().getColumn(4).setCellRenderer(new DefaultTableCellRenderer() {
+            @Override
+            public Component getTableCellRendererComponent(JTable t, Object val, boolean isSel, boolean hasFocus, int row, int col) {
+                JLabel lbl = (JLabel) super.getTableCellRendererComponent(t, val, isSel, hasFocus, row, col);
+                lbl.setHorizontalAlignment(SwingConstants.RIGHT);
+                lbl.setBorder(BorderFactory.createCompoundBorder(
+                    BorderFactory.createMatteBorder(0, 0, 1, 0, new Color(238, 232, 222)),
+                    new EmptyBorder(0, 12, 0, 12)
+                ));
+                double fineVal = (val instanceof Number) ? ((Number) val).doubleValue() : 0.0;
+                if (fineVal > 0) {
+                    lbl.setText("₹" + (int) fineVal);
+                    lbl.setFont(BODY_BOLD);
+                    lbl.setForeground(TERRACOTTA);
+                } else {
+                    lbl.setText("—");
+                    lbl.setFont(BODY);
+                    lbl.setForeground(new Color(160, 155, 148));
+                }
+
+                if (row == hoveredRow[0]) {
+                    lbl.setBackground(new Color(248, 243, 235));
+                    lbl.setOpaque(true);
+                } else {
+                    lbl.setOpaque(false);
+                }
+                return lbl;
+            }
+        });
+
+        // Category Chip Renderer (Col 2: Tinted rounded chip)
+        table.getColumnModel().getColumn(2).setCellRenderer(new TableCellRenderer() {
+            @Override
+            public Component getTableCellRendererComponent(JTable t, Object val, boolean isSel, boolean hasFocus, final int row, int col) {
+                final String cat = val == null ? "General" : val.toString();
+                final Color catCol = categoryColor(cat);
+
+                JPanel cell = new JPanel(new FlowLayout(FlowLayout.LEFT, 12, 13)) {
+                    @Override
+                    protected void paintComponent(Graphics g) {
+                        if (row == hoveredRow[0]) {
+                            g.setColor(new Color(248, 243, 235));
+                            g.fillRect(0, 0, getWidth(), getHeight());
+                        }
+                        g.setColor(new Color(238, 232, 222));
+                        g.fillRect(0, getHeight() - 1, getWidth(), 1);
+                        super.paintComponent(g);
+                    }
+                };
+                cell.setOpaque(false);
+
+                JPanel chip = new JPanel() {
+                    @Override
+                    protected void paintComponent(Graphics g) {
+                        Graphics2D g2 = (Graphics2D) g.create();
+                        g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+                        g2.setColor(new Color(catCol.getRed(), catCol.getGreen(), catCol.getBlue(), 28));
+                        g2.fillRoundRect(0, 0, getWidth(), getHeight(), 10, 10);
+                        g2.setColor(new Color(catCol.getRed(), catCol.getGreen(), catCol.getBlue(), 120));
+                        g2.setStroke(new BasicStroke(1.0f));
+                        g2.drawRoundRect(0, 0, getWidth() - 1, getHeight() - 1, 10, 10);
+                        g2.dispose();
+                    }
+                };
+                chip.setLayout(new FlowLayout(FlowLayout.CENTER, 8, 3));
+                chip.setOpaque(false);
+
+                JLabel l = new JLabel(cat);
+                l.setFont(new Font("SansSerif", Font.BOLD, 11));
+                l.setForeground(catCol);
+                chip.add(l);
+
+                cell.add(chip);
+                return cell;
+            }
+        });
+
+        // Status Pill Renderer (Col 5: sage "On time", gold "Late", terracotta "Fine due")
+        table.getColumnModel().getColumn(5).setCellRenderer(new TableCellRenderer() {
+            @Override
+            public Component getTableCellRendererComponent(JTable t, Object val, boolean isSel, boolean hasFocus, final int row, int col) {
+                String raw = val == null ? "" : val.toString();
+                final String text;
+                final Color pillBg;
+                final Color pillFg;
+
+                if ("On time".equalsIgnoreCase(raw)) {
+                    text = "On time";
+                    pillBg = new Color(228, 240, 224);
+                    pillFg = SAGE;
+                } else if ("Fine due".equalsIgnoreCase(raw)) {
+                    text = "Fine due";
+                    pillBg = new Color(252, 230, 225);
+                    pillFg = TERRACOTTA;
+                } else {
+                    text = "Late";
+                    pillBg = new Color(254, 244, 220);
+                    pillFg = new Color(180, 120, 30);
+                }
+
+                JPanel cell = new JPanel(new FlowLayout(FlowLayout.CENTER, 6, 12)) {
+                    @Override
+                    protected void paintComponent(Graphics g) {
+                        if (row == hoveredRow[0]) {
+                            g.setColor(new Color(248, 243, 235));
+                            g.fillRect(0, 0, getWidth(), getHeight());
+                        }
+                        g.setColor(new Color(238, 232, 222));
+                        g.fillRect(0, getHeight() - 1, getWidth(), 1);
+                        super.paintComponent(g);
+                    }
+                };
+                cell.setOpaque(false);
+
+                JPanel pill = new JPanel() {
+                    @Override
+                    protected void paintComponent(Graphics g) {
+                        Graphics2D g2 = (Graphics2D) g.create();
+                        g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+                        g2.setColor(pillBg);
+                        g2.fillRoundRect(0, 0, getWidth(), getHeight(), 16, 16);
+                        g2.setColor(new Color(pillFg.getRed(), pillFg.getGreen(), pillFg.getBlue(), 80));
+                        g2.setStroke(new BasicStroke(1.0f));
+                        g2.drawRoundRect(0, 0, getWidth() - 1, getHeight() - 1, 16, 16);
+                        g2.dispose();
+                    }
+                };
+                pill.setLayout(new FlowLayout(FlowLayout.CENTER, 10, 3));
+                pill.setOpaque(false);
+
+                JLabel l = new JLabel(text);
+                l.setFont(new Font("SansSerif", Font.BOLD, 11));
+                l.setForeground(pillFg);
+                pill.add(l);
+
+                cell.add(pill);
+                return cell;
+            }
+        });
+
+        // Visible records list for matching rows with LibRecord instances
+        final ArrayList<LibRecord> displayedRecords = new ArrayList<>();
+
+        // Receipt Button Renderer & Editor (Col 6)
+        class ReceiptButtonRenderer extends JPanel implements TableCellRenderer {
+            private final JButton btn;
+            private int renderRow = -1;
+
+            ReceiptButtonRenderer() {
+                super(new FlowLayout(FlowLayout.CENTER, 4, 11));
+                setOpaque(false);
+                btn = new JButton("Receipt");
+                btn.setFont(new Font("SansSerif", Font.BOLD, 11));
+                btn.setForeground(INK);
+                btn.setBackground(WHITE);
+                btn.setFocusPainted(false);
+                btn.setPreferredSize(new Dimension(72, 28));
+                btn.setBorder(BorderFactory.createLineBorder(new Color(210, 205, 195), 1, true));
+                add(btn);
+            }
+
+            @Override
+            protected void paintComponent(Graphics g) {
+                if (renderRow == hoveredRow[0]) {
+                    g.setColor(new Color(248, 243, 235));
+                    g.fillRect(0, 0, getWidth(), getHeight());
+                }
+                g.setColor(new Color(238, 232, 222));
+                g.fillRect(0, getHeight() - 1, getWidth(), 1);
+                super.paintComponent(g);
+            }
+
+            @Override
+            public Component getTableCellRendererComponent(JTable t, Object val, boolean isSel, boolean hasFocus, int r, int c) {
+                this.renderRow = r;
+                return this;
+            }
+        }
+
+        class ReceiptButtonEditor extends DefaultCellEditor {
+            private final JPanel panel;
+            private final JButton btn;
+            private int currentRow = -1;
+
+            ReceiptButtonEditor() {
+                super(new JCheckBox());
+                panel = new JPanel(new FlowLayout(FlowLayout.CENTER, 4, 11)) {
+                    @Override
+                    protected void paintComponent(Graphics g) {
+                        if (currentRow == hoveredRow[0]) {
+                            g.setColor(new Color(248, 243, 235));
+                            g.fillRect(0, 0, getWidth(), getHeight());
+                        }
+                        g.setColor(new Color(238, 232, 222));
+                        g.fillRect(0, getHeight() - 1, getWidth(), 1);
+                        super.paintComponent(g);
+                    }
+                };
+                panel.setOpaque(false);
+                btn = new JButton("Receipt");
+                btn.setFont(new Font("SansSerif", Font.BOLD, 11));
+                btn.setForeground(INK);
+                btn.setBackground(WHITE);
+                btn.setFocusPainted(false);
+                btn.setCursor(new Cursor(Cursor.HAND_CURSOR));
+                btn.setPreferredSize(new Dimension(72, 28));
+                btn.setBorder(BorderFactory.createLineBorder(TERRACOTTA, 1, true));
+
+                btn.addActionListener(e -> {
+                    fireEditingStopped();
+                    if (currentRow >= 0 && currentRow < displayedRecords.size()) {
+                        LibRecord rec = displayedRecords.get(currentRow);
+                        java.time.LocalDate retDate = rec.getIssueDate().plusDays(rec.getActualDays());
+                        showFineReceiptModal(rec, retDate, rec.getDelayedDays(), rec.getFine());
+                    }
+                });
+                panel.add(btn);
+            }
+
+            @Override
+            public Component getTableCellEditorComponent(JTable t, Object value, boolean isSelected, int r, int c) {
+                this.currentRow = r;
+                return panel;
+            }
+
+            @Override
+            public Object getCellEditorValue() {
+                return "Receipt";
+            }
+        }
+
+        table.getColumnModel().getColumn(6).setCellRenderer(new ReceiptButtonRenderer());
+        table.getColumnModel().getColumn(6).setCellEditor(new ReceiptButtonEditor());
+
+        // Preferred column widths
+        table.getColumnModel().getColumn(0).setPreferredWidth(170); // Student
+        table.getColumnModel().getColumn(1).setPreferredWidth(210); // Book
+        table.getColumnModel().getColumn(2).setPreferredWidth(110); // Category
+        table.getColumnModel().getColumn(3).setPreferredWidth(80);  // Days Late
+        table.getColumnModel().getColumn(4).setPreferredWidth(85);  // Fine
+        table.getColumnModel().getColumn(5).setPreferredWidth(100); // Status
+        table.getColumnModel().getColumn(6).setPreferredWidth(95);  // Receipt
+
+        // Scroll pane for the table inside the card with slim styled scrollbar
+        JScrollPane tableScroll = new JScrollPane(table);
+        tableScroll.setBorder(BorderFactory.createEmptyBorder());
+        tableScroll.setOpaque(false);
+        tableScroll.getViewport().setOpaque(false);
+        tableScroll.getVerticalScrollBar().setUnitIncrement(16);
+        tableScroll.setHorizontalScrollBarPolicy(JScrollPane.HORIZONTAL_SCROLLBAR_NEVER);
+
+        // Slim styled scrollbar
+        tableScroll.getVerticalScrollBar().setPreferredSize(new Dimension(8, 0));
+        tableScroll.getVerticalScrollBar().setUI(new javax.swing.plaf.basic.BasicScrollBarUI() {
+            @Override
+            protected void configureScrollBarColors() {
+                this.thumbColor = new Color(205, 195, 185);
+                this.trackColor = new Color(245, 240, 235, 120);
+            }
+            @Override
+            protected JButton createDecreaseButton(int orientation) {
+                return createZeroButton();
+            }
+            @Override
+            protected JButton createIncreaseButton(int orientation) {
+                return createZeroButton();
+            }
+            private JButton createZeroButton() {
+                JButton b = new JButton();
+                b.setPreferredSize(new Dimension(0, 0));
+                b.setMinimumSize(new Dimension(0, 0));
+                b.setMaximumSize(new Dimension(0, 0));
+                return b;
+            }
+            @Override
+            protected void paintThumb(Graphics g, JComponent c, Rectangle thumbBounds) {
+                if (thumbBounds.isEmpty() || !scrollbar.isEnabled()) return;
+                Graphics2D g2 = (Graphics2D) g.create();
+                g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+                g2.setColor(thumbColor);
+                g2.fillRoundRect(thumbBounds.x, thumbBounds.y, thumbBounds.width, thumbBounds.height, 6, 6);
+                g2.dispose();
+            }
+        });
+
+        // ── 5. EMPTY STATE PANEL (Line-drawn receipt icon & return jump button) ─
+        JPanel emptyStatePanel = new JPanel() {
+            @Override
+            protected void paintComponent(Graphics g) {
+                super.paintComponent(g);
+                Graphics2D g2 = (Graphics2D) g.create();
+                g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+
+                int cx = getWidth() / 2;
+                int cy = 90;
+
+                // Draw line-drawn receipt icon
+                g2.setColor(new Color(220, 212, 202));
+                g2.fillRoundRect(cx - 24, cy - 32, 48, 64, 8, 8);
+                g2.setColor(TERRACOTTA);
+                g2.setStroke(new BasicStroke(1.8f));
+                g2.drawRoundRect(cx - 24, cy - 32, 48, 64, 8, 8);
+
+                // Dashed receipt tear lines
+                Stroke dashed = new BasicStroke(1.2f, BasicStroke.CAP_BUTT, BasicStroke.JOIN_BEVEL, 0, new float[]{3, 3}, 0);
+                g2.setStroke(dashed);
+                g2.setColor(MUTED);
+                g2.drawLine(cx - 16, cy - 18, cx + 16, cy - 18);
+                g2.drawLine(cx - 16, cy - 6, cx + 16, cy - 6);
+                g2.drawLine(cx - 16, cy + 6, cx + 16, cy + 6);
+                g2.drawLine(cx - 16, cy + 18, cx + 10, cy + 18);
+
+                g2.dispose();
+            }
+        };
+        emptyStatePanel.setOpaque(false);
+        emptyStatePanel.setLayout(new BoxLayout(emptyStatePanel, BoxLayout.Y_AXIS));
+
+        emptyStatePanel.add(Box.createVerticalStrut(140));
+        JLabel emptyMsg = new JLabel("No fines recorded yet. Returned books will appear here.");
+        emptyMsg.setFont(BODY);
+        emptyMsg.setForeground(MUTED);
+        emptyMsg.setAlignmentX(Component.CENTER_ALIGNMENT);
+        emptyStatePanel.add(emptyMsg);
+        emptyStatePanel.add(Box.createVerticalStrut(16));
+
+        JButton jumpReturnBtn = new JButton("Go to Return Book");
+        jumpReturnBtn.setFont(BODY_BOLD);
+        jumpReturnBtn.setBackground(TERRACOTTA);
+        jumpReturnBtn.setForeground(WHITE);
+        jumpReturnBtn.setFocusPainted(false);
+        jumpReturnBtn.setCursor(new Cursor(Cursor.HAND_CURSOR));
+        jumpReturnBtn.setAlignmentX(Component.CENTER_ALIGNMENT);
+        jumpReturnBtn.setPreferredSize(new Dimension(170, 38));
+        jumpReturnBtn.setMaximumSize(new Dimension(170, 38));
+        jumpReturnBtn.addActionListener(e -> showPage("RETURN"));
+        emptyStatePanel.add(jumpReturnBtn);
+        emptyStatePanel.add(Box.createVerticalStrut(30));
+
+        tableCenterPanel.add(tableScroll, "TABLE");
+        tableCenterPanel.add(emptyStatePanel, "EMPTY");
+        CardLayout centerCardLayout = (CardLayout) tableCenterPanel.getLayout();
+
+        tableCard.add(tableCenterPanel, BorderLayout.CENTER);
+
+        // ── 7. SUMMARY STRIP ──────────────────────────────────────
+        final JPanel summaryStrip = new JPanel(new FlowLayout(FlowLayout.LEFT, 4, 10));
+        summaryStrip.setOpaque(false);
+        final JLabel summaryLabel = new JLabel("");
+        summaryLabel.setFont(SMALL);
+        summaryLabel.setForeground(MUTED);
+        summaryStrip.add(summaryLabel);
+        tableCard.add(summaryStrip, BorderLayout.SOUTH);
+
+        // Filter / Sort / Refresh handler
+        Runnable refreshTable = () -> {
+            String q = searchField.getText().trim();
+            if (q.equals(searchPlaceholder)) q = "";
+            String queryLower = q.toLowerCase();
+
+            String statusSel = (String) statusCombo.getSelectedItem();
+            String sortSel = (String) sortCombo.getSelectedItem();
+
+            displayedRecords.clear();
+            double highestFine = 0.0;
+            String highestFineDesc = "None";
+            double fineSum = 0.0;
+            int totalReturnedRecords = 0;
+
+            for (LibRecord r : records) {
+                if (!r.isReturned()) continue;
+                totalReturnedRecords++;
+
+                // Track highest and fine sum across all returned records
+                if (r.getFine() > highestFine) {
+                    highestFine = r.getFine();
+                    highestFineDesc = "₹" + (int) highestFine + " (" + r.getStudent().getName() + ", " + r.getBook().getTitle() + ")";
+                }
+                fineSum += r.getFine();
+
+                // Status filter
+                if ("On time".equals(statusSel) && r.getDelayedDays() > 0) continue;
+                if ("Late".equals(statusSel) && r.getDelayedDays() == 0) continue;
+
+                // Query filter (matches student name/id or book title/id)
+                if (!queryLower.isEmpty()) {
+                    boolean matchStudent = r.getStudent().getName().toLowerCase().contains(queryLower)
+                        || r.getStudent().getId().toLowerCase().contains(queryLower);
+                    boolean matchBook = r.getBook().getTitle().toLowerCase().contains(queryLower)
+                        || r.getBook().getId().toLowerCase().contains(queryLower);
+                    if (!matchStudent && !matchBook) continue;
+                }
+
+                displayedRecords.add(r);
+            }
+
+            // Sorting
+            if ("Highest fine".equals(sortSel)) {
+                displayedRecords.sort((a, b) -> Double.compare(b.getFine(), a.getFine()));
             } else {
-                long days = java.time.temporal.ChronoUnit.DAYS.between(r.getIssueDate(), java.time.LocalDate.now());
-                if (days > r.getAllowedDays()) {
-                    overdueBooks++;
+                // Newest: assume records added later or reverse order
+                java.util.Collections.reverse(displayedRecords);
+            }
+
+            // Populate table model
+            tableModel.setRowCount(0);
+            for (LibRecord r : displayedRecords) {
+                String studentStr = r.getStudent().getName() + " (" + r.getStudent().getId() + ")";
+                String bookStr = r.getBook().getTitle();
+                String category = r.getBook().getCategory();
+                int daysLate = r.getDelayedDays();
+                double fine = r.getFine();
+
+                String status;
+                if (daysLate == 0) {
+                    status = "On time";
+                } else if ("PAID".equalsIgnoreCase(r.getFineStatus())) {
+                    status = "Late";
+                } else {
+                    status = "Fine due";
                 }
+
+                tableModel.addRow(new Object[]{
+                    studentStr,
+                    bookStr,
+                    category,
+                    daysLate,
+                    fine,
+                    status,
+                    "Receipt"
+                });
             }
-        }
-        unpaidStudents = unpaidStudentSet.size();
 
-        // KPIs
-        JPanel stats = new JPanel(new GridLayout(1, 4, 15, 0));
-        stats.setOpaque(false);
-        stats.setBorder(new EmptyBorder(0, 35, 20, 35));
-        
-        stats.add(statCard("TOTAL FINES", "₹" + (int)totalFines, "All time records", TERRACOTTA));
-        stats.add(statCard("UNPAID", "₹" + (int)unpaidAmount, unpaidStudents + " students", GOLD));
-        stats.add(statCard("OVERDUE NOW", String.valueOf(overdueBooks), "Not returned yet", new Color(200, 80, 80)));
-        stats.add(statCard("COLLECTED", "₹" + (int)collectedThisMonth, "This month", SAGE));
+            recordCounter.setText("Showing " + displayedRecords.size() + " of " + totalReturnedRecords + " records");
 
-        // Filters
-        JPanel filters = new JPanel(new FlowLayout(FlowLayout.LEFT, 15, 10));
-        filters.setOpaque(false);
-        filters.setBorder(new EmptyBorder(0, 20, 10, 20));
-        
-        JTextField searchFines = new JTextField(20);
-        searchFines.setPreferredSize(new Dimension(200, 35));
-        searchFines.setText("Search student or book...");
-        searchFines.setForeground(MUTED);
-        
-        String[] statuses = {"All Statuses", "Unpaid", "Paid", "Waived", "None"};
-        JComboBox<String> statusFilter = new JComboBox<>(statuses);
-        statusFilter.setPreferredSize(new Dimension(150, 35));
-        
-        JButton exportBtn = new JButton("Export CSV");
-        exportBtn.setBackground(INK);
-        exportBtn.setForeground(WHITE);
-        exportBtn.setFocusPainted(false);
-        
-        filters.add(searchFines);
-        filters.add(statusFilter);
-        filters.add(Box.createHorizontalStrut(20));
-        filters.add(exportBtn);
+            // Empty state check
+            if (displayedRecords.isEmpty()) {
+                centerCardLayout.show(tableCenterPanel, "EMPTY");
+                summaryStrip.setVisible(false);
+            } else {
+                centerCardLayout.show(tableCenterPanel, "TABLE");
+                summaryStrip.setVisible(true);
 
-        // Top section
-        JPanel top = new JPanel(new BorderLayout());
-        top.setOpaque(false);
-        top.add(header, BorderLayout.NORTH);
-        top.add(stats, BorderLayout.CENTER);
-        top.add(filters, BorderLayout.SOUTH);
-        page.add(top, BorderLayout.NORTH);
+                double avgFine = totalReturnedRecords > 0 ? (fineSum / totalReturnedRecords) : 0.0;
+                String avgFineFormatted = String.format(java.util.Locale.US, "%.1f", avgFine);
+                if (avgFineFormatted.endsWith(".0")) {
+                    avgFineFormatted = String.valueOf((int) avgFine);
+                }
 
-        // Table
-        JPanel list = new JPanel();
-        list.setBackground(CREAM);
-        list.setLayout(new BoxLayout(list, BoxLayout.Y_AXIS));
-        list.setBorder(new EmptyBorder(0, 35, 30, 35));
-        
-        // Table Header
-        JPanel th = new JPanel(new FlowLayout(FlowLayout.LEFT, 10, 0));
-        th.setOpaque(false);
-        th.setMaximumSize(new Dimension(1200, 30));
-        th.add(createHeaderLabel("Book", 260));
-        th.add(createHeaderLabel("Student", 180));
-        th.add(createHeaderLabel("Issued", 80));
-        th.add(createHeaderLabel("Due", 80));
-        th.add(createHeaderLabel("Returned", 80));
-        th.add(createHeaderLabel("Late", 60));
-        th.add(createHeaderLabel("Fine", 70));
-        th.add(createHeaderLabel("Status", 100));
-        th.add(createHeaderLabel("Action", 100));
-        
-        list.add(th);
-        list.add(Box.createVerticalStrut(10));
-
-        int fineRecordsCount = 0;
-        for (LibRecord record : records) {
-            if (record.isReturned()) {
-                list.add(fineRow(record));
-                list.add(Box.createVerticalStrut(8));
-                fineRecordsCount++;
+                String summaryText;
+                if (highestFine > 0) {
+                    summaryText = "Highest fine: " + highestFineDesc + "  ·  Average fine: ₹" + avgFineFormatted;
+                } else {
+                    summaryText = "Highest fine: ₹0 (No overdue fines)  ·  Average fine: ₹0";
+                }
+                summaryLabel.setText(summaryText);
             }
-        }
-        
-        if (fineRecordsCount == 0) {
-            JLabel empty = new JLabel("No fines recorded. Every book returned on time.");
-            empty.setFont(BODY);
-            empty.setForeground(MUTED);
-            empty.setAlignmentX(Component.CENTER_ALIGNMENT);
-            list.add(Box.createVerticalStrut(40));
-            list.add(empty);
-        }
 
-        JPanel listWrapper = new JPanel(new BorderLayout());
-        listWrapper.setBackground(CREAM);
-        listWrapper.add(list, BorderLayout.NORTH);
-        JScrollPane scroll = new JScrollPane(listWrapper);
-        scroll.setBorder(null);
-        scroll.getVerticalScrollBar().setUnitIncrement(16);
+            table.revalidate();
+            table.repaint();
+        };
 
-        page.add(scroll, BorderLayout.CENTER);
+        // Wire filter listeners
+        searchField.getDocument().addDocumentListener(new javax.swing.event.DocumentListener() {
+            @Override public void insertUpdate(javax.swing.event.DocumentEvent e) { refreshTable.run(); }
+            @Override public void removeUpdate(javax.swing.event.DocumentEvent e) { refreshTable.run(); }
+            @Override public void changedUpdate(javax.swing.event.DocumentEvent e) { refreshTable.run(); }
+        });
+        statusCombo.addActionListener(e -> refreshTable.run());
+        sortCombo.addActionListener(e -> refreshTable.run());
+
+        // Initial populate
+        refreshTable.run();
+
+        contentPanel.add(tableCard);
+
+        page.add(contentPanel, BorderLayout.CENTER);
         return page;
     }
-    
-    JLabel createHeaderLabel(String text, int width) {
-        JLabel l = new JLabel(text);
-        l.setFont(SMALL_BOLD);
-        l.setForeground(MUTED);
-        l.setPreferredSize(new Dimension(width, 20));
-        return l;
-    }
 
-    JPanel fineRow(LibRecord record) {
-        GlassPanel row = new GlassPanel(new Color(255, 252, 246, 225), new Color(255, 255, 255, 170));
-        row.setLayout(new FlowLayout(FlowLayout.LEFT, 10, 5));
-        row.setMaximumSize(new Dimension(1200, 65));
-        row.setPreferredSize(new Dimension(1100, 65));
-        row.setBorder(new EmptyBorder(5, 10, 5, 10));
+    // Helper: Compact 110px Stat Card with Graphics2D line-drawn icon in a tinted circle
+    private JPanel createCompactFineStatCard(String label, String value, String caption, Color accent, String iconType) {
+        GlassPanel card = new GlassPanel(new Color(255, 252, 246, 235), new Color(255, 255, 255, 180));
+        card.setLayout(new BorderLayout(14, 0));
+        card.setBorder(new EmptyBorder(16, 20, 16, 20));
+        card.setPreferredSize(new Dimension(240, 110));
 
-        // Book
-        JPanel bookCell = new JPanel(new FlowLayout(FlowLayout.LEFT, 10, 0));
-        bookCell.setOpaque(false);
-        bookCell.setPreferredSize(new Dimension(250, 50));
-        JLabel cover = new JLabel();
-        try {
-            ImageIcon icon = new ImageIcon("assets/covers/" + record.getBook().getId() + ".jpg");
-            Image img = icon.getImage().getScaledInstance(35, 50, Image.SCALE_SMOOTH);
-            cover.setIcon(new ImageIcon(img));
-        } catch (Exception e) {}
-        JLabel bTitle = new JLabel("<html><div style='width:180px;'>" + record.getBook().getTitle() + "</div></html>");
-        bTitle.setFont(BODY_BOLD);
-        bTitle.setForeground(INK);
-        bookCell.add(cover);
-        bookCell.add(bTitle);
+        // Tinted Circle with line-drawn icon
+        JPanel iconPanel = new JPanel() {
+            @Override
+            protected void paintComponent(Graphics g) {
+                super.paintComponent(g);
+                Graphics2D g2 = (Graphics2D) g.create();
+                g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
 
-        // Student
-        JPanel studentCell = new JPanel(new FlowLayout(FlowLayout.LEFT, 8, 10));
-        studentCell.setOpaque(false);
-        studentCell.setPreferredSize(new Dimension(170, 50));
-        JLabel avatar = new JLabel(record.getStudent().getName().substring(0, 1), SwingConstants.CENTER);
-        avatar.setOpaque(true);
-        avatar.setBackground(new Color(220, 210, 200));
-        avatar.setForeground(INK);
-        avatar.setFont(SMALL_BOLD);
-        avatar.setPreferredSize(new Dimension(30, 30));
-        avatar.setBorder(BorderFactory.createLineBorder(new Color(200, 190, 180), 1, true));
-        JLabel sName = new JLabel(record.getStudent().getName());
-        sName.setFont(BODY);
-        studentCell.add(avatar);
-        studentCell.add(sName);
+                int d = 46;
+                int x = (getWidth() - d) / 2;
+                int y = (getHeight() - d) / 2;
 
-        // Dates
-        java.time.format.DateTimeFormatter fmt = java.time.format.DateTimeFormatter.ofPattern("dd MMM");
-        JLabel issued = new JLabel(record.getIssueDate().format(fmt));
-        issued.setPreferredSize(new Dimension(80, 50));
-        issued.setFont(SMALL);
-        
-        JLabel due = new JLabel(record.getIssueDate().plusDays(record.getAllowedDays()).format(fmt));
-        due.setPreferredSize(new Dimension(80, 50));
-        due.setFont(SMALL);
-        
-        java.time.LocalDate returnDate = record.getIssueDate().plusDays(record.getActualDays());
-        JLabel returned = new JLabel(returnDate.format(fmt));
-        returned.setPreferredSize(new Dimension(80, 50));
-        returned.setFont(SMALL);
+                // Tinted circle
+                g2.setColor(new Color(accent.getRed(), accent.getGreen(), accent.getBlue(), 28));
+                g2.fillOval(x, y, d, d);
+                g2.setColor(new Color(accent.getRed(), accent.getGreen(), accent.getBlue(), 90));
+                g2.setStroke(new BasicStroke(1.2f));
+                g2.drawOval(x, y, d, d);
 
-        // Days Late
-        JLabel late = new JLabel(record.getDelayedDays() + "d");
-        late.setPreferredSize(new Dimension(60, 50));
-        late.setFont(BODY_BOLD);
-        late.setForeground(record.getDelayedDays() > 0 ? TERRACOTTA : SAGE);
+                // Line-drawn icon (no emoji)
+                g2.setColor(accent);
+                g2.setStroke(new BasicStroke(2.0f, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
+                int cx = x + d / 2;
+                int cy = y + d / 2;
 
-        // Fine
-        JLabel fine = new JLabel("₹" + (int)record.getFine());
-        fine.setPreferredSize(new Dimension(70, 50));
-        fine.setFont(BODY_BOLD);
-        fine.setForeground(record.getFine() > 0 ? TERRACOTTA : INK);
-        if (record.getFine() > 0) {
-            String calculation = "<html><body>" + record.getDelayedDays() + " days late.<br>Tiered rates apply.</body></html>";
-            fine.setToolTipText(calculation);
-        }
+                if ("fine".equals(iconType)) {
+                    // Currency / Coin / Rupee symbol lines
+                    g2.drawOval(cx - 10, cy - 10, 20, 20);
+                    g2.drawLine(cx - 5, cy - 3, cx + 5, cy - 3);
+                    g2.drawLine(cx - 5, cy + 1, cx + 3, cy + 1);
+                    g2.drawLine(cx - 2, cy - 6, cx - 2, cy + 6);
+                } else if ("clock".equals(iconType)) {
+                    // Clock circle and hands
+                    g2.drawOval(cx - 10, cy - 10, 20, 20);
+                    g2.drawLine(cx, cy, cx, cy - 5);
+                    g2.drawLine(cx, cy, cx + 4, cy + 2);
+                } else if ("check".equals(iconType)) {
+                    // Checkmark
+                    g2.drawLine(cx - 7, cy, cx - 2, cy + 5);
+                    g2.drawLine(cx - 2, cy + 5, cx + 7, cy - 5);
+                }
+                g2.dispose();
+            }
+        };
+        iconPanel.setOpaque(false);
+        iconPanel.setPreferredSize(new Dimension(50, 78));
+        card.add(iconPanel, BorderLayout.WEST);
 
-        // Status Pill
-        JLabel status = new JLabel(record.getFineStatus(), SwingConstants.CENTER);
-        status.setOpaque(true);
-        status.setFont(SMALL_BOLD);
-        status.setPreferredSize(new Dimension(80, 28));
-        switch (record.getFineStatus()) {
-            case "UNPAID":
-                status.setBackground(new Color(250, 237, 232));
-                status.setForeground(TERRACOTTA);
-                break;
-            case "PAID":
-                status.setBackground(new Color(237, 245, 234));
-                status.setForeground(SAGE);
-                break;
-            case "WAIVED":
-                status.setBackground(new Color(230, 230, 230));
-                status.setForeground(MUTED);
-                break;
-            default:
-                status.setBackground(new Color(245, 245, 245));
-                status.setForeground(MUTED);
-                status.setText("NONE");
-        }
-        JPanel statusCell = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 10));
-        statusCell.setOpaque(false);
-        statusCell.setPreferredSize(new Dimension(100, 50));
-        statusCell.add(status);
+        // Text Info (Big Number + Label + Caption)
+        JPanel textPanel = new JPanel();
+        textPanel.setOpaque(false);
+        textPanel.setLayout(new BoxLayout(textPanel, BoxLayout.Y_AXIS));
 
-        // Action
-        JPanel actionCell = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 10));
-        actionCell.setOpaque(false);
-        actionCell.setPreferredSize(new Dimension(100, 50));
-        if ("UNPAID".equals(record.getFineStatus())) {
-            JButton payBtn = new JButton("Pay");
-            payBtn.setFont(SMALL_BOLD);
-            payBtn.setBackground(INK);
-            payBtn.setForeground(WHITE);
-            payBtn.setFocusPainted(false);
-            payBtn.setCursor(new Cursor(Cursor.HAND_CURSOR));
-            payBtn.addActionListener(e -> {
-                record.setFineStatus("PAID");
-                FileManager.saveRecords(records);
-                showPage("FINES");
-            });
-            actionCell.add(payBtn);
-        } else if ("PAID".equals(record.getFineStatus())) {
-            JLabel paidIcon = new JLabel("✓ Settled");
-            paidIcon.setFont(SMALL_BOLD);
-            paidIcon.setForeground(SAGE);
-            actionCell.add(paidIcon);
-        }
+        JLabel titleLbl = new JLabel(label);
+        titleLbl.setFont(new Font("SansSerif", Font.BOLD, 11));
+        titleLbl.setForeground(accent);
 
-        row.add(bookCell);
-        row.add(studentCell);
-        row.add(issued);
-        row.add(due);
-        row.add(returned);
-        row.add(late);
-        row.add(fine);
-        row.add(statusCell);
-        row.add(actionCell);
+        JLabel valLbl = new JLabel(value);
+        valLbl.setFont(new Font("SansSerif", Font.BOLD, 26));
+        valLbl.setForeground(INK);
 
-        return row;
+        JLabel capLbl = new JLabel(caption);
+        capLbl.setFont(SMALL);
+        capLbl.setForeground(MUTED);
+
+        textPanel.add(titleLbl);
+        textPanel.add(Box.createVerticalStrut(2));
+        textPanel.add(valLbl);
+        textPanel.add(Box.createVerticalStrut(2));
+        textPanel.add(capLbl);
+
+        card.add(textPanel, BorderLayout.CENTER);
+        return card;
     }
 
 
