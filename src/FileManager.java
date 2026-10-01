@@ -587,7 +587,8 @@ public class FileManager {
                                 record.getDelayedDays() + "|" +
                                 record.getFine() + "|" +
                                 record.isReturned() + "|" +
-                                (record.getIssueDate() != null ? record.getIssueDate().toString() : java.time.LocalDate.now().toString())
+                                (record.getIssueDate() != null ? record.getIssueDate().toString() : java.time.LocalDate.now().toString()) + "|" +
+                                record.getFineStatus()
                 );
                 writer.newLine();
             }
@@ -615,7 +616,8 @@ public class FileManager {
                         }
                         LibRecord record = new LibRecord(student, book, allowedDays, issueDate);
                         if (returned) {
-                            record.setReturnData(actualDays, Integer.parseInt(data[4]), Double.parseDouble(data[5]));
+                            String fStatus = data.length >= 9 ? data[8] : (Double.parseDouble(data[5]) > 0 ? "UNPAID" : "NONE");
+                            record.setReturnData(actualDays, Integer.parseInt(data[4]), Double.parseDouble(data[5]), fStatus);
                         }
                         records.add(record);
                     }

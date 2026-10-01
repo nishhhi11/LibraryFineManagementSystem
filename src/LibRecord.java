@@ -12,6 +12,7 @@ public class LibRecord {
     private int delayedDays;
     private double fine;
     private boolean returned;
+    private String fineStatus;
 
     // Create issue record
     public LibRecord(Student student, Book book, int allowedDays, LocalDate issueDate) {
@@ -23,6 +24,7 @@ public class LibRecord {
         this.delayedDays = 0;
         this.fine = 0;
         this.returned = false;
+        this.fineStatus = "NONE";
     }
 
     public LibRecord(Student student, Book book, int allowedDays) {
@@ -39,13 +41,15 @@ public class LibRecord {
 
         fine = calculateFineAmount(delayedDays);
         returned = true;
+        fineStatus = fine > 0 ? "UNPAID" : "NONE";
     }
     
-    public void setReturnData(int actualDays, int delayedDays, double fine) {
+        public void setReturnData(int actualDays, int delayedDays, double fine, String fineStatus) {
         this.actualDays = actualDays;
         this.delayedDays = delayedDays;
         this.fine = fine;
         this.returned = true;
+        this.fineStatus = fineStatus;
     }
 
     // Calculate fine
@@ -84,6 +88,9 @@ public class LibRecord {
     public boolean isReturned() {
         return returned;
     }
+    
+    public String getFineStatus() { return fineStatus; }
+    public void setFineStatus(String status) { this.fineStatus = status; }
 
     // Display receipt
     public void displayReceipt() {
