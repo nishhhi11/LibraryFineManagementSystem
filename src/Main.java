@@ -346,19 +346,14 @@ public class Main {
 
     // View receipts
     static void viewReceipts() {
-
         System.out.println("\n------------- FINE RECEIPTS ----------------");
-
         boolean found = false;
-
         for (LibRecord record : records) {
-
             if (record.isReturned()) {
-                
+                record.displayReceipt();
                 found = true;
             }
         }
-
         if (!found) {
             System.out.println("No returned books or fine receipts.");
         }

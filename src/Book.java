@@ -1,5 +1,4 @@
 public class Book {
-
     private String id;
     private String title;
     private String author;
@@ -8,9 +7,7 @@ public class Book {
     private int availableCopies;
 
     // Store book details
-    public Book(String id, String title, String author,
-                String category, int totalCopies) {
-
+    public Book(String id, String title, String author, String category, int totalCopies) {
         this.id = id;
         this.title = title;
         this.author = author;
@@ -19,33 +16,13 @@ public class Book {
         this.availableCopies = totalCopies;
     }
 
-    public String getId() {
-        return id;
-    }
-
-    public String getTitle() {
-        return title;
-    }
-
-    public String getAuthor() {
-        return author;
-    }
-
-    public String getCategory() {
-        return category;
-    }
-
-    public int getTotalCopies() {
-        return totalCopies;
-    }
-
-    public int getAvailableCopies() {
-        return availableCopies;
-    }
-
-    public int getIssuedCopies() {
-        return totalCopies - availableCopies;
-    }
+    public String getId() { return id; }
+    public String getTitle() { return title; }
+    public String getAuthor() { return author; }
+    public String getCategory() { return category; }
+    public int getTotalCopies() { return totalCopies; }
+    public int getAvailableCopies() { return availableCopies; }
+    public int getIssuedCopies() { return totalCopies - availableCopies; }
 
     // Check availability
     public boolean isAvailable() {
@@ -68,15 +45,7 @@ public class Book {
 
     // Display book
     public void display() {
-
-        String status;
-
-        if (availableCopies > 0) {
-            status = "AVAILABLE";
-        } else {
-            status = "UNAVAILABLE";
-        }
-
+        String status = availableCopies > 0 ? "AVAILABLE" : "UNAVAILABLE";
         System.out.println("------------------------------------------");
         System.out.println("Book ID          : " + id);
         System.out.println("Title            : " + title);

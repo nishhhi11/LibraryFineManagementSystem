@@ -1,5 +1,4 @@
 public class Student {
-
     private String id;
     private String name;
     private String course;
@@ -13,21 +12,10 @@ public class Student {
         this.contact = contact;
     }
 
-    public String getId() {
-        return id;
-    }
-
-    public String getName() {
-        return name;
-    }
-
-    public String getCourse() {
-        return course;
-    }
-
-    public String getContact() {
-        return contact;
-    }
+    public String getId() { return id; }
+    public String getName() { return name; }
+    public String getCourse() { return course; }
+    public String getContact() { return contact; }
 
     // Display student
     public void display() {

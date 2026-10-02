@@ -97,62 +97,34 @@ public class LibRecord {
     }
     
     public LocalDate getIssueDate() { return issueDate; }
-    public Student getStudent() {
-        return student;
-    }
-
-    public Book getBook() {
-        return book;
-    }
-
-    public int getAllowedDays() {
-        return allowedDays;
-    }
-
-    public int getActualDays() {
-        return actualDays;
-    }
-
-    public int getDelayedDays() {
-        return delayedDays;
-    }
-
-    public double getFine() {
-        return fine;
-    }
-
-    public boolean isReturned() {
-        return returned;
-    }
-    
+    public Student getStudent() { return student; }
+    public Book getBook() { return book; }
+    public int getAllowedDays() { return allowedDays; }
+    public int getActualDays() { return actualDays; }
+    public int getDelayedDays() { return delayedDays; }
+    public double getFine() { return fine; }
+    public boolean isReturned() { return returned; }
     public String getFineStatus() { return fineStatus; }
     public void setFineStatus(String status) { this.fineStatus = status; }
 
     // Display receipt
     public void displayReceipt() {
-
         System.out.println("\n==========================================");
         System.out.println("              FINE RECEIPT");
         System.out.println("==========================================");
-
         System.out.println("Student ID   : " + student.getId());
         System.out.println("Student Name : " + student.getName());
         System.out.println("Course       : " + student.getCourse());
-
         System.out.println("------------------------------------------");
-
         System.out.println("Book ID      : " + book.getId());
         System.out.println("Book Name    : " + book.getTitle());
         System.out.println("Author       : " + book.getAuthor());
         System.out.println("Category     : " + book.getCategory());
-
         System.out.println("------------------------------------------");
-
         System.out.println("Allowed Days : " + allowedDays);
         System.out.println("Actual Days  : " + actualDays);
         System.out.println("Delayed Days : " + delayedDays);
         System.out.println("Fine Amount  : ₹" + fine);
-
         System.out.println("------------------------------------------");
         System.out.println("Status       : " + (returned ? "RETURNED" : "ISSUED"));
         System.out.println("==========================================");

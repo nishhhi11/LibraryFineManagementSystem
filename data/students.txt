@@ -2,7 +2,7 @@ S101|Nishi Chopda|B.Tech CSE · 3rd year|9000000101
 S102|Nandeni Tiwari|B.Tech IT · 2nd year|9000000102
 S103|Akshara Tanted|B.Tech ECE · 4th year|9000000103
 S104|Yashika Saraf|B.Tech Mech · 1st year|9000000104
-S105|Paarshvi Vijoy|B.Tech CSE · 4th year|9000000105
+S105|Paarshvi Vijay|B.Tech CSE · 4th year|9000000105
 S106|Vyom Shah|B.Tech CSE · 2nd year|9000000106
 S107|Prathamesh More|B.Tech CSE · 3rd year|9000000107
 S108|Kushal Nakrani|B.Tech IT · 2nd year|9000000108
