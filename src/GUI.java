@@ -1117,6 +1117,7 @@ public class GUI extends JFrame {
         
         final int overdueRef = overdueBooks;
         final int dueSoonRef = dueSoonCount;
+        final int minDueDaysRef = minDueDays;
         JPanel heroRight = new JPanel(new FlowLayout(FlowLayout.RIGHT, 10, 4));
         heroRight.setOpaque(false);
 
@@ -1150,7 +1151,8 @@ public class GUI extends JFrame {
                 returnFilterOverdueOnly = true;
                 showPage("RETURN");
             } else if (dueSoonRef > 0) {
-                showToast("Reminder sent to borrowers with books due in the next 7 days.", SAGE);
+                String dWord = minDueDaysRef == 0 ? "today" : (minDueDaysRef == 1 ? "in 1 day" : "in " + minDueDaysRef + " days");
+                showToast("Reminder sent to borrowers with books due " + dWord + ".", SAGE);
             } else {
                 booksFilterMode = "ON_LOAN";
                 showPage("BOOKS");
@@ -6231,6 +6233,8 @@ JButton smallButton(
         printBtn.setFont(BODY_BOLD);
         printBtn.setBackground(INK);
         printBtn.setForeground(WHITE);
+        printBtn.setOpaque(true);
+        printBtn.setBorderPainted(false);
         printBtn.setFocusPainted(false);
         printBtn.setCursor(new Cursor(Cursor.HAND_CURSOR));
         printBtn.setPreferredSize(new Dimension(130, 38));
@@ -6263,6 +6267,8 @@ JButton smallButton(
         closeBtn.setFont(BODY_BOLD);
         closeBtn.setBackground(CREAM);
         closeBtn.setForeground(INK);
+        closeBtn.setOpaque(true);
+        closeBtn.setBorderPainted(false);
         closeBtn.setFocusPainted(false);
         closeBtn.setCursor(new Cursor(Cursor.HAND_CURSOR));
         closeBtn.setPreferredSize(new Dimension(90, 38));
