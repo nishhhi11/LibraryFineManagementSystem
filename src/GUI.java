@@ -4911,6 +4911,15 @@ JButton smallButton(
         combo.setMaximumSize(new Dimension(Integer.MAX_VALUE, 44));
         combo.setOpaque(false);
 
+        Component editor = combo.getEditor().getEditorComponent();
+        if (editor instanceof JTextField) {
+            JTextField tf = (JTextField) editor;
+            tf.setBorder(BorderFactory.createEmptyBorder(0, 10, 0, 10));
+            tf.setOpaque(false);
+            tf.setBackground(new Color(0, 0, 0, 0));
+            tf.setForeground(INK);
+        }
+
         boolean[] focused = {false};
 
         Border roundedBorder = new Border() {
@@ -5326,7 +5335,7 @@ JButton smallButton(
         dateRow.setAlignmentX(Component.LEFT_ALIGNMENT);
 
         // Date Display Pill/Field
-        JLabel dateTextLbl = new JLabel(returnDateHolder[0].format(dateDisplayFmt), SwingConstants.CENTER) {
+        JLabel dateTextLbl = new JLabel(returnDateHolder[0].format(dateDisplayFmt)) {
             @Override
             protected void paintComponent(Graphics g) {
                 Graphics2D g2 = (Graphics2D) g.create();
@@ -5342,6 +5351,9 @@ JButton smallButton(
         dateTextLbl.setOpaque(false);
         dateTextLbl.setFont(BODY_BOLD);
         dateTextLbl.setForeground(INK);
+        dateTextLbl.setIcon(createLineIcon("calendar", 16, TERRACOTTA));
+        dateTextLbl.setIconTextGap(10);
+        dateTextLbl.setBorder(BorderFactory.createEmptyBorder(0, 14, 0, 0));
         dateRow.add(dateTextLbl, BorderLayout.CENTER);
 
         // -1 Day and +1 Day Buttons
@@ -5447,6 +5459,13 @@ JButton smallButton(
         statsRow.add(lateCard);
         formCard.add(statsRow);
         formCard.add(Box.createVerticalStrut(24));
+
+        final JCheckBox markPaidToggle = new JCheckBox("Collect fine now / Mark as paid", true);
+        markPaidToggle.setOpaque(false);
+        markPaidToggle.setFont(BODY_BOLD);
+        markPaidToggle.setForeground(WHITE);
+        markPaidToggle.setFocusPainted(false);
+        markPaidToggle.setAlignmentX(Component.LEFT_ALIGNMENT);
 
         // Return Button with custom painting and antialiasing
         JButton returnBtn = new JButton("Return Book") {
@@ -5601,7 +5620,7 @@ JButton smallButton(
 
                     // Fine pill (sage Rs 0 or terracotta Rs X, fully rounded)
                     int fineAmount = (int) r.getFine();
-                    JLabel finePill = new JLabel(fineAmount == 0 ? "Rs 0" : "Rs " + fineAmount, SwingConstants.CENTER) {
+                    JLabel finePill = new JLabel(fineAmount == 0 ? "₹0" : "₹" + fineAmount, SwingConstants.CENTER) {
                         @Override
                         protected void paintComponent(Graphics g) {
                             Graphics2D g2 = (Graphics2D) g.create();
@@ -5658,6 +5677,7 @@ JButton smallButton(
             boolean hasSelection = selectedLoanItem != null && !selectedLoanItem.isPlaceholder && selectedLoanItem.record != null;
 
             if (!hasSelection) {
+                returnBtn.setText("Return Book");
                 returnBtn.setEnabled(false);
                 keptVal.setText("—");
                 lateVal.setText("—");
@@ -5845,22 +5865,42 @@ JButton smallButton(
                 livePanel.add(Box.createVerticalStrut(18));
 
                 // Dates Breakdown Grid
-                JPanel dateGrid = new JPanel(new GridLayout(3, 2, 8, 6));
+                JPanel dateGrid = new JPanel(new GridLayout(6, 2, 8, 6));
                 dateGrid.setOpaque(false);
                 dateGrid.setAlignmentX(Component.LEFT_ALIGNMENT);
 
                 java.time.LocalDate dueDate = issueDate.plusDays(allowedDays);
                 java.time.format.DateTimeFormatter dtfLong = java.time.format.DateTimeFormatter.ofPattern("d MMM yyyy");
 
-                dateGrid.add(createMetaLabel("Issue Date:", issueDate.format(dtfLong)));
-                dateGrid.add(createMetaLabel("Due Date:", dueDate.format(dtfLong)));
-                dateGrid.add(createMetaLabel("Return Date:", returnDate.format(dtfLong)));
-                dateGrid.add(createMetaLabel("Days Late:", daysLate + " days"));
-                dateGrid.add(createMetaLabel("Slab Applied:", slabName));
-                dateGrid.add(createMetaLabel("Rate per Day:", rateDesc));
+                String[][] gridData = {
+                    {"Issue Date:", issueDate.format(dtfLong)},
+                    {"Due Date:", dueDate.format(dtfLong)},
+                    {"Return Date:", returnDate.format(dtfLong)},
+                    {"Days Late:", daysLate + " days"},
+                    {"Slab Applied:", slabName},
+                    {"Rate per Day:", rateDesc}
+                };
+                for (String[] row : gridData) {
+                    JLabel kLbl = new JLabel(row[0]);
+                    kLbl.setFont(SMALL_BOLD);
+                    kLbl.setForeground(new Color(255, 255, 255, 140));
+                    JLabel vLbl = new JLabel(row[1]);
+                    vLbl.setFont(BODY_BOLD);
+                    vLbl.setForeground(WHITE);
+                    dateGrid.add(kLbl);
+                    dateGrid.add(vLbl);
+                }
 
                 livePanel.add(dateGrid);
                 livePanel.add(Box.createVerticalStrut(16));
+
+                if (fineAmount > 0) {
+                    livePanel.add(markPaidToggle);
+                    livePanel.add(Box.createVerticalStrut(10));
+                    returnBtn.setText("Return Book & Record ₹" + (int)fineAmount + " Fine");
+                } else {
+                    returnBtn.setText("Return Book");
+                }
 
                 // Large Total Fine Display
                 JPanel fineBox = new JPanel();
@@ -5887,7 +5927,11 @@ JButton smallButton(
             infoCard.repaint();
         };
 
-        loanCombo.addActionListener(e -> updatePreviewRef[0].run());
+        loanCombo.addActionListener(e -> {
+            returnDateHolder[0] = java.time.LocalDate.now();
+            dateTextLbl.setText(returnDateHolder[0].format(dateDisplayFmt));
+            updatePreviewRef[0].run();
+        });
 
         // -1 Day and +1 Day action listeners
         minusDayBtn.addActionListener(e -> {
@@ -5906,7 +5950,12 @@ JButton smallButton(
         });
 
         plusDayBtn.addActionListener(e -> {
-            returnDateHolder[0] = returnDateHolder[0].plusDays(1);
+            java.time.LocalDate candidate = returnDateHolder[0].plusDays(1);
+            if (candidate.isAfter(java.time.LocalDate.now())) {
+                showToast("Return date cannot be in the future", TERRACOTTA);
+                return;
+            }
+            returnDateHolder[0] = candidate;
             dateTextLbl.setText(returnDateHolder[0].format(dateDisplayFmt));
             updatePreviewRef[0].run();
         });
@@ -5929,7 +5978,8 @@ JButton smallButton(
             double fineAmount = LibRecord.calculateFineAmount(daysLate, record.getBook() != null ? record.getBook().getCategory() : "General");
 
             // Execute return record update
-            record.setReturnData(daysKept, daysLate, fineAmount, fineAmount > 0 ? "UNPAID" : "NONE");
+            String fineStatus = fineAmount > 0 ? (markPaidToggle.isSelected() ? "PAID" : "UNPAID") : "NONE";
+            record.setReturnData(daysKept, daysLate, fineAmount, fineStatus);
             record.getBook().returnCopy();
             saveData();
 
@@ -5937,7 +5987,7 @@ JButton smallButton(
             showFineReceiptModal(record, returnDate, daysLate, fineAmount);
 
             // Success feedback toast (fades after 3 seconds)
-            String toastMsg = record.getBook().getTitle() + " returned by " + record.getStudent().getName() + ", fine Rs " + (int) fineAmount;
+            String toastMsg = record.getBook().getTitle() + " returned by " + record.getStudent().getName() + ", fine ₹" + (int) fineAmount;
             showToast(toastMsg, SAGE);
 
             // Refresh recent returns
@@ -6315,6 +6365,8 @@ JButton smallButton(
                 );
 
         stats.setOpaque(false);
+        stats.setMaximumSize(new Dimension(Integer.MAX_VALUE, 90));
+        stats.setAlignmentX(Component.LEFT_ALIGNMENT);
 
 
         if (issueMode) {
@@ -6379,9 +6431,8 @@ JButton smallButton(
             stats.add(
                     statCard(
                             "RECORDED FINES",
-                            "₹"
-                                    + (int) totalFine,
-                            "total returned-book fines",
+                            String.valueOf((int) totalFine),
+                            "total fines collected (₹)",
                             TERRACOTTA
                     )
             );
