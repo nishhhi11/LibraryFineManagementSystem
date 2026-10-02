@@ -222,6 +222,9 @@ public class GUI extends JFrame {
 
     JPanel sidebar;
     String activePage = "HOME";
+    String booksFilterMode = "ALL";
+    boolean returnFilterOverdueOnly = false;
+    int activityDaysRange = 7;
     JPanel createSidebar() {
 
         sidebar =
@@ -312,21 +315,36 @@ public class GUI extends JFrame {
                 BorderLayout.NORTH
         );
 
-        JPanel bottom =
-                new JPanel();
-
+        JPanel bottom = new JPanel();
+        bottom.setLayout(new BoxLayout(bottom, BoxLayout.Y_AXIS));
         bottom.setOpaque(false);
+        bottom.setBorder(new EmptyBorder(0, 10, 10, 10));
 
-        // User / system area at sidebar bottom
-        JPanel userBox = new JPanel(new BorderLayout(8, 0));
+        // User / librarian profile area above Collapse Sidebar
+        JPanel userBox = new JPanel(new BorderLayout(8, 0)) {
+            @Override protected void paintComponent(Graphics g) {
+                Graphics2D g2 = (Graphics2D) g.create();
+                g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+                if (getModel() != null && (getMousePosition() != null)) {
+                    g2.setColor(new Color(60, 48, 42));
+                    g2.fillRoundRect(0, 0, getWidth(), getHeight(), 8, 8);
+                }
+                super.paintComponent(g);
+                g2.dispose();
+            }
+            private ButtonModel model;
+            public ButtonModel getModel() { return model; }
+        };
         userBox.setOpaque(false);
-        userBox.setBorder(new EmptyBorder(10, 12, 10, 12));
+        userBox.setBorder(new EmptyBorder(6, 8, 6, 8));
+        userBox.setMaximumSize(new Dimension(Integer.MAX_VALUE, 44));
+        userBox.setAlignmentX(Component.LEFT_ALIGNMENT);
         
         JPanel uAvatar = new JPanel() {
             @Override protected void paintComponent(Graphics g) {
                 Graphics2D g2 = (Graphics2D) g.create();
                 g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-                g2.setColor(new Color(184, 98, 77, 180));
+                g2.setColor(new Color(184, 98, 77));
                 g2.fillOval(0, 0, getWidth(), getHeight());
                 g2.setColor(WHITE);
                 g2.setFont(SMALL_BOLD);
@@ -344,15 +362,86 @@ public class GUI extends JFrame {
         JLabel uName = new JLabel("Nishi Chopda");
         uName.setFont(SMALL_BOLD);
         uName.setForeground(WHITE);
-        JLabel uRole = new JLabel("Head Librarian  •  Online");
+        JLabel uRole = new JLabel("Head Librarian • Online");
         uRole.setFont(new Font("SansSerif", Font.PLAIN, 10));
         uRole.setForeground(new Color(175, 165, 155));
         uDetails.add(uName);
         uDetails.add(Box.createVerticalStrut(2));
         uDetails.add(uRole);
         
+        JLabel uChevron = new JLabel("▾");
+        uChevron.setFont(new Font("SansSerif", Font.BOLD, 12));
+        uChevron.setForeground(new Color(175, 165, 155));
+        
         userBox.add(uAvatar, BorderLayout.WEST);
         userBox.add(uDetails, BorderLayout.CENTER);
+        userBox.add(uChevron, BorderLayout.EAST);
+        
+        userBox.setCursor(new Cursor(Cursor.HAND_CURSOR));
+        userBox.setToolTipText("Librarian Profile (Click for Settings & Logout)");
+        
+        JPopupMenu sideUserMenu = new JPopupMenu();
+        sideUserMenu.setBackground(PAPER);
+        sideUserMenu.setBorder(BorderFactory.createLineBorder(SAND));
+        
+        JMenuItem suHeader = new JMenuItem("Signed in as Nishi Chopda");
+        suHeader.setFont(SMALL_BOLD);
+        suHeader.setEnabled(false);
+        sideUserMenu.add(suHeader);
+        sideUserMenu.addSeparator();
+        
+        JMenuItem suHome = new JMenuItem("Dashboard Home");
+        suHome.setFont(BODY);
+        suHome.addActionListener(e -> showPage("HOME"));
+        sideUserMenu.add(suHome);
+        
+        JMenuItem suFines = new JMenuItem("Manage Fine Rates & Receipts");
+        suFines.setFont(BODY);
+        suFines.addActionListener(e -> showPage("FINES"));
+        sideUserMenu.add(suFines);
+        
+        JMenuItem suSettings = new JMenuItem("Settings & Database Status");
+        suSettings.setFont(BODY);
+        suSettings.addActionListener(e -> {
+            JOptionPane.showMessageDialog(sidebar,
+                "MindSpace Library v1.0\nData Storage: Local Plaintext / RedHat JDT Workspace\nCatalog: 40 Titles · 116 Copies\nStatus: All subsystems active and synchronized.",
+                "System Settings & Info",
+                JOptionPane.INFORMATION_MESSAGE);
+        });
+        sideUserMenu.add(suSettings);
+        sideUserMenu.addSeparator();
+        
+        JMenuItem suLogout = new JMenuItem("Lock Session / Logout");
+        suLogout.setFont(SMALL_BOLD);
+        suLogout.setForeground(TERRACOTTA);
+        suLogout.addActionListener(e -> {
+            int confirm = JOptionPane.showConfirmDialog(sidebar,
+                "Are you sure you want to lock the session?",
+                "Session Lock",
+                JOptionPane.YES_NO_OPTION);
+            if (confirm == JOptionPane.YES_OPTION) {
+                showPage("HOME");
+            }
+        });
+        sideUserMenu.add(suLogout);
+        
+        userBox.addMouseListener(new MouseAdapter() {
+            @Override
+            public void mouseEntered(MouseEvent e) {
+                userBox.setOpaque(true);
+                userBox.setBackground(new Color(60, 48, 42));
+                userBox.repaint();
+            }
+            @Override
+            public void mouseExited(MouseEvent e) {
+                userBox.setOpaque(false);
+                userBox.repaint();
+            }
+            @Override
+            public void mouseClicked(MouseEvent e) {
+                sideUserMenu.show(userBox, 0, -sideUserMenu.getPreferredSize().height - 4);
+            }
+        });
         
         bottom.add(userBox);
         bottom.add(Box.createVerticalStrut(6));
@@ -372,12 +461,13 @@ public class GUI extends JFrame {
         };
         collapseBtn.setOpaque(false);
         collapseBtn.setContentAreaFilled(false);
-        collapseBtn.setBorder(new EmptyBorder(6, 12, 6, 12));
+        collapseBtn.setBorder(new EmptyBorder(6, 8, 6, 8));
         collapseBtn.setFont(new Font("SansSerif", Font.PLAIN, 11));
         collapseBtn.setForeground(new Color(185, 175, 165));
         collapseBtn.setCursor(new Cursor(Cursor.HAND_CURSOR));
         collapseBtn.setFocusPainted(false);
         collapseBtn.setAlignmentX(Component.LEFT_ALIGNMENT);
+        collapseBtn.setMaximumSize(new Dimension(Integer.MAX_VALUE, 30));
         collapseBtn.addActionListener(e -> {
             boolean isExpanded = sidebar.getPreferredSize().width > 80;
             if (isExpanded) {
@@ -580,8 +670,65 @@ public class GUI extends JFrame {
 
         left.add(title);
 
-        JPanel right = new JPanel(new FlowLayout(FlowLayout.RIGHT, 15, 15));
+
+
+        JPanel right = new JPanel(new FlowLayout(FlowLayout.RIGHT, 12, 14));
         right.setOpaque(false);
+        
+        // Notification bell with active loan / overdue indicator
+        int overdueCount = 0;
+        for (LibRecord r : records) {
+            if (!r.isReturned()) {
+                long ds = java.time.temporal.ChronoUnit.DAYS.between(r.getIssueDate(), java.time.LocalDate.now());
+                if (ds > r.getAllowedDays()) overdueCount++;
+            }
+        }
+        final int badgeCount = overdueCount;
+        
+        JButton bellBtn = new JButton() {
+            @Override protected void paintComponent(Graphics g) {
+                Graphics2D g2 = (Graphics2D) g.create();
+                g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+                if (getModel().isRollover()) {
+                    g2.setColor(new Color(240, 235, 228));
+                    g2.fillOval(0, 0, getWidth(), getHeight());
+                }
+                Icon icon = createLineIcon("BELL", 16, INK);
+                icon.paintIcon(this, g2, (getWidth() - 16) / 2, (getHeight() - 16) / 2);
+                if (badgeCount > 0) {
+                    g2.setColor(TERRACOTTA);
+                    if (badgeCount > 9) {
+                        g2.fillRoundRect(getWidth() - 16, 2, 14, 12, 6, 6);
+                    } else {
+                        g2.fillOval(getWidth() - 12, 3, 10, 10);
+                    }
+                    g2.setColor(WHITE);
+                    g2.setFont(new Font("SansSerif", Font.BOLD, 8));
+                    FontMetrics fm = g2.getFontMetrics();
+                    String bStr = String.valueOf(badgeCount);
+                    int bx = badgeCount > 9 ? getWidth() - 16 + (14 - fm.stringWidth(bStr)) / 2 : getWidth() - 12 + (10 - fm.stringWidth(bStr)) / 2;
+                    int by = badgeCount > 9 ? 11 : 11;
+                    g2.drawString(bStr, bx, by);
+                }
+                g2.dispose();
+            }
+        };
+        bellBtn.setPreferredSize(new Dimension(34, 34));
+        bellBtn.setOpaque(false);
+        bellBtn.setContentAreaFilled(false);
+        bellBtn.setBorderPainted(false);
+        bellBtn.setFocusPainted(false);
+        bellBtn.setCursor(new Cursor(Cursor.HAND_CURSOR));
+        bellBtn.setToolTipText(badgeCount > 0 ? badgeCount + " overdue books requiring attention" : "No active alerts");
+        bellBtn.addActionListener(e -> {
+            if (badgeCount > 0) {
+                returnFilterOverdueOnly = true;
+                showPage("RETURN");
+            } else {
+                JOptionPane.showMessageDialog(bar, "All book loans are up to date!", "Notifications", JOptionPane.INFORMATION_MESSAGE);
+            }
+        });
+        right.add(bellBtn);
         
         JPanel profile = new JPanel(new BorderLayout());
         profile.setOpaque(false);
@@ -647,6 +794,8 @@ public class GUI extends JFrame {
                 left,
                 BorderLayout.WEST
         );
+
+
 
         bar.add(
                 right,
@@ -888,7 +1037,13 @@ public class GUI extends JFrame {
         JLabel dateLabel = new JLabel(java.time.LocalDate.now().format(dtf));
         dateLabel.setFont(SMALL_BOLD);
         dateLabel.setForeground(MUTED);
-        header.add(dateLabel, BorderLayout.EAST);
+
+        // Header right panel with date
+        JPanel headerRight = new JPanel(new FlowLayout(FlowLayout.RIGHT, 0, 0));
+        headerRight.setOpaque(false);
+        headerRight.add(dateLabel);
+
+        header.add(headerRight, BorderLayout.EAST);
 
         content.add(header);
         content.add(Box.createVerticalStrut(20));
@@ -911,34 +1066,102 @@ public class GUI extends JFrame {
             }
         }
 
-        // ---------- HERO ----------
+        // Find closest due loan within 7 days
+        int minDueDays = -1;
+        int dueSoonCount = 0;
+        java.time.LocalDate todayDate = java.time.LocalDate.now();
+        for (LibRecord r : records) {
+            if (!r.isReturned()) {
+                java.time.LocalDate dueDate = r.getIssueDate().plusDays(r.getAllowedDays());
+                long diff = java.time.temporal.ChronoUnit.DAYS.between(todayDate, dueDate);
+                if (diff >= 0 && diff <= 7) {
+                    dueSoonCount++;
+                    if (minDueDays == -1 || diff < minDueDays) {
+                        minDueDays = (int) diff;
+                    }
+                }
+            }
+        }
+
+        // ---------- HERO BANNER (Trimmed height with Issue a Book shortcut) ----------
         GlassPanel hero = new GlassPanel(INK, new Color(255, 255, 255, 45));
         hero.setLayout(new BorderLayout());
-        hero.setPreferredSize(new Dimension(0, 68));
-        hero.setMaximumSize(new Dimension(Integer.MAX_VALUE, 68));
-        hero.setBorder(new EmptyBorder(10, 24, 10, 24));
+        hero.setPreferredSize(new Dimension(0, 54));
+        hero.setMaximumSize(new Dimension(Integer.MAX_VALUE, 54));
+        hero.setBorder(new EmptyBorder(7, 20, 7, 20));
 
         JPanel heroText = new JPanel();
         heroText.setOpaque(false);
         heroText.setLayout(new BoxLayout(heroText, BoxLayout.Y_AXIS));
 
         JLabel eyebrow = new JLabel("MINDSPACE · LIVE DISPATCH");
-        eyebrow.setFont(SMALL_BOLD); eyebrow.setForeground(GOLD);
+        eyebrow.setFont(new Font("SansSerif", Font.BOLD, 9)); eyebrow.setForeground(GOLD);
 
-        String heroSubText = "Active library catalog ready  •  " + issuedCopies + " books currently on loan";
-        JLabel heroTitle = new JLabel(heroSubText);
-        heroTitle.setFont(customSerif.deriveFont(Font.BOLD, 17f)); heroTitle.setForeground(WHITE);
+        String loanPlural = issuedCopies == 1 ? "1 book currently on loan" : issuedCopies + " books currently on loan";
+        String dueMsg;
+        if (dueSoonCount > 0) {
+            String dueWord = dueSoonCount == 1 ? "1 book" : dueSoonCount + " books";
+            String dayWord = minDueDays == 0 ? "today" : (minDueDays == 1 ? "in 1 day" : "in " + minDueDays + " days");
+            dueMsg = dueWord + " due " + dayWord + "  •  " + loanPlural;
+        } else {
+            dueMsg = "All loans within schedule  •  " + loanPlural;
+        }
+        JLabel heroTitle = new JLabel(dueMsg);
+        heroTitle.setFont(customSerif.deriveFont(Font.BOLD, 15f)); heroTitle.setForeground(WHITE);
 
         heroText.add(eyebrow);
-        heroText.add(Box.createVerticalStrut(3));
+        heroText.add(Box.createVerticalStrut(2));
         heroText.add(heroTitle);
 
         hero.add(heroText, BorderLayout.WEST);
         
         final int overdueRef = overdueBooks;
-        JPanel heroRight = new JPanel(new FlowLayout(FlowLayout.RIGHT, 10, 8));
+        final int dueSoonRef = dueSoonCount;
+        JPanel heroRight = new JPanel(new FlowLayout(FlowLayout.RIGHT, 10, 4));
         heroRight.setOpaque(false);
-        JLabel heroBadge = new JLabel(overdueRef > 0 ? "  ⚠ " + overdueRef + " Overdue Attention Required  " : "  ✓ All Loans On Track  ") {
+
+        // Contextual action button inside banner (avoids duplicating "+ Issue a Book" from quick actions and sidebar)
+        String actionBtnText = overdueRef > 0 ? "Review Overdue" : (dueSoonRef > 0 ? "Send Reminder" : "View Loans");
+        String actionBtnTip = overdueRef > 0 ? "Inspect overdue records immediately" : (dueSoonRef > 0 ? "Send loan due reminder notifications" : "View current active loan records");
+        Color actionBtnBg = overdueRef > 0 ? new Color(184, 80, 65) : (dueSoonRef > 0 ? new Color(175, 125, 45) : new Color(75, 95, 80));
+        Color actionBtnHover = overdueRef > 0 ? new Color(205, 95, 80) : (dueSoonRef > 0 ? new Color(195, 140, 55) : new Color(90, 115, 98));
+
+        JButton heroActionBtn = new JButton(actionBtnText) {
+            @Override protected void paintComponent(Graphics g) {
+                Graphics2D g2 = (Graphics2D) g.create();
+                g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+                g2.setColor(getModel().isRollover() ? actionBtnHover : actionBtnBg);
+                g2.fillRoundRect(0, 0, getWidth(), getHeight(), 8, 8);
+                super.paintComponent(g);
+                g2.dispose();
+            }
+        };
+        heroActionBtn.setFont(SMALL_BOLD);
+        heroActionBtn.setForeground(WHITE);
+        heroActionBtn.setOpaque(false);
+        heroActionBtn.setContentAreaFilled(false);
+        heroActionBtn.setBorderPainted(false);
+        heroActionBtn.setFocusPainted(false);
+        heroActionBtn.setBorder(new EmptyBorder(5, 12, 5, 12));
+        heroActionBtn.setCursor(new Cursor(Cursor.HAND_CURSOR));
+        heroActionBtn.setToolTipText(actionBtnTip);
+        heroActionBtn.addActionListener(e -> {
+            if (overdueRef > 0) {
+                returnFilterOverdueOnly = true;
+                showPage("RETURN");
+            } else if (dueSoonRef > 0) {
+                showToast("Reminder sent to borrowers with books due in the next 7 days.", SAGE);
+            } else {
+                booksFilterMode = "ON_LOAN";
+                showPage("BOOKS");
+            }
+        });
+        heroRight.add(heroActionBtn);
+
+        String badgeText = overdueRef > 0 
+            ? (overdueRef == 1 ? "  ⚠ 1 Overdue  " : "  ⚠ " + overdueRef + " Overdue  ")
+            : "  ✓ All On Track  ";
+        JLabel heroBadge = new JLabel(badgeText) {
             @Override protected void paintComponent(Graphics g) {
                 Graphics2D g2 = (Graphics2D) g.create();
                 g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
@@ -956,7 +1179,7 @@ public class GUI extends JFrame {
         
         hero.setAlignmentX(Component.LEFT_ALIGNMENT);
         content.add(hero);
-        content.add(Box.createVerticalStrut(14));
+        content.add(Box.createVerticalStrut(12));
 
         // ---------- STATS ----------
         JPanel stats = new JPanel(new GridLayout(1, 4, 12, 0));
@@ -964,10 +1187,22 @@ public class GUI extends JFrame {
         stats.setMaximumSize(new Dimension(Integer.MAX_VALUE, 80));
         stats.setAlignmentX(Component.LEFT_ALIGNMENT);
 
-        stats.add(statCard("BOOK TITLES", String.valueOf(books.size()), "+4 this month", TERRACOTTA, "BOOK", "BOOKS"));
-        stats.add(statCard("TOTAL COPIES", String.valueOf(totalCopies), "in physical library", SAGE, "COPIES", "BOOKS"));
-        stats.add(statCard("ON LOAN", String.valueOf(issuedCopies), "currently borrowed", GOLD, "LOAN", "BOOKS"));
-        stats.add(statCard("OVERDUE", String.valueOf(overdueBooks), overdueBooks == 0 ? "all books on time" : "requires attention", overdueBooks == 0 ? SAGE : new Color(200, 75, 75), "OVERDUE", "RETURN"));
+        stats.add(statCard("BOOK TITLES", String.valueOf(books.size()), "+4 this month", TERRACOTTA, "BOOK", "BOOKS", () -> {
+            booksFilterMode = "ALL";
+            showPage("BOOKS");
+        }));
+        stats.add(statCard("TOTAL COPIES", String.valueOf(totalCopies), "in physical library", SAGE, "COPIES", "BOOKS", () -> {
+            booksFilterMode = "ALL";
+            showPage("BOOKS");
+        }));
+        stats.add(statCard("ON LOAN", String.valueOf(issuedCopies), "currently borrowed", GOLD, "LOAN", "BOOKS", () -> {
+            booksFilterMode = "ON_LOAN";
+            showPage("BOOKS");
+        }));
+        stats.add(statCard("OVERDUE", String.valueOf(overdueBooks), overdueBooks == 0 ? "all books on time" : "requires attention", overdueBooks == 0 ? SAGE : new Color(200, 75, 75), "OVERDUE", "RETURN", () -> {
+            returnFilterOverdueOnly = (overdueRef > 0);
+            showPage("RETURN");
+        }));
 
         content.add(stats);
         content.add(Box.createVerticalStrut(14));
@@ -978,10 +1213,9 @@ public class GUI extends JFrame {
         actions.setMaximumSize(new Dimension(Integer.MAX_VALUE, 90));
         actions.setAlignmentX(Component.LEFT_ALIGNMENT);
         
-        boolean hasOverdueAttention = overdueBooks > 0;
         actions.add(largeQuickAction("Browse Collection", "Search and view library books", "BOOKS", "BOOKS", false));
-        actions.add(largeQuickAction("Issue a Book", "Register a new outgoing book", "ISSUE", "ISSUE", !hasOverdueAttention));
-        actions.add(largeQuickAction("Return a Book", "Process incoming book & fines", "RETURN", "RETURN", hasOverdueAttention));
+        actions.add(largeQuickAction("Issue a Book", "Register a new outgoing book", "ISSUE", "ISSUE", false));
+        actions.add(largeQuickAction("Return a Book", "Process incoming book & fines", "RETURN", "RETURN", false));
         
         content.add(actions);
         content.add(Box.createVerticalStrut(14));
@@ -996,41 +1230,46 @@ public class GUI extends JFrame {
         gbc.weighty = 1.0;
         gbc.insets = new Insets(0, 0, 0, 6);
         
-        // Bar Chart
-        final int[] issues = new int[7];
-        final int[] returns = new int[7];
+        // Bar Chart - Dynamic Days Range (7 default, with 7/14/30 toggle)
+        final int numDays = (activityDaysRange == 30 || activityDaysRange == 14) ? activityDaysRange : 7;
+        final int[] issues = new int[numDays];
+        final int[] returns = new int[numDays];
         final java.time.LocalDate today = java.time.LocalDate.now();
-        final String[] colDates = new String[7];
+        final String[] colDates = new String[numDays];
         final java.time.format.DateTimeFormatter chartDtf = java.time.format.DateTimeFormatter.ofPattern("d MMM");
-        for (int i = 0; i < 7; i++) {
-            java.time.LocalDate d = today.minusDays(12 - 2 * i);
+        final java.time.format.DateTimeFormatter dayNumDtf = java.time.format.DateTimeFormatter.ofPattern("d");
+        final String[] dayNumLabels = new String[numDays];
+
+        for (int i = 0; i < numDays; i++) {
+            java.time.LocalDate d = today.minusDays(numDays - 1 - i);
             colDates[i] = d.format(chartDtf);
+            dayNumLabels[i] = d.format(dayNumDtf);
         }
 
         for (LibRecord r : records) {
             long dIssue = java.time.temporal.ChronoUnit.DAYS.between(r.getIssueDate(), today);
-            if (dIssue >= 0 && dIssue <= 13) {
-                int bucket = 6 - (int)(dIssue / 2);
-                if (bucket >= 0 && bucket < 7) issues[bucket]++;
+            if (dIssue >= 0 && dIssue < numDays) {
+                int bucket = (int)(numDays - 1 - dIssue);
+                if (bucket >= 0 && bucket < numDays) issues[bucket]++;
             }
             
             if (r.isReturned()) {
                 long dRet = java.time.temporal.ChronoUnit.DAYS.between(r.getIssueDate().plusDays(r.getActualDays()), today);
-                if (dRet >= 0 && dRet <= 13) {
-                    int bucket = 6 - (int)(dRet / 2);
-                    if (bucket >= 0 && bucket < 7) returns[bucket]++;
+                if (dRet >= 0 && dRet < numDays) {
+                    int bucket = (int)(numDays - 1 - dRet);
+                    if (bucket >= 0 && bucket < numDays) returns[bucket]++;
                 }
             }
         }
 
         int computedMax = 1;
         int totalActivities = 0;
-        for (int i = 0; i < 7; i++) {
+        for (int i = 0; i < numDays; i++) {
             if (issues[i] > computedMax) computedMax = issues[i];
             if (returns[i] > computedMax) computedMax = returns[i];
             totalActivities += issues[i] + returns[i];
         }
-        final int maxActivity = Math.max(5, computedMax);
+        final int maxActivity = Math.max(3, computedMax);
         final int totalActivityCount = totalActivities;
 
         GlassPanel barPanel = new GlassPanel(new Color(255, 252, 246, 225), new Color(255, 255, 255, 170)) {
@@ -1044,15 +1283,17 @@ public class GUI extends JFrame {
                         int w = getWidth();
                         int padX = 18;
                         int chartW = w - 2 * padX;
-                        int colW = chartW / 7;
+                        int colW = chartW / numDays;
                         int mx = e.getX();
-                        if (mx >= padX && mx < padX + 7 * colW) {
+                        if (mx >= padX && mx < padX + numDays * colW) {
                             int idx = (mx - padX) / colW;
-                            if (idx >= 0 && idx < 7) {
+                            if (idx >= 0 && idx < numDays) {
                                 hoverIndex = idx;
                                 String isText = issues[idx] + (issues[idx] == 1 ? " issue" : " issues");
                                 String retText = returns[idx] + (returns[idx] == 1 ? " return" : " returns");
-                                setToolTipText("<html><b>" + colDates[idx] + "</b>: " + isText + ", " + retText + "</html>");
+                                setToolTipText("<html><body style='padding: 4px 7px;'><b>" + colDates[idx] + "</b><br/>" +
+                                               "<span style='color: #B8624D;'>• Issues: " + issues[idx] + "</span><br/>" +
+                                               "<span style='color: #697E62;'>• Returns: " + returns[idx] + "</span></body></html>");
                                 repaint();
                                 return;
                             }
@@ -1082,7 +1323,7 @@ public class GUI extends JFrame {
                 g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
                 
                 int w = getWidth(), h = getHeight();
-                int padX = 18, padTop = 46, padBtm = 24;
+                int padX = 18, padTop = 46, padBtm = 26;
                 int chartW = w - 2 * padX;
                 int btmY = h - padBtm;
                 int topY = padTop;
@@ -1092,48 +1333,101 @@ public class GUI extends JFrame {
                     g2.setColor(MUTED);
                     g2.setFont(BODY);
                     FontMetrics fm = g2.getFontMetrics();
-                    String emptyMsg = "Not enough data yet";
+                    String emptyMsg = "Not enough data in the selected " + numDays + "-day period";
                     g2.drawString(emptyMsg, (w - fm.stringWidth(emptyMsg)) / 2, topY + chartH / 2);
                     g2.dispose();
                     return;
                 }
                 
-                g2.setColor(new Color(230, 222, 212));
+                // Light subtle horizontal gridlines
+                g2.setColor(new Color(236, 230, 222));
+                for (int step = 1; step <= 3; step++) {
+                    int gy = btmY - (int)((step / 3.0) * chartH);
+                    g2.drawLine(padX, gy, w - padX, gy);
+                }
+
+                // Baseline
+                g2.setColor(new Color(220, 210, 198));
                 g2.drawLine(padX, btmY, w - padX, btmY);
                 
-                int colW = chartW / 7;
-                int barW = Math.max(6, Math.min(14, (colW - 8) / 2));
+                int colW = chartW / numDays;
+                int barW = Math.max(4, Math.min(numDays <= 7 ? 16 : 8, (colW - (numDays <= 7 ? 8 : 4)) / 2));
                 
-                for (int i = 0; i < 7; i++) {
+                for (int i = 0; i < numDays; i++) {
                     int xCenter = padX + i * colW + (colW / 2);
                     
                     if (hoverIndex == i) {
-                        g2.setColor(new Color(240, 232, 220, 120));
-                        g2.fillRoundRect(padX + i * colW + 2, topY, colW - 4, chartH, 6, 6);
+                        g2.setColor(new Color(240, 232, 220, 150));
+                        g2.fillRoundRect(padX + i * colW + 1, topY, colW - 2, chartH, 4, 4);
                     }
                     
-                    // Smooth scaling so a single spike doesn't flatten other days completely
+                    // Controlled scaling
                     int hIssue = (int)((Math.sqrt(issues[i]) / Math.sqrt(maxActivity)) * chartH);
                     g2.setColor(TERRACOTTA);
                     if (issues[i] > 0) {
-                        g2.fillRoundRect(xCenter - barW - 1, btmY - Math.max(3, hIssue), barW, Math.max(3, hIssue), 4, 4);
+                        g2.fillRoundRect(xCenter - barW - 1, btmY - Math.max(3, hIssue), barW, Math.max(3, hIssue), 3, 3);
                     } else {
-                        g2.fillRect(xCenter - barW - 1, btmY - 2, barW, 2);
+                        g2.fillRect(xCenter - barW - 1, btmY - 1, barW, 1);
                     }
                     
                     int hRet = (int)((Math.sqrt(returns[i]) / Math.sqrt(maxActivity)) * chartH);
                     g2.setColor(SAGE);
                     if (returns[i] > 0) {
-                        g2.fillRoundRect(xCenter + 1, btmY - Math.max(3, hRet), barW, Math.max(3, hRet), 4, 4);
+                        g2.fillRoundRect(xCenter + 1, btmY - Math.max(4, hRet), barW, Math.max(4, hRet), 3, 3);
                     } else {
-                        g2.fillRect(xCenter + 1, btmY - 2, barW, 2);
+                        g2.fillRect(xCenter + 1, btmY - 1, barW, 1);
                     }
                     
-                    g2.setColor(hoverIndex == i ? INK : MUTED);
-                    g2.setFont(new Font("SansSerif", hoverIndex == i ? Font.BOLD : Font.PLAIN, 10));
-                    FontMetrics fm = g2.getFontMetrics();
-                    String lbl = colDates[i];
-                    g2.drawString(lbl, xCenter - fm.stringWidth(lbl) / 2, btmY + 15);
+                    // Show date label on every bar for 7d and 14d, or every 2nd/3rd for 30d
+                    boolean showLabel = (numDays <= 14) || (i % 3 == 0) || (i == numDays - 1);
+                    if (showLabel) {
+                        g2.setColor(hoverIndex == i ? INK : MUTED);
+                        g2.setFont(new Font("SansSerif", hoverIndex == i ? Font.BOLD : Font.PLAIN, numDays <= 7 ? 10 : 9));
+                        FontMetrics fm = g2.getFontMetrics();
+                        String lbl = numDays <= 7 ? colDates[i] : dayNumLabels[i];
+                        g2.drawString(lbl, xCenter - fm.stringWidth(lbl) / 2, btmY + 15);
+                    }
+                }
+
+                // Render instant on-canvas tooltip card when hovering a day column
+                if (hoverIndex >= 0 && hoverIndex < numDays) {
+                    int i = hoverIndex;
+                    int xCenter = padX + i * colW + (colW / 2);
+                    String tDate = colDates[i];
+                    String tIss = issues[i] + (issues[i] == 1 ? " issue" : " issues");
+                    String tRet = returns[i] + (returns[i] == 1 ? " return" : " returns");
+                    
+                    g2.setFont(new Font("SansSerif", Font.BOLD, 10));
+                    FontMetrics fmb = g2.getFontMetrics();
+                    g2.setFont(new Font("SansSerif", Font.PLAIN, 10));
+                    FontMetrics fmp = g2.getFontMetrics();
+                    
+                    int tipW = Math.max(fmb.stringWidth(tDate), Math.max(fmp.stringWidth("• " + tIss), fmp.stringWidth("• " + tRet))) + 18;
+                    int tipH = 46;
+                    int tipX = Math.max(padX, Math.min(w - padX - tipW, xCenter - tipW / 2));
+                    int tipY = topY + 4;
+                    
+                    // Shadow & card background
+                    g2.setColor(new Color(40, 30, 20, 30));
+                    g2.fillRoundRect(tipX + 1, tipY + 2, tipW, tipH, 8, 8);
+                    g2.setColor(new Color(254, 252, 248));
+                    g2.fillRoundRect(tipX, tipY, tipW, tipH, 8, 8);
+                    g2.setColor(new Color(215, 205, 192));
+                    g2.drawRoundRect(tipX, tipY, tipW, tipH, 8, 8);
+                    
+                    // Header date
+                    g2.setColor(INK);
+                    g2.setFont(new Font("SansSerif", Font.BOLD, 10));
+                    g2.drawString(tDate, tipX + 8, tipY + 13);
+                    
+                    // Issues
+                    g2.setFont(new Font("SansSerif", Font.PLAIN, 10));
+                    g2.setColor(TERRACOTTA);
+                    g2.drawString("• " + tIss, tipX + 8, tipY + 26);
+                    
+                    // Returns
+                    g2.setColor(SAGE);
+                    g2.drawString("• " + tRet, tipX + 8, tipY + 39);
                 }
                 
                 g2.dispose();
@@ -1146,17 +1440,57 @@ public class GUI extends JFrame {
         JPanel barHeader = new JPanel(new BorderLayout());
         barHeader.setOpaque(false);
         barHeader.setMaximumSize(new Dimension(Integer.MAX_VALUE, 26));
+        
+        JPanel barHeaderLeft = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 0));
+        barHeaderLeft.setOpaque(false);
         JLabel barTitle = new JLabel("Activity Flow");
         barTitle.setFont(TITLE);
         barTitle.setForeground(INK);
-        barHeader.add(barTitle, BorderLayout.WEST);
+        barHeaderLeft.add(barTitle);
+        barHeaderLeft.add(Box.createHorizontalStrut(14));
+        
+        // 7 / 14 / 30 day range toggle pills with consistent width & spacing
+        JPanel togglePanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 4, 0));
+        togglePanel.setOpaque(false);
+        int[] ranges = {7, 14, 30};
+        for (int rVal : ranges) {
+            final int chosen = rVal;
+            boolean isSel = (numDays == chosen);
+            JButton tBtn = new JButton(chosen + "d") {
+                @Override protected void paintComponent(Graphics g) {
+                    Graphics2D g2 = (Graphics2D) g.create();
+                    g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+                    if (isSel) {
+                        g2.setColor(TERRACOTTA);
+                        g2.fillRoundRect(0, 1, getWidth(), getHeight() - 2, 6, 6);
+                    } else if (getModel().isRollover()) {
+                        g2.setColor(new Color(235, 228, 220));
+                        g2.fillRoundRect(0, 1, getWidth(), getHeight() - 2, 6, 6);
+                    }
+                    super.paintComponent(g);
+                    g2.dispose();
+                }
+            };
+            tBtn.setFont(new Font("SansSerif", isSel ? Font.BOLD : Font.PLAIN, 10));
+            tBtn.setForeground(isSel ? WHITE : MUTED);
+            tBtn.setOpaque(false);
+            tBtn.setContentAreaFilled(false);
+            tBtn.setBorderPainted(false);
+            tBtn.setFocusPainted(false);
+            tBtn.setPreferredSize(new Dimension(32, 22));
+            tBtn.setMargin(new Insets(1, 2, 1, 2));
+            tBtn.setCursor(new Cursor(Cursor.HAND_CURSOR));
+            tBtn.addActionListener(e -> {
+                activityDaysRange = chosen;
+                showPage("HOME");
+            });
+            togglePanel.add(tBtn);
+        }
+        barHeaderLeft.add(togglePanel);
+        barHeader.add(barHeaderLeft, BorderLayout.WEST);
         
         JPanel barHeaderRight = new JPanel(new FlowLayout(FlowLayout.RIGHT, 10, 0));
         barHeaderRight.setOpaque(false);
-        JLabel barSub = new JLabel("Last 14 days");
-        barSub.setFont(SMALL);
-        barSub.setForeground(MUTED);
-        barHeaderRight.add(barSub);
         
         JPanel legendPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 6, 0));
         legendPanel.setOpaque(false);
@@ -1317,9 +1651,31 @@ public class GUI extends JFrame {
             }
         }
         if (ovrCount == 0) {
-            JLabel empty = new JLabel("No books are currently overdue.");
-            empty.setFont(SMALL); empty.setForeground(MUTED);
-            overdueList.add(empty);
+            JPanel emptyBox = new JPanel(new FlowLayout(FlowLayout.LEFT, 8, 4));
+            emptyBox.setOpaque(false);
+            JLabel checkIcon = new JLabel("✓") {
+                @Override protected void paintComponent(Graphics g) {
+                    Graphics2D g2 = (Graphics2D) g.create();
+                    g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+                    g2.setColor(new Color(105, 126, 98, 40));
+                    g2.fillOval(0, 0, getWidth(), getHeight());
+                    super.paintComponent(g);
+                    g2.dispose();
+                }
+            };
+            checkIcon.setPreferredSize(new Dimension(20, 20));
+            checkIcon.setHorizontalAlignment(SwingConstants.CENTER);
+            checkIcon.setFont(new Font("SansSerif", Font.BOLD, 11));
+            checkIcon.setForeground(SAGE);
+            checkIcon.setOpaque(false);
+            
+            JLabel empty = new JLabel("No books are currently overdue · All loans on time");
+            empty.setFont(SMALL);
+            empty.setForeground(SAGE);
+            
+            emptyBox.add(checkIcon);
+            emptyBox.add(empty);
+            overdueList.add(emptyBox);
         }
         row2.add(overdueList);
         
@@ -1364,9 +1720,31 @@ public class GUI extends JFrame {
             }
         }
         if (dueCount == 0) {
-            JLabel empty = new JLabel("No books due in the next 7 days.");
-            empty.setFont(SMALL); empty.setForeground(MUTED);
-            duePanel.add(empty);
+            JPanel emptyDueBox = new JPanel(new FlowLayout(FlowLayout.LEFT, 8, 4));
+            emptyDueBox.setOpaque(false);
+            JLabel checkIcon2 = new JLabel("✓") {
+                @Override protected void paintComponent(Graphics g) {
+                    Graphics2D g2 = (Graphics2D) g.create();
+                    g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+                    g2.setColor(new Color(105, 126, 98, 40));
+                    g2.fillOval(0, 0, getWidth(), getHeight());
+                    super.paintComponent(g);
+                    g2.dispose();
+                }
+            };
+            checkIcon2.setPreferredSize(new Dimension(20, 20));
+            checkIcon2.setHorizontalAlignment(SwingConstants.CENTER);
+            checkIcon2.setFont(new Font("SansSerif", Font.BOLD, 11));
+            checkIcon2.setForeground(SAGE);
+            checkIcon2.setOpaque(false);
+            
+            JLabel empty = new JLabel("No books due in the next 7 days · Schedule clear");
+            empty.setFont(SMALL);
+            empty.setForeground(SAGE);
+            
+            emptyDueBox.add(checkIcon2);
+            emptyDueBox.add(empty);
+            duePanel.add(emptyDueBox);
         }
         row2.add(duePanel);
         
@@ -1388,9 +1766,10 @@ public class GUI extends JFrame {
         for (LibRecord r : records) bookCounts.put(r.getBook().getId(), bookCounts.getOrDefault(r.getBook().getId(), 0) + 1);
         java.util.List<java.util.Map.Entry<String, Integer>> popBooks = new java.util.ArrayList<>(bookCounts.entrySet());
         popBooks.sort((e1, e2) -> e2.getValue().compareTo(e1.getValue()));
+        int topCheckIdx = Math.min(popBooks.size() - 1, 4);
         int popMax = popBooks.isEmpty() ? 1 : popBooks.get(0).getValue();
-        int popMin = popBooks.isEmpty() ? 1 : popBooks.get(popBooks.size() - 1).getValue();
-        boolean hasVariation = popMax > popMin;
+        int popMin = popBooks.isEmpty() ? 1 : popBooks.get(topCheckIdx).getValue();
+        boolean hasVariation = popBooks.size() > 1 && popMax > popMin;
         int popCount = 0;
         for (java.util.Map.Entry<String, Integer> entry : popBooks) {
             Book b = null;
@@ -1404,20 +1783,38 @@ public class GUI extends JFrame {
                 leftGroup.setOpaque(false);
                 
                 int currentRank = popCount + 1;
-                JLabel rankLbl = new JLabel("#" + currentRank, SwingConstants.CENTER) {
-                    @Override protected void paintComponent(Graphics g) {
-                        Graphics2D g2 = (Graphics2D) g.create();
-                        g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-                        g2.setColor(currentRank == 1 ? new Color(212, 175, 55, 60) : new Color(225, 218, 210));
-                        g2.fillRoundRect(0, 4, getWidth(), getHeight() - 8, 6, 6);
-                        super.paintComponent(g);
-                        g2.dispose();
+                if (hasVariation) {
+                    JLabel rankLbl = new JLabel("#" + currentRank, SwingConstants.CENTER) {
+                        @Override protected void paintComponent(Graphics g) {
+                            Graphics2D g2 = (Graphics2D) g.create();
+                            g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+                            if (currentRank == 1) {
+                                g2.setColor(new Color(212, 175, 55, 65));
+                            } else if (currentRank == 2) {
+                                g2.setColor(new Color(192, 192, 192, 90));
+                            } else if (currentRank == 3) {
+                                g2.setColor(new Color(205, 127, 50, 50));
+                            } else {
+                                g2.setColor(new Color(225, 218, 210, 80));
+                            }
+                            g2.fillRoundRect(0, 4, getWidth(), getHeight() - 8, 6, 6);
+                            super.paintComponent(g);
+                            g2.dispose();
+                        }
+                    };
+                    rankLbl.setFont(SMALL_BOLD);
+                    if (currentRank == 1) {
+                        rankLbl.setForeground(new Color(150, 115, 30));
+                    } else if (currentRank == 2) {
+                        rankLbl.setForeground(new Color(110, 110, 110));
+                    } else if (currentRank == 3) {
+                        rankLbl.setForeground(new Color(160, 90, 40));
+                    } else {
+                        rankLbl.setForeground(MUTED);
                     }
-                };
-                rankLbl.setFont(SMALL_BOLD);
-                rankLbl.setForeground(currentRank == 1 ? new Color(150, 115, 30) : MUTED);
-                rankLbl.setPreferredSize(new Dimension(24, 36));
-                leftGroup.add(rankLbl);
+                    rankLbl.setPreferredSize(new Dimension(24, 36));
+                    leftGroup.add(rankLbl);
+                }
                 
                 JPanel cover = createCover(b);
                 cover.setPreferredSize(new Dimension(24, 36));
@@ -1657,9 +2054,45 @@ JPanel statCard(String heading, String value, String caption, Color accent) {
     }
 
     JPanel statCard(String heading, String value, String caption, Color accent, String iconName, String pageCmd) {
-        GlassPanel card = new GlassPanel(new Color(255, 252, 246, 225), new Color(255, 255, 255, 170));
+        return statCard(heading, value, caption, accent, iconName, pageCmd, null);
+    }
+
+    JPanel statCard(String heading, String value, String caption, Color accent, String iconName, String pageCmd, Runnable onClick) {
+        boolean isInteractive = (pageCmd != null || onClick != null);
+        GlassPanel card = new GlassPanel(new Color(255, 252, 246, 225), new Color(255, 255, 255, 170)) {
+            private boolean hovered = false;
+            {
+                if (isInteractive) {
+                    addMouseListener(new java.awt.event.MouseAdapter() {
+                        @Override public void mouseEntered(java.awt.event.MouseEvent e) { hovered = true; repaint(); }
+                        @Override public void mouseExited(java.awt.event.MouseEvent e) { hovered = false; repaint(); }
+                    });
+                }
+            }
+            @Override protected void paintComponent(Graphics g) {
+                if (hovered && isInteractive) {
+                    Graphics2D g2 = (Graphics2D) g.create();
+                    g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+                    // Subtle elevated warm fill
+                    g2.setColor(new Color(255, 255, 255, 240));
+                    g2.fillRoundRect(0, 0, getWidth() - 1, getHeight() - 1, 16, 16);
+                    // Accent border highlight
+                    g2.setColor(accent != null ? new Color(accent.getRed(), accent.getGreen(), accent.getBlue(), 120) : SAND);
+                    g2.setStroke(new BasicStroke(1.5f));
+                    g2.drawRoundRect(0, 0, getWidth() - 1, getHeight() - 1, 16, 16);
+                    g2.dispose();
+                } else {
+                    super.paintComponent(g);
+                }
+            }
+        };
         card.setLayout(new BoxLayout(card, BoxLayout.Y_AXIS));
-        card.setBorder(new EmptyBorder(16, 18, 16, 18));
+        card.setBorder(new EmptyBorder(14, 18, 14, 18));
+
+        JPanel topRow = new JPanel(new BorderLayout());
+        topRow.setOpaque(false);
+        topRow.setAlignmentX(Component.LEFT_ALIGNMENT);
+        topRow.setMaximumSize(new Dimension(Integer.MAX_VALUE, 24));
 
         JLabel h = new JLabel(heading);
         if (iconName != null && !iconName.isEmpty()) {
@@ -1668,29 +2101,44 @@ JPanel statCard(String heading, String value, String caption, Color accent) {
         }
         h.setFont(SMALL_BOLD);
         h.setForeground(MUTED);
+        topRow.add(h, BorderLayout.WEST);
+
+        if (isInteractive) {
+            JLabel arrow = new JLabel("↗");
+            arrow.setFont(new Font("SansSerif", Font.BOLD, 12));
+            arrow.setForeground(new Color(190, 180, 170));
+            topRow.add(arrow, BorderLayout.EAST);
+        }
 
         JLabel v = new JLabel(value);
         v.setFont(customSerif.deriveFont(Font.BOLD, 27f));
         v.setForeground(accent);
+        v.setAlignmentX(Component.LEFT_ALIGNMENT);
+        v.setHorizontalAlignment(SwingConstants.LEFT);
 
         JLabel c = new JLabel(caption);
         c.setFont(SMALL);
         c.setForeground(MUTED);
+        c.setAlignmentX(Component.LEFT_ALIGNMENT);
+        c.setHorizontalAlignment(SwingConstants.LEFT);
 
-        card.add(h);
+        card.add(topRow);
         card.add(Box.createVerticalStrut(4));
         card.add(v);
         card.add(Box.createVerticalStrut(2));
         card.add(c);
 
-        if (pageCmd != null) {
+        if (isInteractive) {
             card.setCursor(new Cursor(Cursor.HAND_CURSOR));
+            card.setToolTipText("Click to view filtered " + heading.toLowerCase() + " details");
             card.addMouseListener(new java.awt.event.MouseAdapter() {
-                Border norm = new EmptyBorder(16, 18, 16, 18);
-                Border hov = new EmptyBorder(14, 18, 18, 18);
-                public void mouseEntered(java.awt.event.MouseEvent e) { card.setBorder(hov); }
-                public void mouseExited(java.awt.event.MouseEvent e) { card.setBorder(norm); }
-                public void mouseClicked(java.awt.event.MouseEvent e) { showPage(pageCmd); }
+                public void mouseClicked(java.awt.event.MouseEvent e) { 
+                    if (onClick != null) {
+                        onClick.run();
+                    } else if (pageCmd != null) {
+                        showPage(pageCmd); 
+                    }
+                }
             });
         }
 
@@ -2068,15 +2516,72 @@ JPanel statCard(String heading, String value, String caption, Color accent) {
                             int y = (ph - drawHeight) / 2;
                             g2.drawImage(finalCoverImage, x, y, drawWidth, drawHeight, null);
                         } else {
-                            g2.setColor(categoryColor(book.getCategory()));
+                            // Styled book jacket for custom books without a pre-rendered cover image
+                            Color baseCol = categoryColor(book.getCategory());
+                            g2.setColor(baseCol);
                             g2.fillRect(0, 0, pw, ph);
+
+                            // Subtle spine crease effect on the left
+                            g2.setColor(new Color(0, 0, 0, 35));
+                            g2.fillRect(0, 0, 10, ph);
+                            g2.setColor(new Color(255, 255, 255, 25));
+                            g2.fillRect(10, 0, 2, ph);
+
+                            // Decorative inner frame
+                            g2.setColor(new Color(255, 255, 255, 40));
+                            g2.drawRoundRect(16, 12, pw - 24, ph - 24, 6, 6);
+
+                            // Book category badge top
+                            g2.setFont(new Font("SansSerif", Font.BOLD, 8));
+                            FontMetrics mBadge = g2.getFontMetrics();
+                            String catBadge = (book.getCategory() == null ? "GENERAL" : book.getCategory().toUpperCase());
+                            g2.setColor(new Color(255, 255, 255, 180));
+                            g2.drawString(catBadge, 16 + (pw - 24 - mBadge.stringWidth(catBadge)) / 2, 28);
+
+                            // Title lines (wrapped)
                             g2.setColor(WHITE);
-                            g2.setFont(SMALL_BOLD);
-                            String text = "NO COVER";
-                            FontMetrics metrics = g2.getFontMetrics();
-                            int x = (pw - metrics.stringWidth(text)) / 2;
-                            int y = ((ph - metrics.getHeight()) / 2) + metrics.getAscent();
-                            g2.drawString(text, x, y);
+                            g2.setFont(customSerif != null ? customSerif.deriveFont(Font.BOLD, 12f) : new Font("Serif", Font.BOLD, 12));
+                            FontMetrics mTitle = g2.getFontMetrics();
+                            String bTitle = book.getTitle();
+                            java.util.List<String> titleWords = java.util.Arrays.asList(bTitle.split(" "));
+                            java.util.List<String> titleLines = new java.util.ArrayList<>();
+                            StringBuilder curL = new StringBuilder();
+                            for (String wStr : titleWords) {
+                                String testL = curL.length() == 0 ? wStr : curL + " " + wStr;
+                                if (mTitle.stringWidth(testL) <= (pw - 32) || curL.length() == 0) {
+                                    curL = new StringBuilder(testL);
+                                } else {
+                                    titleLines.add(curL.toString());
+                                    curL = new StringBuilder(wStr);
+                                    if (titleLines.size() >= 3) break;
+                                }
+                            }
+                            if (curL.length() > 0 && titleLines.size() < 4) titleLines.add(curL.toString());
+
+                            int startY = 48;
+                            for (String tLine : titleLines) {
+                                int tX = 16 + (pw - 24 - mTitle.stringWidth(tLine)) / 2;
+                                g2.drawString(tLine, tX, startY);
+                                startY += mTitle.getHeight();
+                            }
+
+                            // Thin divider
+                            g2.setColor(new Color(255, 255, 255, 70));
+                            int divY = Math.max(startY + 4, ph / 2 + 10);
+                            g2.drawLine(24, divY, pw - 16, divY);
+
+                            // Author name bottom
+                            g2.setFont(new Font("SansSerif", Font.PLAIN, 9));
+                            g2.setColor(new Color(255, 255, 255, 220));
+                            FontMetrics mAuth = g2.getFontMetrics();
+                            String authStr = book.getAuthor() != null && !book.getAuthor().isEmpty() ? book.getAuthor() : "Unknown Author";
+                            if (mAuth.stringWidth(authStr) > pw - 28) {
+                                while (authStr.length() > 3 && mAuth.stringWidth(authStr + "…") > pw - 28) {
+                                    authStr = authStr.substring(0, authStr.length() - 1);
+                                }
+                                authStr = authStr + "…";
+                            }
+                            g2.drawString(authStr, 16 + (pw - 24 - mAuth.stringWidth(authStr)) / 2, ph - 20);
                         }
                         
                         g2.setClip(null);
@@ -2151,7 +2656,9 @@ JPanel statCard(String heading, String value, String caption, Color accent) {
         title.setFont(TITLE);
         title.setForeground(INK);
 
-        JLabel sub = new JLabel("40 titles · 116 copies");
+        int totalBookCopies = 0;
+        for (Book b : books) totalBookCopies += b.getTotalCopies();
+        JLabel sub = new JLabel(books.size() + " titles · " + totalBookCopies + " copies");
         sub.setFont(SMALL);
         sub.setForeground(MUTED);
 
@@ -2280,9 +2787,7 @@ JPanel statCard(String heading, String value, String caption, Color accent) {
         addBookBtn.setBorderPainted(false);
         addBookBtn.setFocusPainted(false);
         addBookBtn.setCursor(new Cursor(Cursor.HAND_CURSOR));
-        addBookBtn.addActionListener(e -> {
-            JOptionPane.showMessageDialog(page, "Add Book feature is coming soon!", "Add Book", JOptionPane.INFORMATION_MESSAGE);
-        });
+        addBookBtn.addActionListener(e -> showAddBookDialog(page));
         rightActions.add(addBookBtn);
         
         actionsPanel.add(rightActions, BorderLayout.EAST);
@@ -2290,7 +2795,7 @@ JPanel statCard(String heading, String value, String caption, Color accent) {
         JPanel headerBottom = new JPanel(new BorderLayout());
         headerBottom.setOpaque(false);
         headerBottom.setBorder(new EmptyBorder(20, 0, 0, 0));
-        JLabel resultsCount = new JLabel("Showing " + books.size() + " of 40 titles");
+        JLabel resultsCount = new JLabel("Showing " + books.size() + " of " + books.size() + " titles");
         resultsCount.setFont(SMALL);
         resultsCount.setForeground(MUTED);
         headerBottom.add(resultsCount, BorderLayout.WEST);
@@ -2326,7 +2831,12 @@ JPanel statCard(String heading, String value, String caption, Color accent) {
                     matchesQuery = book.getTitle().toLowerCase().contains(query) || book.getAuthor().toLowerCase().contains(query);
                 }
                 
-                if (matchesCat && matchesQuery) {
+                boolean matchesLoanMode = true;
+                if ("ON_LOAN".equals(booksFilterMode)) {
+                    matchesLoanMode = (book.getTotalCopies() - book.getAvailableCopies()) > 0;
+                }
+                
+                if (matchesCat && matchesQuery && matchesLoanMode) {
                     filtered.add(book);
                 }
             }
@@ -2345,13 +2855,17 @@ JPanel statCard(String heading, String value, String caption, Color accent) {
             }
             
             if (filtered.isEmpty()) {
-                JLabel empty = new JLabel("No books match your search");
+                JLabel empty = new JLabel("ON_LOAN".equals(booksFilterMode) ? "No books are currently on loan." : "No books match your search");
                 empty.setFont(BODY);
                 empty.setForeground(MUTED);
                 grid.add(empty);
             }
             
-            resultsCount.setText("Showing " + filtered.size() + " of 40 titles");
+            if ("ON_LOAN".equals(booksFilterMode)) {
+                resultsCount.setText("Showing " + filtered.size() + " books currently on loan  •  [Filtered by On Loan]");
+            } else {
+                resultsCount.setText("Showing " + filtered.size() + " of " + books.size() + " titles");
+            }
             grid.revalidate();
             grid.repaint();
         };
@@ -2399,7 +2913,7 @@ JPanel statCard(String heading, String value, String caption, Color accent) {
         overlay.setOpaque(false);
         overlay.setVisible(false);
         
-        JPanel overlayBtns = new JPanel(new GridLayout(2, 1, 0, 10));
+        JPanel overlayBtns = new JPanel(new GridLayout(3, 1, 0, 7));
         overlayBtns.setOpaque(false);
         JButton details = smallButton("Details");
         details.addActionListener(e -> showBookDetails(book));
@@ -2410,8 +2924,13 @@ JPanel statCard(String heading, String value, String caption, Color accent) {
             preselectedBook = book.getTitle();
             showPage("ISSUE");
         });
+        JButton delete = smallButton("Delete");
+        delete.setBackground(new Color(180, 60, 60));
+        delete.setForeground(WHITE);
+        delete.addActionListener(e -> showDeleteBookConfirm(book));
         overlayBtns.add(details);
         overlayBtns.add(issue);
+        overlayBtns.add(delete);
         overlay.add(overlayBtns);
         
         // 2. Main Content
@@ -2463,12 +2982,44 @@ JPanel statCard(String heading, String value, String caption, Color accent) {
         card.add(info, BorderLayout.CENTER);
         
         MouseAdapter hoverAdapter = new MouseAdapter() {
-            public void mouseEntered(MouseEvent e) { overlay.setVisible(true); card.setBorder(new EmptyBorder(-2, 0, 2, 0)); card.revalidate(); }
-            public void mouseExited(MouseEvent e) { overlay.setVisible(false); card.setBorder(null); card.revalidate(); }
-            public void mouseClicked(MouseEvent e) { showBookDetails(book); }
+            public void mouseEntered(MouseEvent e) {
+                overlay.setVisible(true);
+                card.setBorder(new EmptyBorder(-2, 0, 2, 0));
+                card.revalidate();
+            }
+            public void mouseExited(MouseEvent e) {
+                // Only hide if the pointer truly left the container (not just moved into a child)
+                Point p = e.getPoint();
+                javax.swing.SwingUtilities.convertPointToScreen(p, (Component) e.getSource());
+                javax.swing.SwingUtilities.convertPointFromScreen(p, container);
+                if (!container.contains(p)) {
+                    overlay.setVisible(false);
+                    card.setBorder(null);
+                    card.revalidate();
+                }
+            }
+            public void mouseClicked(MouseEvent e) {
+                // Only trigger book details if click was on the card background, not a button
+                if (e.getSource() == card) showBookDetails(book);
+            }
         };
         card.addMouseListener(hoverAdapter);
         overlay.addMouseListener(hoverAdapter);
+        // Propagate hover-exit check to every button so moving between buttons doesn't hide overlay
+        for (Component btn : overlayBtns.getComponents()) {
+            btn.addMouseListener(new MouseAdapter() {
+                public void mouseExited(MouseEvent e) {
+                    Point p = e.getPoint();
+                    javax.swing.SwingUtilities.convertPointToScreen(p, (Component) e.getSource());
+                    javax.swing.SwingUtilities.convertPointFromScreen(p, container);
+                    if (!container.contains(p)) {
+                        overlay.setVisible(false);
+                        card.setBorder(null);
+                        card.revalidate();
+                    }
+                }
+            });
+        }
         
         container.add(overlay);
         container.add(card);
@@ -2478,6 +3029,106 @@ JPanel statCard(String heading, String value, String caption, Color accent) {
         wrapper.add(container, BorderLayout.CENTER); // allow stretch to grid cell height
         
         return wrapper;
+    }
+
+    void showDeleteBookConfirm(Book book) {
+        // Block deletion if any copies are currently on loan
+        if (book.getIssuedCopies() > 0) {
+            JOptionPane.showMessageDialog(
+                this,
+                "<html><b>Cannot delete \"" + book.getTitle() + "\"</b><br>" +
+                book.getIssuedCopies() + " cop" + (book.getIssuedCopies() == 1 ? "y is" : "ies are") +
+                " currently on loan.<br>All copies must be returned before deletion.</html>",
+                "Book On Loan",
+                JOptionPane.WARNING_MESSAGE
+            );
+            return;
+        }
+
+        // Styled confirmation dialog
+        JDialog dlg = new JDialog(this, "Delete Book", true);
+        dlg.setSize(420, 220);
+        dlg.setLocationRelativeTo(this);
+        dlg.setResizable(false);
+
+        JPanel main = new JPanel(new BorderLayout());
+        main.setBackground(CREAM);
+
+        // Warning header
+        JPanel hdr = new JPanel(new BorderLayout());
+        hdr.setBackground(new Color(180, 60, 60));
+        hdr.setBorder(new EmptyBorder(14, 20, 14, 20));
+        JLabel hdrLbl = new JLabel("\u26A0  Delete Book");
+        hdrLbl.setFont(TITLE);
+        hdrLbl.setForeground(WHITE);
+        hdr.add(hdrLbl, BorderLayout.CENTER);
+        main.add(hdr, BorderLayout.NORTH);
+
+        // Message
+        JPanel body = new JPanel();
+        body.setOpaque(false);
+        body.setLayout(new BoxLayout(body, BoxLayout.Y_AXIS));
+        body.setBorder(new EmptyBorder(18, 22, 10, 22));
+        JLabel msg1 = new JLabel("<html>Are you sure you want to permanently delete:<br><b>\"" + book.getTitle() + "\"</b> by " + book.getAuthor() + "?</html>");
+        msg1.setFont(BODY);
+        msg1.setForeground(INK);
+        JLabel msg2 = new JLabel("This action cannot be undone.");
+        msg2.setFont(SMALL);
+        msg2.setForeground(new Color(180, 60, 60));
+        body.add(msg1);
+        body.add(Box.createVerticalStrut(8));
+        body.add(msg2);
+        main.add(body, BorderLayout.CENTER);
+
+        // Footer buttons
+        JPanel footer = new JPanel(new FlowLayout(FlowLayout.RIGHT, 10, 12));
+        footer.setOpaque(false);
+        footer.setBorder(BorderFactory.createMatteBorder(1, 0, 0, 0, SAND));
+
+        JButton cancel = new JButton("Cancel");
+        cancel.setFont(SMALL_BOLD);
+        cancel.setForeground(MUTED);
+        cancel.setBackground(CREAM);
+        cancel.setOpaque(true);
+        cancel.setBorderPainted(true);
+        cancel.setBorder(BorderFactory.createCompoundBorder(new LineBorder(SAND, 1, true), new EmptyBorder(6, 18, 6, 18)));
+        cancel.setFocusPainted(false);
+        cancel.setCursor(new Cursor(Cursor.HAND_CURSOR));
+        cancel.addActionListener(e -> dlg.dispose());
+
+        JButton confirm = new JButton("Yes, Delete") {
+            @Override protected void paintComponent(Graphics g) {
+                Graphics2D g2 = (Graphics2D) g.create();
+                g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+                g2.setColor(getModel().isRollover() ? new Color(210, 50, 50) : new Color(180, 60, 60));
+                g2.fillRoundRect(0, 0, getWidth(), getHeight(), 8, 8);
+                super.paintComponent(g);
+                g2.dispose();
+            }
+        };
+        confirm.setFont(SMALL_BOLD);
+        confirm.setForeground(WHITE);
+        confirm.setOpaque(false);
+        confirm.setContentAreaFilled(false);
+        confirm.setBorderPainted(false);
+        confirm.setFocusPainted(false);
+        confirm.setBorder(new EmptyBorder(7, 18, 7, 18));
+        confirm.setCursor(new Cursor(Cursor.HAND_CURSOR));
+        confirm.addActionListener(e -> {
+            books.remove(book);
+            saveData();
+            dlg.dispose();
+            showToast("\"" + book.getTitle() + "\" removed from the catalog.", new Color(180, 60, 60));
+            rebuildPages();
+            showPage("BOOKS");
+        });
+
+        footer.add(cancel);
+        footer.add(confirm);
+        main.add(footer, BorderLayout.SOUTH);
+
+        dlg.add(main);
+        dlg.setVisible(true);
     }
 JButton smallButton(
             String text) {
@@ -3103,6 +3754,162 @@ JButton smallButton(
             rebuildPages();
             showPage("STUDENTS");
         });
+        footer.add(cancel);
+        footer.add(save);
+        main.add(footer, BorderLayout.SOUTH);
+
+        dlg.add(main);
+        dlg.setVisible(true);
+    }
+
+    void showAddBookDialog(JPanel parent) {
+        JDialog dlg = new JDialog((java.awt.Frame) javax.swing.SwingUtilities.getWindowAncestor(parent), "Add New Book", true);
+        dlg.setSize(480, 420);
+        dlg.setLocationRelativeTo(parent);
+
+        JPanel main = new JPanel(new BorderLayout());
+        main.setBackground(CREAM);
+
+        // Header strip
+        JPanel dlgHeader = new JPanel(new BorderLayout());
+        dlgHeader.setBackground(INK);
+        dlgHeader.setBorder(new EmptyBorder(18, 24, 18, 24));
+        JLabel dlgTitle = new JLabel("Add New Book");
+        dlgTitle.setFont(TITLE);
+        dlgTitle.setForeground(WHITE);
+        JLabel dlgSub = new JLabel("Fill in the details to add a book to the catalog");
+        dlgSub.setFont(SMALL);
+        dlgSub.setForeground(new Color(180, 170, 160));
+        JPanel dlgHdrText = new JPanel();
+        dlgHdrText.setOpaque(false);
+        dlgHdrText.setLayout(new BoxLayout(dlgHdrText, BoxLayout.Y_AXIS));
+        dlgHdrText.add(dlgTitle);
+        dlgHdrText.add(Box.createVerticalStrut(3));
+        dlgHdrText.add(dlgSub);
+        dlgHeader.add(dlgHdrText, BorderLayout.CENTER);
+        main.add(dlgHeader, BorderLayout.NORTH);
+
+        // Form grid
+        JPanel form = new JPanel(new GridLayout(0, 2, 12, 14));
+        form.setOpaque(false);
+        form.setBorder(new EmptyBorder(22, 24, 10, 24));
+
+        // Title
+        JLabel lblTitle = new JLabel("Book Title *");
+        lblTitle.setFont(SMALL_BOLD); lblTitle.setForeground(INK);
+        JTextField fTitle = new JTextField();
+        fTitle.setFont(BODY);
+        fTitle.setBorder(BorderFactory.createCompoundBorder(new LineBorder(SAND, 1, true), new EmptyBorder(6, 8, 6, 8)));
+
+        // Author
+        JLabel lblAuthor = new JLabel("Author *");
+        lblAuthor.setFont(SMALL_BOLD); lblAuthor.setForeground(INK);
+        JTextField fAuthor = new JTextField();
+        fAuthor.setFont(BODY);
+        fAuthor.setBorder(BorderFactory.createCompoundBorder(new LineBorder(SAND, 1, true), new EmptyBorder(6, 8, 6, 8)));
+
+        // Book ID
+        JLabel lblId = new JLabel("Book ID *");
+        lblId.setFont(SMALL_BOLD); lblId.setForeground(INK);
+        JTextField fId = new JTextField();
+        fId.setFont(BODY);
+        fId.setBorder(BorderFactory.createCompoundBorder(new LineBorder(SAND, 1, true), new EmptyBorder(6, 8, 6, 8)));
+        fId.setToolTipText("Unique ID, e.g. A201, G310, F502");
+
+        // Category
+        JLabel lblCat = new JLabel("Category *");
+        lblCat.setFont(SMALL_BOLD); lblCat.setForeground(INK);
+        JComboBox<String> fCat = new JComboBox<>(new String[]{"Academic", "Reference", "General", "Fiction"});
+        fCat.setFont(BODY);
+        fCat.setBackground(WHITE);
+
+        // Copies
+        JLabel lblCopies = new JLabel("No. of Copies *");
+        lblCopies.setFont(SMALL_BOLD); lblCopies.setForeground(INK);
+        JTextField fCopies = new JTextField("1");
+        fCopies.setFont(BODY);
+        fCopies.setBorder(BorderFactory.createCompoundBorder(new LineBorder(SAND, 1, true), new EmptyBorder(6, 8, 6, 8)));
+
+        form.add(lblTitle);    form.add(fTitle);
+        form.add(lblAuthor);   form.add(fAuthor);
+        form.add(lblId);       form.add(fId);
+        form.add(lblCat);      form.add(fCat);
+        form.add(lblCopies);   form.add(fCopies);
+
+        main.add(form, BorderLayout.CENTER);
+
+        // Footer
+        JPanel footer = new JPanel(new FlowLayout(FlowLayout.RIGHT, 10, 14));
+        footer.setOpaque(false);
+        footer.setBorder(BorderFactory.createMatteBorder(1, 0, 0, 0, SAND));
+
+        JButton cancel = new JButton("Cancel");
+        cancel.setFont(SMALL_BOLD);
+        cancel.setForeground(MUTED);
+        cancel.setBackground(CREAM);
+        cancel.setOpaque(true);
+        cancel.setBorderPainted(true);
+        cancel.setBorder(BorderFactory.createCompoundBorder(new LineBorder(SAND, 1, true), new EmptyBorder(6, 16, 6, 16)));
+        cancel.setFocusPainted(false);
+        cancel.setCursor(new Cursor(Cursor.HAND_CURSOR));
+        cancel.addActionListener(e -> dlg.dispose());
+
+        JButton save = new JButton("Add Book") {
+            @Override protected void paintComponent(Graphics g) {
+                Graphics2D g2 = (Graphics2D) g.create();
+                g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+                g2.setColor(getModel().isRollover() ? new Color(205, 95, 75) : TERRACOTTA);
+                g2.fillRoundRect(0, 0, getWidth(), getHeight(), 8, 8);
+                super.paintComponent(g);
+                g2.dispose();
+            }
+        };
+        save.setFont(SMALL_BOLD);
+        save.setForeground(WHITE);
+        save.setOpaque(false);
+        save.setContentAreaFilled(false);
+        save.setBorderPainted(false);
+        save.setFocusPainted(false);
+        save.setBorder(new EmptyBorder(7, 20, 7, 20));
+        save.setCursor(new Cursor(Cursor.HAND_CURSOR));
+
+        save.addActionListener(e -> {
+            String titleVal  = fTitle.getText().trim();
+            String authorVal = fAuthor.getText().trim();
+            String idVal     = fId.getText().trim();
+            String catVal    = (String) fCat.getSelectedItem();
+            String copiesStr = fCopies.getText().trim();
+
+            // Validation
+            if (titleVal.isEmpty() || authorVal.isEmpty() || idVal.isEmpty()) {
+                JOptionPane.showMessageDialog(dlg, "Title, Author, and Book ID are required.", "Validation Error", JOptionPane.WARNING_MESSAGE);
+                return;
+            }
+            int copiesVal;
+            try {
+                copiesVal = Integer.parseInt(copiesStr);
+                if (copiesVal < 1 || copiesVal > 999) throw new NumberFormatException();
+            } catch (NumberFormatException ex) {
+                JOptionPane.showMessageDialog(dlg, "Copies must be a number between 1 and 999.", "Validation Error", JOptionPane.WARNING_MESSAGE);
+                return;
+            }
+            // Check for duplicate ID
+            for (Book existing : books) {
+                if (existing.getId().equalsIgnoreCase(idVal)) {
+                    JOptionPane.showMessageDialog(dlg, "A book with ID \"" + idVal + "\" already exists.", "Duplicate ID", JOptionPane.WARNING_MESSAGE);
+                    return;
+                }
+            }
+
+            Book newBook = new Book(idVal, titleVal, authorVal, catVal, copiesVal);
+            books.add(newBook);
+            saveData();
+            dlg.dispose();
+            showToast("\"" + titleVal + "\" added to the catalog.", SAGE);
+            rebuildPages();
+            showPage("BOOKS");
+        });
+
         footer.add(cancel);
         footer.add(save);
         main.add(footer, BorderLayout.SOUTH);
@@ -4458,22 +5265,33 @@ JButton smallButton(
         formCard.add(loanLabel);
         formCard.add(Box.createVerticalStrut(6));
 
+        java.time.LocalDate todayNow = java.time.LocalDate.now();
         java.time.format.DateTimeFormatter dtfShort = java.time.format.DateTimeFormatter.ofPattern("d MMM");
         ArrayList<ActiveLoanComboItem> loanItems = new ArrayList<>();
         ArrayList<LibRecord> activeRecords = new ArrayList<>();
         for (LibRecord r : records) {
             if (!r.isReturned()) {
-                activeRecords.add(r);
+                if (returnFilterOverdueOnly) {
+                    long ds = java.time.temporal.ChronoUnit.DAYS.between(r.getIssueDate(), todayNow);
+                    if (ds > r.getAllowedDays()) {
+                        activeRecords.add(r);
+                    }
+                } else {
+                    activeRecords.add(r);
+                }
             }
         }
 
         if (activeRecords.isEmpty()) {
-            loanItems.add(new ActiveLoanComboItem(null, "No books are currently on loan.", true));
+            loanItems.add(new ActiveLoanComboItem(null, returnFilterOverdueOnly ? "No overdue loans found." : "No books are currently on loan.", true));
         } else {
-            loanItems.add(new ActiveLoanComboItem(null, "Select an active loan...", true));
+            loanItems.add(new ActiveLoanComboItem(null, returnFilterOverdueOnly ? "Select an overdue loan to return..." : "Select an active loan...", true));
             for (LibRecord r : activeRecords) {
                 java.time.LocalDate due = r.getIssueDate().plusDays(r.getAllowedDays());
-                String rowText = r.getStudent().getId() + " · " + r.getStudent().getName() + " — " + r.getBook().getTitle() + " (due " + due.format(dtfShort) + ")";
+                long ds = java.time.temporal.ChronoUnit.DAYS.between(r.getIssueDate(), todayNow);
+                int lateDays = (int) ds - r.getAllowedDays();
+                String overdueBadge = lateDays > 0 ? " [⚠ " + lateDays + "d OVERDUE]" : "";
+                String rowText = r.getStudent().getId() + " · " + r.getStudent().getName() + " — " + r.getBook().getTitle() + overdueBadge + " (due " + due.format(dtfShort) + ")";
                 loanItems.add(new ActiveLoanComboItem(r, rowText, false));
             }
         }
