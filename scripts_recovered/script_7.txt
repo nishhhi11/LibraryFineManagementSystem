@@ -1,8 +1,0 @@
-cat << 'EOF' > fix_books2.py
-import re
-
-with open('src/GUI.java', 'r') as f:
-    text = f.read()
-
-# I will write python replacements to carefully inject the new code.
-EOF
