@@ -118,31 +118,13 @@ public class GUI extends JFrame {
     // =========================================================
 
     public GUI() {
-
         loadData();
-
         setTitle("MindSpace Library");
-
-        setSize(
-                1380,
-                850
-        );
-
-        setMinimumSize(
-                new Dimension(
-                        1100,
-                        720
-                )
-        );
-
+        setSize(1380, 850);
+        setMinimumSize(new Dimension(1100, 720));
         setLocationRelativeTo(null);
-
-        setDefaultCloseOperation(
-                JFrame.EXIT_ON_CLOSE
-        );
-
+        setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         createInterface();
-
         setVisible(true);
     }
 
@@ -152,40 +134,17 @@ public class GUI extends JFrame {
     // =========================================================
 
     void loadData() {
-
         FileManager.setupFiles();
-
         FileManager.addDefaultBooks();
-
         FileManager.addDefaultStudents();
-
-        students =
-                FileManager.loadStudents();
-
-        books =
-                FileManager.loadBooks();
-
-        records =
-                FileManager.loadRecords(
-                        students,
-                        books
-                );
+        students = FileManager.loadStudents();
+        books = FileManager.loadBooks();
+        records = FileManager.loadRecords(students, books);
     }
-
-
     void saveData() {
-
-        FileManager.saveStudents(
-                students
-        );
-
-        FileManager.saveBooks(
-                books
-        );
-
-        FileManager.saveRecords(
-                records
-        );
+        FileManager.saveStudents(students);
+        FileManager.saveBooks(books);
+        FileManager.saveRecords(records);
     }
 
 
@@ -194,24 +153,10 @@ public class GUI extends JFrame {
     // =========================================================
 
     void createInterface() {
-
-        JPanel root =
-                new JPanel(
-                        new BorderLayout()
-                );
-
+        JPanel root = new JPanel(new BorderLayout());
         root.setBackground(CREAM);
-
-        root.add(
-                createSidebar(),
-                BorderLayout.WEST
-        );
-
-        root.add(
-                createWorkspace(),
-                BorderLayout.CENTER
-        );
-
+        root.add(createSidebar(), BorderLayout.WEST);
+        root.add(createWorkspace(), BorderLayout.CENTER);
         setContentPane(root);
     }
 
@@ -226,94 +171,36 @@ public class GUI extends JFrame {
     boolean returnFilterOverdueOnly = false;
     int activityDaysRange = 7;
     JPanel createSidebar() {
+        sidebar = new JPanel(new BorderLayout());
+        sidebar.setPreferredSize(new Dimension(230, 0));
+        sidebar.setBackground(ESPRESSO);
 
-        sidebar =
-                new JPanel(
-                        new BorderLayout()
-                );
-
-        sidebar.setPreferredSize(
-                new Dimension(
-                        230,
-                        0
-                )
-        );
-
-        sidebar.setBackground(
-                ESPRESSO
-        );
-
-        JPanel top =
-                new JPanel();
-
+        JPanel top = new JPanel();
         top.setOpaque(false);
+        top.setLayout(new BoxLayout(top, BoxLayout.Y_AXIS));
+        top.setBorder(new EmptyBorder(32, 24, 20, 20));
 
-        top.setLayout(
-                new BoxLayout(
-                        top,
-                        BoxLayout.Y_AXIS
-                )
-        );
-
-        top.setBorder(
-                new EmptyBorder(
-                        32,
-                        24,
-                        20,
-                        20
-                )
-        );
-
-        JLabel logo =
-                new JLabel(
-                        "MINDSPACE"
-                );
-
-        logo.setFont(
-                customSerif.deriveFont(Font.BOLD, 26f)
-        );
-
+        JLabel logo = new JLabel("MINDSPACE");
+        logo.setFont(customSerif.deriveFont(Font.BOLD, 26f));
         logo.setForeground(WHITE);
 
-        JLabel sub =
-                new JLabel(
-                        "LIBRARY MANAGEMENT"
-                );
-
-        sub.setFont(
-                SMALL_BOLD
-        );
-
+        JLabel sub = new JLabel("LIBRARY MANAGEMENT");
+        sub.setFont(SMALL_BOLD);
         sub.setForeground(GOLD);
 
         top.add(logo);
-
-        top.add(
-                Box.createVerticalStrut(4)
-        );
-
+        top.add(Box.createVerticalStrut(4));
         top.add(sub);
-
-        top.add(
-                Box.createVerticalStrut(38)
-        );
+        top.add(Box.createVerticalStrut(38));
 
         addNavigation(top, "HOME", "Overview", "HOME");
-
         addNavigation(top, "BOOKS", "Book Collection", "BOOKS");
-
         addNavigation(top, "STUDENTS", "Students", "STUDENTS");
-
         addNavigation(top, "ISSUE", "Issue Book", "ISSUE");
-
         addNavigation(top, "RETURN", "Return Book", "RETURN");
-
         addNavigation(top, "FINES", "Fine Records", "FINES");
 
-        sidebar.add(
-                top,
-                BorderLayout.NORTH
-        );
+        sidebar.add(top, BorderLayout.NORTH);
 
         JPanel bottom = new JPanel();
         bottom.setLayout(new BoxLayout(bottom, BoxLayout.Y_AXIS));
@@ -369,61 +256,8 @@ public class GUI extends JFrame {
         uDetails.add(Box.createVerticalStrut(2));
         uDetails.add(uRole);
         
-        JLabel uChevron = new JLabel("▾");
-        uChevron.setFont(new Font("SansSerif", Font.BOLD, 12));
-        uChevron.setForeground(new Color(175, 165, 155));
-        
         userBox.add(uAvatar, BorderLayout.WEST);
         userBox.add(uDetails, BorderLayout.CENTER);
-        userBox.add(uChevron, BorderLayout.EAST);
-        
-        userBox.setCursor(new Cursor(Cursor.HAND_CURSOR));
-        userBox.setToolTipText("Librarian Profile (Click for Settings & Logout)");
-        
-        JPopupMenu sideUserMenu = new JPopupMenu();
-        sideUserMenu.setBackground(PAPER);
-        sideUserMenu.setBorder(BorderFactory.createLineBorder(SAND));
-        
-        JMenuItem suHeader = new JMenuItem("Signed in as Nishi Chopda");
-        suHeader.setFont(SMALL_BOLD);
-        suHeader.setEnabled(false);
-        sideUserMenu.add(suHeader);
-        sideUserMenu.addSeparator();
-        
-        JMenuItem suHome = new JMenuItem("Dashboard Home");
-        suHome.setFont(BODY);
-        suHome.addActionListener(e -> showPage("HOME"));
-        sideUserMenu.add(suHome);
-        
-        JMenuItem suFines = new JMenuItem("Manage Fine Rates & Receipts");
-        suFines.setFont(BODY);
-        suFines.addActionListener(e -> showPage("FINES"));
-        sideUserMenu.add(suFines);
-        
-        JMenuItem suSettings = new JMenuItem("Settings & Database Status");
-        suSettings.setFont(BODY);
-        suSettings.addActionListener(e -> {
-            JOptionPane.showMessageDialog(sidebar,
-                "MindSpace Library v1.0\nData Storage: Local Plaintext / RedHat JDT Workspace\nCatalog: 40 Titles · 116 Copies\nStatus: All subsystems active and synchronized.",
-                "System Settings & Info",
-                JOptionPane.INFORMATION_MESSAGE);
-        });
-        sideUserMenu.add(suSettings);
-        sideUserMenu.addSeparator();
-        
-        JMenuItem suLogout = new JMenuItem("Lock Session / Logout");
-        suLogout.setFont(SMALL_BOLD);
-        suLogout.setForeground(TERRACOTTA);
-        suLogout.addActionListener(e -> {
-            int confirm = JOptionPane.showConfirmDialog(sidebar,
-                "Are you sure you want to lock the session?",
-                "Session Lock",
-                JOptionPane.YES_NO_OPTION);
-            if (confirm == JOptionPane.YES_OPTION) {
-                showPage("HOME");
-            }
-        });
-        sideUserMenu.add(suLogout);
         
         userBox.addMouseListener(new MouseAdapter() {
             @Override
@@ -437,53 +271,11 @@ public class GUI extends JFrame {
                 userBox.setOpaque(false);
                 userBox.repaint();
             }
-            @Override
-            public void mouseClicked(MouseEvent e) {
-                sideUserMenu.show(userBox, 0, -sideUserMenu.getPreferredSize().height - 4);
-            }
         });
         
         bottom.add(userBox);
         bottom.add(Box.createVerticalStrut(6));
 
-        // Quick action: Collapse or Refresh
-        JButton collapseBtn = new JButton("❮ Collapse Sidebar") {
-            @Override protected void paintComponent(Graphics g) {
-                Graphics2D g2 = (Graphics2D) g.create();
-                g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-                if (getModel().isRollover()) {
-                    g2.setColor(new Color(70, 56, 48));
-                    g2.fillRoundRect(0, 0, getWidth(), getHeight(), 8, 8);
-                }
-                super.paintComponent(g);
-                g2.dispose();
-            }
-        };
-        collapseBtn.setOpaque(false);
-        collapseBtn.setContentAreaFilled(false);
-        collapseBtn.setBorder(new EmptyBorder(6, 8, 6, 8));
-        collapseBtn.setFont(new Font("SansSerif", Font.PLAIN, 11));
-        collapseBtn.setForeground(new Color(185, 175, 165));
-        collapseBtn.setCursor(new Cursor(Cursor.HAND_CURSOR));
-        collapseBtn.setFocusPainted(false);
-        collapseBtn.setAlignmentX(Component.LEFT_ALIGNMENT);
-        collapseBtn.setMaximumSize(new Dimension(Integer.MAX_VALUE, 30));
-        collapseBtn.addActionListener(e -> {
-            boolean isExpanded = sidebar.getPreferredSize().width > 80;
-            if (isExpanded) {
-                sidebar.setPreferredSize(new Dimension(72, 0));
-                collapseBtn.setText("❯");
-                userBox.setVisible(false);
-            } else {
-                sidebar.setPreferredSize(new Dimension(240, 0));
-                collapseBtn.setText("❮ Collapse Sidebar");
-                userBox.setVisible(true);
-            }
-            sidebar.revalidate();
-            sidebar.repaint();
-        });
-        bottom.add(collapseBtn);
-        bottom.add(Box.createVerticalStrut(10));
 
         sidebar.add(
                 bottom,
@@ -560,62 +352,19 @@ public class GUI extends JFrame {
     // =========================================================
 
     JPanel createWorkspace() {
-
-        JPanel workspace =
-                new JPanel(
-                        new BorderLayout()
-                );
-
+        JPanel workspace = new JPanel(new BorderLayout());
         workspace.setBackground(CREAM);
-
-        workspace.add(
-                createTopbar(),
-                BorderLayout.NORTH
-        );
-
-        cardLayout =
-                new CardLayout();
-
-        pages =
-                new JPanel(cardLayout);
-
+        workspace.add(createTopbar(), BorderLayout.NORTH);
+        cardLayout = new CardLayout();
+        pages = new JPanel(cardLayout);
         pages.setBackground(CREAM);
-
-        pages.add(
-                createHomePage(),
-                "HOME"
-        );
-
-        pages.add(
-                createBooksPage(),
-                "BOOKS"
-        );
-
-        pages.add(
-                createStudentsPage(),
-                "STUDENTS"
-        );
-
-        pages.add(
-                createIssuePage(),
-                "ISSUE"
-        );
-
-        pages.add(
-                createReturnPage(),
-                "RETURN"
-        );
-
-        pages.add(
-                createFinesPage(),
-                "FINES"
-        );
-
-        workspace.add(
-                pages,
-                BorderLayout.CENTER
-        );
-
+        pages.add(createHomePage(), "HOME");
+        pages.add(createBooksPage(), "BOOKS");
+        pages.add(createStudentsPage(), "STUDENTS");
+        pages.add(createIssuePage(), "ISSUE");
+        pages.add(createReturnPage(), "RETURN");
+        pages.add(createFinesPage(), "FINES");
+        workspace.add(pages, BorderLayout.CENTER);
         return workspace;
     }
 
@@ -2316,176 +2065,56 @@ JPanel statCard(String heading, String value, String caption, Color accent) {
     // BOOK COVER
     // =========================================================
 
-    File findCoverFile(
-            String bookId) {
-
-        String fileName =
-                bookId + ".png";
-
-        // Your current project keeps the images directly in assets.
+    File findCoverFile(String bookId) {
+        String fileName = bookId + ".png";
         String[] directPaths = {
-                "assets/" + fileName,
-                "LibraryFineManagementSystem/assets/" + fileName,
-                "../assets/" + fileName,
-                "../LibraryFineManagementSystem/assets/" + fileName,
-                "../../assets/" + fileName
+            "assets/" + fileName, "LibraryFineManagementSystem/assets/" + fileName,
+            "../assets/" + fileName, "../LibraryFineManagementSystem/assets/" + fileName, "../../assets/" + fileName
         };
-
         for (String path : directPaths) {
-
-            File file =
-                    new File(path);
-
-            if (file.exists() && file.isFile()) {
-                return file;
-            }
+            File file = new File(path);
+            if (file.exists() && file.isFile()) return file;
         }
-
-        // Also search upward from the current working folder.
-        File current =
-                new File(
-                        System.getProperty("user.dir")
-                );
-
-        for (int i = 0;
-             i < 6 && current != null;
-             i++) {
-
-            File file =
-                    new File(
-                            current,
-                            "assets/" + fileName
-                    );
-
-            if (file.exists() && file.isFile()) {
-                return file;
-            }
-
-            file =
-                    new File(
-                            current,
-                            "LibraryFineManagementSystem/assets/"
-                                    + fileName
-                    );
-
-            if (file.exists() && file.isFile()) {
-                return file;
-            }
-
-            current =
-                    current.getParentFile();
+        File current = new File(System.getProperty("user.dir"));
+        for (int i = 0; i < 6 && current != null; i++) {
+            File file = new File(current, "assets/" + fileName);
+            if (file.exists() && file.isFile()) return file;
+            file = new File(current, "LibraryFineManagementSystem/assets/" + fileName);
+            if (file.exists() && file.isFile()) return file;
+            current = current.getParentFile();
         }
-
-        // Finally check the location of the compiled class.
         try {
-
-            File classLocation =
-                    new File(
-                            GUI.class
-                                    .getProtectionDomain()
-                                    .getCodeSource()
-                                    .getLocation()
-                                    .toURI()
-                    );
-
-            if (classLocation.isFile()) {
-                classLocation =
-                        classLocation.getParentFile();
+            File classLocation = new File(GUI.class.getProtectionDomain().getCodeSource().getLocation().toURI());
+            if (classLocation.isFile()) classLocation = classLocation.getParentFile();
+            for (int i = 0; i < 6 && classLocation != null; i++) {
+                File file = new File(classLocation, "assets/" + fileName);
+                if (file.exists() && file.isFile()) return file;
+                file = new File(classLocation, "LibraryFineManagementSystem/assets/" + fileName);
+                if (file.exists() && file.isFile()) return file;
+                classLocation = classLocation.getParentFile();
             }
-
-            for (int i = 0;
-                 i < 6 && classLocation != null;
-                 i++) {
-
-                File file =
-                        new File(
-                                classLocation,
-                                "assets/" + fileName
-                        );
-
-                if (file.exists() && file.isFile()) {
-                    return file;
-                }
-
-                file =
-                        new File(
-                                classLocation,
-                                "LibraryFineManagementSystem/assets/"
-                                        + fileName
-                        );
-
-                if (file.exists() && file.isFile()) {
-                    return file;
-                }
-
-                classLocation =
-                        classLocation.getParentFile();
-            }
-
-        } catch (Exception ignored) {
-        }
-
+        } catch (Exception ignored) {}
         return null;
     }
 
 
-    JPanel createCover(
-            Book book) {
-
-        File imageFile =
-                findCoverFile(
-                        book.getId()
-                );
-
-        BufferedImage coverImage =
-                null;
-
+    JPanel createCover(Book book) {
+        File imageFile = findCoverFile(book.getId());
+        BufferedImage coverImage = null;
         try {
-
-            if (imageFile != null) {
-
-                coverImage =
-                        ImageIO.read(imageFile);
-            }
-
+            if (imageFile != null) coverImage = ImageIO.read(imageFile);
         } catch (IOException e) {
-
-            System.out.println(
-                    "Could not load cover: "
-                            + book.getId()
-            );
+            System.out.println("Could not load cover: " + book.getId());
         }
-
-        final BufferedImage finalCoverImage =
-                coverImage;
-
-        JPanel cover =
-                new JPanel() {
-
-                    @Override
-                    protected void paintComponent(
-                            Graphics g) {
-
-                        super.paintComponent(g);
-
-                        Graphics2D g2 =
-                                (Graphics2D)
-                                        g.create();
-
-                        g2.setRenderingHint(
-                                RenderingHints.KEY_INTERPOLATION,
-                                RenderingHints.VALUE_INTERPOLATION_BICUBIC
-                        );
-
-                        g2.setRenderingHint(
-                                RenderingHints.KEY_RENDERING,
-                                RenderingHints.VALUE_RENDER_QUALITY
-                        );
-
-                        g2.setRenderingHint(
-                                RenderingHints.KEY_ANTIALIASING,
-                                RenderingHints.VALUE_ANTIALIAS_ON
-                        );
+        final BufferedImage finalCoverImage = coverImage;
+        JPanel cover = new JPanel() {
+            @Override
+            protected void paintComponent(Graphics g) {
+                super.paintComponent(g);
+                Graphics2D g2 = (Graphics2D) g.create();
+                g2.setRenderingHint(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_BICUBIC);
+                g2.setRenderingHint(RenderingHints.KEY_RENDERING, RenderingHints.VALUE_RENDER_QUALITY);
+                g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
 
                         int panelWidth =
                                 getWidth();
@@ -2600,36 +2229,10 @@ JPanel statCard(String heading, String value, String caption, Color accent) {
     }
 
 
-    Color categoryColor(
-            String category) {
-
-        if (
-                category.equalsIgnoreCase(
-                        "Academic"
-                )
-        ) {
-
-            return SAGE;
-        }
-
-        if (
-                category.equalsIgnoreCase(
-                        "Reference"
-                )
-        ) {
-
-            return INK;
-        }
-
-        if (
-                category.equalsIgnoreCase(
-                        "Fiction"
-                )
-        ) {
-
-            return TERRACOTTA;
-        }
-
+    Color categoryColor(String category) {
+        if (category.equalsIgnoreCase("Academic")) return SAGE;
+        if (category.equalsIgnoreCase("Reference")) return INK;
+        if (category.equalsIgnoreCase("Fiction")) return TERRACOTTA;
         return GOLD;
     }
 
@@ -6329,121 +5932,32 @@ JButton smallButton(
     // TRANSACTION STATS
     // =========================================================
 
-    JPanel transactionStats(
-            boolean issueMode) {
-
-        int totalCopies = 0;
-        int availableCopies = 0;
-        int issuedCopies = 0;
+    JPanel transactionStats(boolean issueMode) {
+        int totalCopies = 0, availableCopies = 0, issuedCopies = 0;
         double totalFine = 0;
-
         for (Book book : books) {
-
-            totalCopies +=
-                    book.getTotalCopies();
-
-            availableCopies +=
-                    book.getAvailableCopies();
+            totalCopies += book.getTotalCopies();
+            availableCopies += book.getAvailableCopies();
         }
-
-        issuedCopies =
-                totalCopies -
-                        availableCopies;
-
+        issuedCopies = totalCopies - availableCopies;
         for (LibRecord record : records) {
-
-            if (record.isReturned()) {
-
-                totalFine +=
-                        record.getFine();
-            }
+            if (record.isReturned()) totalFine += record.getFine();
         }
-
-
-        JPanel stats =
-                new JPanel(
-                        new GridLayout(
-                                1,
-                                3,
-                                12,
-                                0
-                        )
-                );
-
+        
+        JPanel stats = new JPanel(new GridLayout(1, 3, 12, 0));
         stats.setOpaque(false);
         stats.setMaximumSize(new Dimension(Integer.MAX_VALUE, 90));
         stats.setAlignmentX(Component.LEFT_ALIGNMENT);
-
-
+        
         if (issueMode) {
-
-            stats.add(
-                    statCard(
-                            "AVAILABLE BOOKS",
-                            String.valueOf(
-                                    availableCopies
-                            ),
-                            "copies ready to issue",
-                            SAGE
-                    )
-            );
-
-            stats.add(
-                    statCard(
-                            "REGISTERED STUDENTS",
-                            String.valueOf(
-                                    students.size()
-                            ),
-                            "active library users",
-                            TERRACOTTA
-                    )
-            );
-
-            stats.add(
-                    statCard(
-                            "CURRENTLY ON LOAN",
-                            String.valueOf(
-                                    issuedCopies
-                            ),
-                            "books already issued",
-                            GOLD
-                    )
-            );
-
+            stats.add(statCard("AVAILABLE BOOKS", String.valueOf(availableCopies), "copies ready to issue", SAGE));
+            stats.add(statCard("REGISTERED STUDENTS", String.valueOf(students.size()), "active library users", TERRACOTTA));
+            stats.add(statCard("CURRENTLY ON LOAN", String.valueOf(issuedCopies), "books already issued", GOLD));
         } else {
-
-            stats.add(
-                    statCard(
-                            "CURRENTLY ON LOAN",
-                            String.valueOf(
-                                    issuedCopies
-                            ),
-                            "books awaiting return",
-                            GOLD
-                    )
-            );
-
-            stats.add(
-                    statCard(
-                            "AVAILABLE BOOKS",
-                            String.valueOf(
-                                    availableCopies
-                            ),
-                            "copies in the library",
-                            SAGE
-                    )
-            );
-
-            stats.add(
-                    statCard(
-                            "RECORDED FINES",
-                            String.valueOf((int) totalFine),
-                            "total fines collected (₹)",
-                            TERRACOTTA
-                    )
-            );
+            stats.add(statCard("CURRENTLY ON LOAN", String.valueOf(issuedCopies), "books awaiting return", GOLD));
+            stats.add(statCard("AVAILABLE BOOKS", String.valueOf(availableCopies), "copies in the library", SAGE));
+            stats.add(statCard("RECORDED FINES", String.valueOf((int) totalFine), "total fines collected (₹)", TERRACOTTA));
         }
-
         return stats;
     }
 
@@ -6453,47 +5967,14 @@ JButton smallButton(
     // =========================================================
 
     JTextField formField() {
-
-        JTextField field =
-                new JTextField();
-
-        field.setPreferredSize(
-                new Dimension(
-                        360,
-                        42
-                )
-        );
-
-        field.setMaximumSize(
-                new Dimension(
-                        Integer.MAX_VALUE,
-                        42
-                )
-        );
-
+        JTextField field = new JTextField();
+        field.setPreferredSize(new Dimension(360, 42));
+        field.setMaximumSize(new Dimension(Integer.MAX_VALUE, 42));
         field.setFont(BODY);
-
         field.setForeground(INK);
-
         field.setBackground(PAPER);
-
         field.setCaretColor(TERRACOTTA);
-
-        field.setBorder(
-                BorderFactory.createCompoundBorder(
-                        new LineBorder(
-                                SAND,
-                                1
-                        ),
-                        new EmptyBorder(
-                                0,
-                                12,
-                                0,
-                                12
-                        )
-                )
-        );
-
+        field.setBorder(BorderFactory.createCompoundBorder(new LineBorder(SAND, 1), new EmptyBorder(0, 12, 0, 12)));
         return field;
     }
 
@@ -6502,109 +5983,36 @@ JButton smallButton(
     // INFORMATION ROW
     // =========================================================
 
-    void addInfoRow(
-            JPanel panel,
-            String number,
-            String heading,
-            String description) {
-
-        JPanel row =
-                new JPanel();
-
+    void addInfoRow(JPanel panel, String number, String heading, String description) {
+        JPanel row = new JPanel(new BorderLayout());
         row.setOpaque(false);
-
-        row.setLayout(
-                new BorderLayout()
-        );
-
-        row.setMaximumSize(
-                new Dimension(
-                        Integer.MAX_VALUE,
-                        56
-                )
-        );
-
-
-        JLabel numberLabel =
-                new JLabel(number);
-
-        numberLabel.setFont(
-                customSerif.deriveFont(Font.BOLD, 15f)
-        );
-
+        row.setMaximumSize(new Dimension(Integer.MAX_VALUE, 56));
+        
+        JLabel numberLabel = new JLabel(number);
+        numberLabel.setFont(customSerif.deriveFont(Font.BOLD, 15f));
         numberLabel.setForeground(GOLD);
-
-        numberLabel.setPreferredSize(
-                new Dimension(
-                        35,
-                        30
-                )
-        );
-
-        row.add(
-                numberLabel,
-                BorderLayout.WEST
-        );
-
-
-        JPanel text =
-                new JPanel();
-
+        numberLabel.setPreferredSize(new Dimension(35, 30));
+        row.add(numberLabel, BorderLayout.WEST);
+        
+        JPanel text = new JPanel();
         text.setOpaque(false);
-
-        text.setLayout(
-                new BoxLayout(
-                        text,
-                        BoxLayout.Y_AXIS
-                )
-        );
-
-
-        JLabel title =
-                new JLabel(heading);
-
+        text.setLayout(new BoxLayout(text, BoxLayout.Y_AXIS));
+        
+        JLabel title = new JLabel(heading);
         title.setFont(BODY_BOLD);
         title.setForeground(WHITE);
-
-
-        JLabel descriptionLabel =
-                new JLabel(
-                        "<html><div style='width:230px'>"
-                                + description
-                                + "</div></html>"
-                );
-
+        
+        JLabel descriptionLabel = new JLabel("<html><div style='width:230px'>" + description + "</div></html>");
         descriptionLabel.setFont(SMALL);
-
-        descriptionLabel.setForeground(
-                new Color(
-                        215,
-                        205,
-                        195
-                )
-        );
-
-
+        descriptionLabel.setForeground(new Color(215, 205, 195));
+        
         text.add(title);
-
-        text.add(
-                Box.createVerticalStrut(2)
-        );
-
+        text.add(Box.createVerticalStrut(2));
         text.add(descriptionLabel);
-
-
-        row.add(
-                text,
-                BorderLayout.CENTER
-        );
-
-
+        
+        row.add(text, BorderLayout.CENTER);
         panel.add(row);
-
-        panel.add(
-                Box.createVerticalStrut(7)
-        );
+        panel.add(Box.createVerticalStrut(7));
     }
 
 
@@ -6612,82 +6020,22 @@ JButton smallButton(
     // ACTION BUTTON
     // =========================================================
 
-    JButton actionButton(
-            String text) {
-
-        JButton button =
-                new JButton(text);
-
-        button.setPreferredSize(
-                new Dimension(
-                        155,
-                        44
-                )
-        );
-
-        button.setMaximumSize(
-                new Dimension(
-                        155,
-                        44
-                )
-        );
-
+    JButton actionButton(String text) {
+        JButton button = new JButton(text);
+        button.setPreferredSize(new Dimension(155, 44));
+        button.setMaximumSize(new Dimension(155, 44));
         button.setFont(BODY_BOLD);
-
         button.setForeground(WHITE);
-
-        button.setBackground(
-                TERRACOTTA
-        );
-
+        button.setBackground(TERRACOTTA);
         button.setOpaque(true);
-
         button.setContentAreaFilled(true);
-
         button.setFocusPainted(false);
-
-        button.setBorder(
-                BorderFactory.createEmptyBorder(
-                        8,
-                        18,
-                        8,
-                        18
-                )
-        );
-
-        button.setCursor(
-                new Cursor(
-                        Cursor.HAND_CURSOR
-                )
-        );
-
-
-        button.addMouseListener(
-                new MouseAdapter() {
-
-                    public void mouseEntered(
-                            MouseEvent e) {
-
-                        button.setBackground(
-                                new Color(
-                                        160,
-                                        78,
-                                        60
-                                )
-                        );
-                    }
-
-
-                    public void mouseExited(
-                            MouseEvent e) {
-
-                        button.setBackground(
-                                TERRACOTTA
-                        );
-                    }
-                }
-        );
-
+        button.setBorder(BorderFactory.createEmptyBorder(8, 18, 8, 18));
+        button.setCursor(new Cursor(Cursor.HAND_CURSOR));
+        button.addMouseListener(new MouseAdapter() {
+            public void mouseEntered(MouseEvent e) { button.setBackground(new Color(160, 78, 60)); }
+            public void mouseExited(MouseEvent e) { button.setBackground(TERRACOTTA); }
+        });
         return button;
     }
 
@@ -6696,142 +6044,55 @@ JButton smallButton(
     // ISSUE BOOK
     // =========================================================
 
-    void issueBook(
-            JTextField studentField,
-            JTextField bookField,
-            JTextField daysField) {
-
-        String studentId =
-                studentField.getText()
-                        .trim();
-
-        String bookId =
-                bookField.getText()
-                        .trim();
-
-        String daysText =
-                daysField.getText()
-                        .trim();
-
-        if (
-                studentId.isEmpty()
-                        ||
-                        bookId.isEmpty()
-                        ||
-                        daysText.isEmpty()
-        ) {
-
-            warning(
-                    "Please fill all fields."
-            );
-
+    void issueBook(JTextField studentField, JTextField bookField, JTextField daysField) {
+        String studentId = studentField.getText().trim();
+        String bookId = bookField.getText().trim();
+        String daysText = daysField.getText().trim();
+        if (studentId.isEmpty() || bookId.isEmpty() || daysText.isEmpty()) {
+            warning("Please fill all fields.");
             return;
         }
-
         int allowedDays;
-
         try {
-
-            allowedDays =
-                    Integer.parseInt(
-                            daysText
-                    );
-
+            allowedDays = Integer.parseInt(daysText);
         } catch (NumberFormatException e) {
-
-            warning(
-                    "Allowed days must be a number."
-            );
-
+            warning("Allowed days must be a number.");
             return;
         }
-
         if (allowedDays <= 0) {
-
-            warning(
-                    "Allowed days must be greater than zero."
-            );
-
+            warning("Allowed days must be greater than zero.");
             return;
         }
-
-        Student student =
-                findStudent(studentId);
-
-        Book book =
-                findBook(bookId);
-
+        Student student = findStudent(studentId);
+        Book book = findBook(bookId);
         if (student == null) {
-
-            warning(
-                    "Student ID not found."
-            );
-
+            warning("Student ID not found.");
             return;
         }
-
         if (book == null) {
-
-            warning(
-                    "Book ID not found."
-            );
-
+            warning("Book ID not found.");
             return;
         }
-
         if (!book.isAvailable()) {
-
-            warning(
-                    "This book is currently unavailable."
-            );
-
+            warning("This book is currently unavailable.");
             return;
         }
-
-        if (
-                findActiveRecord(
-                        studentId,
-                        bookId
-                ) != null
-        ) {
-
-            warning(
-                    "This student already has this book issued."
-            );
-
+        if (findActiveRecord(studentId, bookId) != null) {
+            warning("This student already has this book issued.");
             return;
         }
-
-        LibRecord record =
-                new LibRecord(
-                        student,
-                        book,
-                        allowedDays
-                );
-
-        records.add(record);
-
+        
+        records.add(new LibRecord(student, book, allowedDays));
         book.issueCopy();
-
         saveData();
-
-        if(!suppressDialogs) JOptionPane.showMessageDialog(
-                this,
-                "BOOK ISSUED SUCCESSFULLY\n\n"
-                        + "Student : "
-                        + student.getName()
-                        + "\nBook : "
-                        + book.getTitle()
-                        + "\nAllowed Days : "
-                        + allowedDays,
-                "MindSpace Library",
-                JOptionPane.INFORMATION_MESSAGE
-        );
-
+        
+        if (!suppressDialogs) JOptionPane.showMessageDialog(this,
+                "BOOK ISSUED SUCCESSFULLY\n\nStudent : " + student.getName() +
+                "\nBook : " + book.getTitle() + "\nAllowed Days : " + allowedDays,
+                "MindSpace Library", JOptionPane.INFORMATION_MESSAGE);
+                
         studentField.setText("");
-
         bookField.setText("");
-
         daysField.setText("");
     }
 
@@ -7733,76 +6994,34 @@ JButton smallButton(
         return card;
     }
 
-
-
     // =========================================================
     // FIND METHODS
     // =========================================================
 
-    Book findBook(
-            String id) {
-
+    Book findBook(String id) {
         for (Book book : books) {
-
-            if (
-                    book.getId()
-                            .equalsIgnoreCase(id)
-            ) {
-
-                return book;
-            }
+            if (book.getId().equalsIgnoreCase(id)) return book;
         }
-
         return null;
     }
 
 
-    Student findStudent(
-            String id) {
-
-        for (Student student :
-                students) {
-
-            if (
-                    student.getId()
-                            .equalsIgnoreCase(id)
-            ) {
-
-                return student;
-            }
+    Student findStudent(String id) {
+        for (Student student : students) {
+            if (student.getId().equalsIgnoreCase(id)) return student;
         }
-
         return null;
     }
 
 
-    LibRecord findActiveRecord(
-            String studentId,
-            String bookId) {
-
-        for (LibRecord record :
-                records) {
-
-            if (
-                    record.getStudent()
-                            .getId()
-                            .equalsIgnoreCase(
-                                    studentId
-                            )
-                            &&
-                            record.getBook()
-                                    .getId()
-                                    .equalsIgnoreCase(
-                                            bookId
-                                    )
-                            &&
-                            !record.isReturned()
-            ) {
-
+    LibRecord findActiveRecord(String studentId, String bookId) {
+        for (LibRecord record : records) {
+            if (record.getStudent().getId().equalsIgnoreCase(studentId) &&
+                record.getBook().getId().equalsIgnoreCase(bookId) &&
+                !record.isReturned()) {
                 return record;
             }
         }
-
         return null;
     }
 
@@ -7811,15 +7030,8 @@ JButton smallButton(
     // WARNING
     // =========================================================
 
-    void warning(
-            String message) {
-
-        JOptionPane.showMessageDialog(
-                this,
-                message,
-                "MindSpace Library",
-                JOptionPane.WARNING_MESSAGE
-        );
+    void warning(String message) {
+        JOptionPane.showMessageDialog(this, message, "MindSpace Library", JOptionPane.WARNING_MESSAGE);
     }
 
 
@@ -7827,87 +7039,26 @@ JButton smallButton(
     // GLASS PANEL
     // =========================================================
 
-    static class GlassPanel
-            extends JPanel {
-
+    static class GlassPanel extends JPanel {
         private Color fill;
-
         private Color borderColor;
-
-        GlassPanel(
-                Color fill,
-                Color borderColor) {
-
+        GlassPanel(Color fill, Color borderColor) {
             this.fill = fill;
-
-            this.borderColor =
-                    borderColor;
-
+            this.borderColor = borderColor;
             setOpaque(false);
         }
-
         @Override
-        protected void paintComponent(
-                Graphics g) {
-
-            Graphics2D g2 =
-                    (Graphics2D)
-                            g.create();
-
-            g2.setRenderingHint(
-                    RenderingHints
-                            .KEY_ANTIALIASING,
-                    RenderingHints
-                            .VALUE_ANTIALIAS_ON
-            );
-
-            int width =
-                    getWidth();
-
-            int height =
-                    getHeight();
-
-            // soft shadow
-
-            g2.setColor(new Color(60, 45, 35, 25));
-
-            g2.fillRoundRect(
-                    3,
-                    4,
-                    width - 6,
-                    height - 5,
-                    18,
-                    18
-            );
-
-            // glass background
-
-            g2.setColor(fill);
-
-            g2.fillRoundRect(
-                    0,
-                    0,
-                    width - 1,
-                    height - 1,
-                    18,
-                    18
-            );
-
-            // border
-
-            g2.setColor(borderColor);
-
-            g2.drawRoundRect(
-                    0,
-                    0,
-                    width - 1,
-                    height - 1,
-                    18,
-                    18
-            );
-
+        protected void paintComponent(Graphics g) {
+            Graphics2D g2 = (Graphics2D) g.create();
+            g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+            int width = getWidth(), height = getHeight();
+            g2.setColor(new Color(60, 45, 35, 25)); // soft shadow
+            g2.fillRoundRect(3, 4, width - 6, height - 5, 18, 18);
+            g2.setColor(fill); // glass background
+            g2.fillRoundRect(0, 0, width - 1, height - 1, 18, 18);
+            g2.setColor(borderColor); // border
+            g2.drawRoundRect(0, 0, width - 1, height - 1, 18, 18);
             g2.dispose();
-
             super.paintComponent(g);
         }
     }
@@ -7917,12 +7068,8 @@ JButton smallButton(
     // MAIN
     // =========================================================
 
-    public static void main(
-            String[] args) {
-
-        SwingUtilities.invokeLater(
-                GUI::new
-        );
+    public static void main(String[] args) {
+        SwingUtilities.invokeLater(GUI::new);
     }
 
     // =========================================================
