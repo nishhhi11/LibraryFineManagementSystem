@@ -578,41 +578,14 @@ public class GUI extends JFrame {
     }
 
     void rebuildPages() {
-
         pages.removeAll();
-
-        pages.add(
-                createHomePage(),
-                "HOME"
-        );
-
-        pages.add(
-                createBooksPage(),
-                "BOOKS"
-        );
-
-        pages.add(
-                createStudentsPage(),
-                "STUDENTS"
-        );
-
-        pages.add(
-                createIssuePage(),
-                "ISSUE"
-        );
-
-        pages.add(
-                createReturnPage(),
-                "RETURN"
-        );
-
-        pages.add(
-                createFinesPage(),
-                "FINES"
-        );
-
+        pages.add(createHomePage(), "HOME");
+        pages.add(createBooksPage(), "BOOKS");
+        pages.add(createStudentsPage(), "STUDENTS");
+        pages.add(createIssuePage(), "ISSUE");
+        pages.add(createReturnPage(), "RETURN");
+        pages.add(createFinesPage(), "FINES");
         pages.revalidate();
-
         pages.repaint();
     }
 
@@ -938,22 +911,10 @@ public class GUI extends JFrame {
         stats.setMaximumSize(new Dimension(Integer.MAX_VALUE, 80));
         stats.setAlignmentX(Component.LEFT_ALIGNMENT);
 
-        stats.add(statCard("BOOK TITLES", String.valueOf(books.size()), "+4 this month", TERRACOTTA, "BOOK", "BOOKS", () -> {
-            booksFilterMode = "ALL";
-            showPage("BOOKS");
-        }));
-        stats.add(statCard("TOTAL COPIES", String.valueOf(totalCopies), "in physical library", SAGE, "COPIES", "BOOKS", () -> {
-            booksFilterMode = "ALL";
-            showPage("BOOKS");
-        }));
-        stats.add(statCard("ON LOAN", String.valueOf(issuedCopies), "currently borrowed", GOLD, "LOAN", "BOOKS", () -> {
-            booksFilterMode = "ON_LOAN";
-            showPage("BOOKS");
-        }));
-        stats.add(statCard("OVERDUE", String.valueOf(overdueBooks), overdueBooks == 0 ? "all books on time" : "requires attention", overdueBooks == 0 ? SAGE : new Color(200, 75, 75), "OVERDUE", "RETURN", () -> {
-            returnFilterOverdueOnly = (overdueRef > 0);
-            showPage("RETURN");
-        }));
+        stats.add(statCard("BOOK TITLES", String.valueOf(books.size()), "+4 this month", TERRACOTTA, "BOOK", "BOOKS", () -> { booksFilterMode = "ALL"; showPage("BOOKS"); }));
+        stats.add(statCard("TOTAL COPIES", String.valueOf(totalCopies), "in physical library", SAGE, "COPIES", "BOOKS", () -> { booksFilterMode = "ALL"; showPage("BOOKS"); }));
+        stats.add(statCard("ON LOAN", String.valueOf(issuedCopies), "currently borrowed", GOLD, "LOAN", "BOOKS", () -> { booksFilterMode = "ON_LOAN"; showPage("BOOKS"); }));
+        stats.add(statCard("OVERDUE", String.valueOf(overdueBooks), overdueBooks == 0 ? "all books on time" : "requires attention", overdueBooks == 0 ? SAGE : new Color(200, 75, 75), "OVERDUE", "RETURN", () -> { returnFilterOverdueOnly = (overdueRef > 0); showPage("RETURN"); }));
 
         content.add(stats);
         content.add(Box.createVerticalStrut(14));
