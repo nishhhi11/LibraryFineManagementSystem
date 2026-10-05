@@ -135,8 +135,6 @@ public class GUI extends JFrame {
 
     void loadData() {
         FileManager.setupFiles();
-        FileManager.addDefaultBooks();
-        FileManager.addDefaultStudents();
         students = FileManager.loadStudents();
         books = FileManager.loadBooks();
         records = FileManager.loadRecords(students, books);

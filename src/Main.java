@@ -12,7 +12,6 @@ public class Main {
     // Start library
     static void startLibrary() {
         FileManager.setupFiles();
-        FileManager.addDefaultBooks();
 
         students = FileManager.loadStudents();
         books = FileManager.loadBooks();
