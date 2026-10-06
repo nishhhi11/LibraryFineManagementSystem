@@ -1,11 +1,12 @@
-S101|Nishi Chopda|B.Tech CSE · 3rd year|9000000101
-S102|Nandeni Tiwari|B.Tech IT · 2nd year|9000000102
-S103|Akshara Tanted|B.Tech ECE · 4th year|9000000103
-S104|Yashika Saraf|B.Tech Mech · 1st year|9000000104
-S105|Paarshvi Vijay|B.Tech CSE · 4th year|9000000105
-S106|Vyom Shah|B.Tech CSE · 2nd year|9000000106
-S107|Prathamesh More|B.Tech CSE · 3rd year|9000000107
-S108|Kushal Nakrani|B.Tech IT · 2nd year|9000000108
-S109|Daksh Shrivastav|B.Tech ECE · 4th year|9000000109
-S110|Kushal Kishore|B.Tech Mech · 1st year|9000000110
-S111|Om Maurya|B.Tech CSE · 4th year|9000000111
+ST101|Nishi Chopda|B.Tech CSE|9876543210
+ST102|Nandeni Tiwari|B.Tech CSE|9876543211
+ST103|Akshara Tanted|B.Tech CSE|9876543212
+ST104|Yashika Saraf|B.Tech CSE|9876543213
+ST105|Paarshvi Vijay|B.Tech CSE|9876543214
+ST106|Vyom Shah|B.Tech CSE|9876543215
+ST107|Kushal Nakrani|B.Tech CSE|9876543216
+ST108|Prathamesh More|B.Tech CSE|9876543217
+ST109|Daksh Shrivastav|B.Tech CSE|9876543218
+ST110|Kushal Kishore|B.Tech CSE|9876543219
+ST111|Raj|BBA · 1st year|8972017839
+ST113|Manan|BBA · 2nd year|7216387978

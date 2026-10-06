@@ -202,10 +202,6 @@ public class Main {
         System.out.println("Book Name    : " + book.getTitle());
         System.out.println("Allowed Days : " + record.getAllowedDays());
 
-        System.out.print("Enter actual days: ");
-        sc.nextInt(); // consume actual days (unused, automatically uses today's date)
-        sc.nextLine();
-
         record.returnBook(java.time.LocalDate.now());
 
         book.returnCopy();

@@ -24,7 +24,12 @@ bin/
 /.nb-gradle/
 
 ### VS Code ###
-.vscode/
+.vscode/*
+!.vscode/settings.json
 
 ### Mac OS ###
 .DS_Store
+
+### Compiled class files — never commit these into src/ ###
+src/*.class
+src/**/*.class

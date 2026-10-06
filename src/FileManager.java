@@ -1,12 +1,36 @@
 import java.io.*;
+import java.time.LocalDate;
 import java.util.ArrayList;
 
 public class FileManager {
 
-    static final String DATA_FOLDER = "data";
-    static final String BOOK_FILE = DATA_FOLDER + "/books.txt";
-    static final String STUDENT_FILE = DATA_FOLDER + "/students.txt";
-    static final String RECORD_FILE = DATA_FOLDER + "/records.txt";
+    // Absolute path to the project's data/ folder — used as the guaranteed fallback.
+    // Relative paths break when the VS Code Java extension runs classes from
+    // its own jdt_ws/...bin/ directory inside ~/Library/.
+    private static final String PROJECT_DATA =
+            "/Users/nishi/JavaMainProject/LibraryFineManagementSystem/data";
+
+    static final String DATA_FOLDER;
+    static {
+        String[] candidates = {
+            "data",                          // CWD = LibraryFineManagementSystem/
+            "LibraryFineManagementSystem/data", // CWD = JavaMainProject/
+            PROJECT_DATA                     // absolute — always works
+        };
+        String found = null;
+        for (String c : candidates) {
+            File f = new File(c);
+            if (f.isDirectory() && new File(f, "books.txt").exists()) {
+                found = f.getAbsolutePath();
+                break;
+            }
+        }
+        DATA_FOLDER = (found != null) ? found : PROJECT_DATA;
+    }
+
+    static final String BOOK_FILE    = DATA_FOLDER + File.separator + "books.txt";
+    static final String STUDENT_FILE = DATA_FOLDER + File.separator + "students.txt";
+    static final String RECORD_FILE  = DATA_FOLDER + File.separator + "records.txt";
 
     public static void setupFiles() {
 
@@ -193,7 +217,7 @@ public class FileManager {
     }
 
     public static void saveRecords(ArrayList<LibRecord> records) {
-        try (java.io.BufferedWriter writer = new java.io.BufferedWriter(new java.io.FileWriter(RECORD_FILE))) {
+        try (BufferedWriter writer = new BufferedWriter(new FileWriter(RECORD_FILE))) {
             for (LibRecord record : records) {
                 writer.write(
                         record.getStudent().getId() + "|" +
@@ -203,7 +227,7 @@ public class FileManager {
                                 record.getDelayedDays() + "|" +
                                 record.getFine() + "|" +
                                 record.isReturned() + "|" +
-                                (record.getIssueDate() != null ? record.getIssueDate().toString() : java.time.LocalDate.now().toString()) + "|" +
+                                (record.getIssueDate() != null ? record.getIssueDate().toString() : LocalDate.now().toString()) + "|" +
                                 record.getFineStatus()
                 );
                 writer.newLine();
@@ -215,7 +239,7 @@ public class FileManager {
 
     public static ArrayList<LibRecord> loadRecords(ArrayList<Student> students, ArrayList<Book> books) {
         ArrayList<LibRecord> records = new ArrayList<>();
-        try (java.io.BufferedReader reader = new java.io.BufferedReader(new java.io.FileReader(RECORD_FILE))) {
+        try (BufferedReader reader = new BufferedReader(new FileReader(RECORD_FILE))) {
             String line;
             while ((line = reader.readLine()) != null) {
                 String[] data = line.split("\\|");
@@ -226,9 +250,9 @@ public class FileManager {
                         int allowedDays = Integer.parseInt(data[2]);
                         int actualDays = Integer.parseInt(data[3]);
                         boolean returned = Boolean.parseBoolean(data[6]);
-                        java.time.LocalDate issueDate = java.time.LocalDate.now();
+                        LocalDate issueDate = LocalDate.now();
                         if (data.length >= 8) {
-                            issueDate = java.time.LocalDate.parse(data[7]);
+                            issueDate = LocalDate.parse(data[7]);
                         }
                         LibRecord record = new LibRecord(student, book, allowedDays, issueDate);
                         if (returned) {

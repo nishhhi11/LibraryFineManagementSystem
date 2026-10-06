@@ -44,7 +44,7 @@ public class LibRecord {
         fineStatus = fine > 0 ? "UNPAID" : "NONE";
     }
     
-        public void setReturnData(int actualDays, int delayedDays, double fine, String fineStatus) {
+    public void setReturnData(int actualDays, int delayedDays, double fine, String fineStatus) {
         this.actualDays = actualDays;
         this.delayedDays = delayedDays;
         this.fine = fine;
